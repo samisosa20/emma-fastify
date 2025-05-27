@@ -1,0 +1,25 @@
+{
+  "compilerOptions": {
+    "target": "ESNext",
+    "module": "commonjs",
+    "outDir": "dist",
+    "moduleResolution": "node",
+    "forceConsistentCasingInFileNames": true,
+    "strict": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "baseUrl": ".",
+    "paths": {
+      "@routes": ["src/routes"],
+      "@controllers": ["src/controllers"],
+      "@lib": ["src/lib"],
+      "@packages": ["packages"],
+    }
+  },
+  "include": ["src/**/*.ts", "packages/**/*.ts"],
+  "exclude": [
+    "node_modules",
+    "**/*.d.ts",
+    "**/*.spec.ts",
+  ]
+}

@@ -3,6 +3,8 @@ export type User = {
   email: string;
   name: string;
   password: string;
+  phone: string | null;
+  phoneCode: string | null;
   tokenRecoveryPassword: string | null;
   confirmedEmailAt: Date | null;
   createdAt: Date;

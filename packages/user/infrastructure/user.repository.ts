@@ -150,6 +150,8 @@ export class UserRepositoryPrismaPostgres implements IUserRepository {
         password: true,
         name: true,
         confirmedEmailAt: true,
+        phone: true,
+        phoneCode: true,
       },
     });
 
@@ -192,6 +194,8 @@ export class UserRepositoryPrismaPostgres implements IUserRepository {
         password: true,
         name: true,
         confirmedEmailAt: true,
+        phone: true,
+        phoneCode: true,
       },
     });
 

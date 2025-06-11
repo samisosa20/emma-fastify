@@ -13,6 +13,8 @@ model User {
   email                   String                   @unique
   confirmedEmailAt        DateTime?
   tokenRecoveryPassword   String?
+  phone                   String?
+  phoneCode               String?
   password                String
   createdAt               DateTime                 @default(now())
   updatedAt               DateTime                 @updatedAt

@@ -24,7 +24,7 @@ export class AuthController {
     request: FastifyRequest,
     reply: FastifyReply
   ) => {
-    const { name, email, password } = request.body as UserBody;
+    const body = request.body as UserBody;
 
     try {
       /* const parseResult = strongPasswordSchema.safeParse(password);
@@ -37,11 +37,7 @@ export class AuthController {
         });
       } */
 
-      const newUser = await userUseCase.addUser({
-        name,
-        email,
-        password,
-      });
+      const newUser = await userUseCase.addUser(body);
 
       if ("statusCode" in newUser) {
         return newUser;

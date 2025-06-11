@@ -28,7 +28,8 @@
     "mysql2": "^3.14.1",
     "nodemailer": "^7.0.3",
     "prisma-extension-pagination": "^0.7.5",
-    "swagger-themes": "^1.4.3"
+    "swagger-themes": "^1.4.3",
+    "zod": "^3.25.61"
   },
   "devDependencies": {
     "@types/node": "^20.12.12",

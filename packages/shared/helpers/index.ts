@@ -1,6 +1,7 @@
 import bcrypt from "bcryptjs";
 
 import { transporterMailer } from "../mailer";
+import { ZodError } from "zod";
 
 export async function hashPassword(password: string): Promise<string> {
   const saltRounds = 12;
@@ -49,3 +50,13 @@ export async function sendEmailConfirmation(email: string, token: string) {
    <p>If you did not request this, please ignore this email.</p>`
   );
 }
+
+export const formatErrorMessageMiddleware = (error: any) => {
+  if (error instanceof ZodError) {
+    throw Object.assign(new Error("Validation Error", { cause: "zod" }), {
+      statusCode: 400,
+      message: error.errors.map((e) => e.message),
+      error: "Validation Error",
+    });
+  }
+};

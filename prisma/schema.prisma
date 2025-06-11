@@ -1,12 +1,5 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
-
 generator client {
   provider = "prisma-client-js"
-  output   = "../src/generated/prisma"
 }
 
 datasource db {
@@ -15,15 +8,22 @@ datasource db {
 }
 
 model User {
-  id               String    @id @default(uuid())
-  name             String
-  email            String    @unique
-  confirmedEmailAt DateTime?
-  password         String
-  createdAt        DateTime  @default(now())
-  updatedAt        DateTime  @updatedAt
-
-  accounts Account[]
+  id                      String                   @id @default(uuid())
+  name                    String
+  email                   String                   @unique
+  confirmedEmailAt        DateTime?
+  tokenRecoveryPassword   String?
+  password                String
+  createdAt               DateTime                 @default(now())
+  updatedAt               DateTime                 @updatedAt
+  plannedPayments         PlannedPayment[]
+  accounts                Account[]
+  events                  Event[]
+  investments             Investment[]
+  movements               Movement[]
+  heritages               Heritage[]
+  investmentAppreciations InvestmentAppreciation[]
+  budgets                 Budget[]
 }
 
 model EmailConfirmationToken {
@@ -35,34 +35,37 @@ model EmailConfirmationToken {
 }
 
 model Account {
-  id          String    @id @default(uuid())
-  name        String
-  description String?
-  badgeId     String
-  initAmount  Decimal
-  limit       Decimal
-  typeId      String
-  userId      String
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-  deletedAt   DateTime?
-
-  user User        @relation(fields: [userId], references: [id])
-  type AccountType @relation(fields: [typeId], references: [id])
-  badge Badge       @relation(fields: [badgeId], references: [id])
+  id              String           @id @default(uuid())
+  name            String
+  description     String?
+  badgeId         String
+  initAmount      Decimal
+  limit           Decimal
+  typeId          String
+  userId          String
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+  deletedAt       DateTime?
+  plannedPayments PlannedPayment[]
+  movements       Movement[]
+  user            User             @relation(fields: [userId], references: [id])
+  type            AccountType      @relation(fields: [typeId], references: [id])
+  badge           Badge            @relation(fields: [badgeId], references: [id])
 }
 
-
 model Category {
-  id          String    @id @default(uuid())
-  name        String
-  description String
-  groupId     String
-  categoryId  String?
-  userId      String
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-  deletedAt   DateTime?
+  id              String           @id @default(uuid())
+  name            String
+  description     String
+  groupId         String
+  categoryId      String?
+  userId          String
+  plannedPayments PlannedPayment[]
+  movements       Movement[]
+  budgets         Budget[]
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+  deletedAt       DateTime?
 }
 
 model AccountType {
@@ -81,10 +84,131 @@ model GroupCategory {
 }
 
 model Badge {
+  id          String       @id @default(uuid())
+  name        String
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  accounts    Account[]
+  investments Investment[]
+  heritages   Heritage[]
+  budgets     Budget[]
+}
+
+model Event {
+  id        String     @id @default(uuid())
+  name      String
+  endEvent  DateTime
+  userId    String
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+  user      User       @relation(fields: [userId], references: [id])
+  movements Movement[]
+}
+
+model Investment {
+  id             String                   @id @default(uuid())
+  name           String
+  initAmount     Decimal                  @db.Decimal(15, 2)
+  endAmount      Decimal                  @db.Decimal(15, 2)
+  badgeId        String
+  dateInvestment DateTime                 @db.Date
+  userId         String
+  createdAt      DateTime                 @default(now())
+  updatedAt      DateTime                 @updatedAt
+  deletedAt      DateTime?
+  user           User                     @relation(fields: [userId], references: [id])
+  badge          Badge                    @relation(fields: [badgeId], references: [id])
+  movements      Movement[]
+  appreciations  InvestmentAppreciation[]
+}
+
+model PlannedPayment {
+  id          String    @id @default(uuid())
+  accountId   String
+  categoryId  String
+  description String?
+  amount      Decimal   @db.Decimal(15, 2)
+  startDate   DateTime  @db.Date
+  endDate     DateTime? @db.Date
+  specificDay Int
+  userId      String
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  account     Account   @relation(fields: [accountId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  category    Category  @relation(fields: [categoryId], references: [id], onUpdate: Cascade)
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+}
+
+model Movement {
+  id                       String      @id @default(uuid())
+  accountId                String
+  categoryId               String
+  description              String?
+  amount                   Decimal     @db.Decimal(15, 2)
+  trm                      Decimal     @default(1.00000) @db.Decimal(15, 5)
+  datePurchase             DateTime
+  transferId               String?
+  eventId                  String?
+  investmentId             String?
+  userId                   String
+  createdAt                DateTime    @default(now())
+  updatedAt                DateTime    @updatedAt
+  addWithdrawal            Boolean     @default(false)
+  account                  Account     @relation(fields: [accountId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  category                 Category    @relation(fields: [categoryId], references: [id], onUpdate: Cascade)
+  event                    Event?      @relation(fields: [eventId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  investment               Investment? @relation(fields: [investmentId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  user                     User        @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  originalOrPairedMovement Movement?   @relation(fields: [transferId], references: [id], name: "MovementTransferPair", onDelete: SetNull, onUpdate: Cascade)
+  relatedTransferMovements Movement[]  @relation(name: "MovementTransferPair")
+}
+
+model Period {
   id        String   @id @default(uuid())
   name      String
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-  
-  accounts  Account[]
+  budgets   Budget[]
+}
+
+model Heritage {
+  id              String   @id @default(uuid())
+  name            String   @db.VarChar(100)
+  comercialAmount Decimal  @db.Decimal(15, 2)
+  legalAmount     Decimal  @db.Decimal(15, 2)
+  badgeId         String
+  year            Int
+  userId          String
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  badge           Badge    @relation(fields: [badgeId], references: [id], onUpdate: Cascade)
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+}
+
+model InvestmentAppreciation {
+  id               String     @id @default(uuid())
+  investmentId     String
+  amount           Decimal    @db.Decimal(15, 2)
+  dateAppreciation DateTime   @db.Date
+  userId           String
+  createdAt        DateTime   @default(now())
+  updatedAt        DateTime   @updatedAt
+  investment       Investment @relation(fields: [investmentId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  user             User       @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+}
+
+model Budget {
+  id         String   @id @default(uuid())
+  categoryId String
+  amount     Decimal  @db.Decimal(15, 2)
+  badgeId    String
+  periodId   String
+  year       Int
+  userId     String
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  category   Category @relation(fields: [categoryId], references: [id], onUpdate: Cascade)
+  badge      Badge    @relation(fields: [badgeId], references: [id], onUpdate: Cascade)
+  period     Period   @relation(fields: [periodId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
 }

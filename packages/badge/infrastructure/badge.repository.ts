@@ -1,15 +1,18 @@
-import { Badge, CreateBadge } from '../domain/badge';
-import { IBadgeRepository } from '../domain/interfaces/badge.interfaces';
+import { Badge, CreateBadge } from "../domain/badge";
+import { IBadgeRepository } from "../domain/interfaces/badge.interfaces";
 
 import prisma from "packages/shared/settings/prisma.client";
-import { CommonParamsPaginate, Paginate, ErrorMessage, handleShowDeleteData } from 'packages/shared';
+import {
+  CommonParamsPaginate,
+  Paginate,
+  ErrorMessage,
+  handleShowDeleteData,
+} from "packages/shared";
 
 export class BadgePrismaRepository implements IBadgeRepository {
-  public async addBadge(
-    data: CreateBadge
-  ): Promise<Badge | ErrorMessage> {
+  public async addBadge(data: CreateBadge): Promise<Badge | ErrorMessage> {
     try {
-      const newBadge = await prisma.account.create({
+      const newBadge = await prisma.badge.create({
         data,
       });
       return newBadge;
@@ -26,7 +29,7 @@ export class BadgePrismaRepository implements IBadgeRepository {
     params: CommonParamsPaginate
   ): Promise<{ content: Badge[]; meta: Paginate }> {
     const { deleted, size, page } = params;
-    const [content, meta] = await prisma.account
+    const [content, meta] = await prisma.badge
       .paginate({
         where: {
           OR: handleShowDeleteData(deleted === "1"),
@@ -48,10 +51,9 @@ export class BadgePrismaRepository implements IBadgeRepository {
     data: Partial<CreateBadge>
   ): Promise<Badge | ErrorMessage> {
     try {
-      const updatedBadge = await prisma.account.update({
+      const updatedBadge = await prisma.badge.update({
         where: {
           id,
-          deletedAt: null,
         },
         data,
       });
@@ -67,7 +69,7 @@ export class BadgePrismaRepository implements IBadgeRepository {
 
   public async detailBadge(id: string): Promise<Badge | null> {
     try {
-      return await prisma.account.findUnique({
+      return await prisma.badge.findUnique({
         where: { id },
       });
     } catch (error: any) {
@@ -80,15 +82,14 @@ export class BadgePrismaRepository implements IBadgeRepository {
   }
 
   public async deleteBadge(id: string): Promise<Badge | null> {
-    const account = await prisma.account.findUnique({
+    const badge = await prisma.badge.findUnique({
       where: { id },
     });
-    if (!account) {
- return null;
+    if (!badge) {
+      return null;
     }
-    return await prisma.account.update({
+    return await prisma.badge.delete({
       where: { id },
-      data: { deletedAt: new Date() },
     });
   }
 }

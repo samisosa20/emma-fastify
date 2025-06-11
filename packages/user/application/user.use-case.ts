@@ -1,6 +1,6 @@
 import { CommonParamsPaginate, ErrorMessage, Paginate } from "packages/shared";
 import { IUserRepository } from "../domain/interfaces/user.interfaces";
-import { User, CreateUser } from "../domain/user";
+import { User, CreateUser, UserLogin } from "../domain/user";
 
 export class UserUseCase {
   private userRepository: IUserRepository;
@@ -32,5 +32,25 @@ export class UserUseCase {
   }
   public async deleteUser(id: string): Promise<Omit<User, "password"> | null> {
     return await this.userRepository.deleteUser(id);
+  }
+  public async login(
+    email: string,
+    password: string
+  ): Promise<UserLogin | ErrorMessage> {
+    return await this.userRepository.login(email, password);
+  }
+  public async emailConfirmation(
+    email: string,
+    token: string
+  ): Promise<UserLogin | ErrorMessage> {
+    return await this.userRepository.emailConfirmation(email, token);
+  }
+  public async sendEmailConfirmation(
+    email: string
+  ): Promise<{ token: string } | ErrorMessage> {
+    return await this.userRepository.sendEmailConfirmation(email);
+  }
+  public async recoveryPassword(email: string): Promise<ErrorMessage> {
+    return await this.userRepository.recoveryPassword(email);
   }
 }

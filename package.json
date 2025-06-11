@@ -1,28 +1,61 @@
 {
-  "name": "node-express-api-ts",
+  "name": "fiona-node-api-ts",
   "description": "Simple api sample in Node",
   "version": "1.0.0",
   "private": true,
   "main": "index.js",
   "scripts": {
-    "dev": "nodemon --watch 'src/**' --ext 'ts,json' --exec 'npm run build && npm run start'",
+    "dev": "nodemon",
     "build": "tsc",
-    "start": "node dist/index.js"
+    "migrate": "prisma migrate dev",
+    "prisma": "prisma generate",
+    "start": "node -r tsconfig-paths/register dist/src/index.js",
+    "deploy:prod": "npm run migrate && pm2 start --name fiona-backend --watch --node-args=\"-r tsconfig-paths/register\" dist/src/index.js && pm2 save"
   },
-  "author": "Google LLC",
+  "author": "Sammy Guttman",
   "license": "Apache-2.0",
   "dependencies": {
+    "@fastify/autoload": "^6.3.1",
+    "@fastify/cors": "^11.0.1",
+    "@fastify/jwt": "^9.1.0",
+    "@fastify/rate-limit": "^10.3.0",
+    "@fastify/swagger": "^9.5.1",
+    "@fastify/swagger-ui": "^5.2.3",
     "@prisma/client": "^6.8.2",
     "bcryptjs": "^3.0.2",
     "express": "^4.21.2",
     "fastify": "^5.3.3",
     "mysql2": "^3.14.1",
-    "prisma": "^6.8.2",
-    "prisma-extension-pagination": "^0.7.5"
+    "nodemailer": "^7.0.3",
+    "prisma-extension-pagination": "^0.7.5",
+    "swagger-themes": "^1.4.3"
   },
   "devDependencies": {
     "@types/node": "^20.12.12",
+    "@types/nodemailer": "^6.4.17",
     "nodemon": "^3.1.0",
-    "typescript": "^5.4.5"
+    "pm2": "^6.0.6",
+    "prisma": "^6.9.0",
+    "ts-node": "^10.9.2",
+    "tsc-alias": "^1.8.16",
+    "tsconfig-paths": "^4.2.0",
+    "typescript": "^5.8.3"
+  },
+  "nodemonConfig": {
+    "ignore": [
+      "**/*.test.ts",
+      "**/*.spec.ts",
+      ".git",
+      "node_modules"
+    ],
+    "watch": [
+      "src",
+      "packages"
+    ],
+    "exec": "node -r tsconfig-paths/register -r ts-node/register ./src/index.ts",
+    "ext": "ts, js"
+  },
+  "engines": {
+    "node": ">=23.0.0"
   }
 }

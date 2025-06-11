@@ -1,8 +1,13 @@
-import { GroupCategory, CreateGroupCategory } from '../domain/groupCategory';
-import { IGroupCategoryRepository } from '../domain/interfaces/groupCategory.interfaces';
+import { GroupCategory, CreateGroupCategory } from "../domain/groupCategory";
+import { IGroupCategoryRepository } from "../domain/interfaces/groupCategory.interfaces";
 
 import prisma from "packages/shared/settings/prisma.client";
-import { CommonParamsPaginate, Paginate, ErrorMessage, handleShowDeleteData } from 'packages/shared';
+import {
+  CommonParamsPaginate,
+  Paginate,
+  ErrorMessage,
+  handleShowDeleteData,
+} from "packages/shared";
 
 export class GroupCategoryPrismaRepository implements IGroupCategoryRepository {
   public async addGroupCategory(
@@ -51,7 +56,6 @@ export class GroupCategoryPrismaRepository implements IGroupCategoryRepository {
       const updatedGroupCategory = await prisma.groupCategory.update({
         where: {
           id,
-          deletedAt: null,
         },
         data,
       });
@@ -86,9 +90,8 @@ export class GroupCategoryPrismaRepository implements IGroupCategoryRepository {
     if (!groupCategory) {
       return null;
     }
-    return await prisma.groupCategory.update({
+    return await prisma.groupCategory.delete({
       where: { id },
-      data: { deletedAt: new Date() },
     });
   }
 }

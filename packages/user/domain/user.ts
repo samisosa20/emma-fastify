@@ -20,3 +20,12 @@ export type CreateUser = Omit<
   currentPassword?: string;
   confirmPassword?: string;
 };
+
+export type UserLogin = Omit<
+  User,
+  | "password"
+  | "createdAt"
+  | "updatedAt"
+  | "confirmedEmailAt"
+  | "tokenRecoveryPassword"
+>;

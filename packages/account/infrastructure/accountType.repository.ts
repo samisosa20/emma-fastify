@@ -1,15 +1,20 @@
-import { AccountType, CreateAccountType } from '../domain/accountType';
-import { IAccountTypeRepository } from '../domain/interfaces/accountType.interfaces';
+import { AccountType, CreateAccountType } from "../domain/accountType";
+import { IAccountTypeRepository } from "../domain/interfaces/accountType.interfaces";
 
 import prisma from "packages/shared/settings/prisma.client";
-import { CommonParamsPaginate, Paginate, ErrorMessage, handleShowDeleteData } from 'packages/shared';
+import {
+  CommonParamsPaginate,
+  Paginate,
+  ErrorMessage,
+  handleShowDeleteData,
+} from "packages/shared";
 
 export class AccountTypePrismaRepository implements IAccountTypeRepository {
   public async addAccountType(
     data: CreateAccountType
   ): Promise<AccountType | ErrorMessage> {
     try {
-      const newAccountType = await prisma.account.create({
+      const newAccountType = await prisma.accountType.create({
         data,
       });
       return newAccountType;
@@ -48,10 +53,9 @@ export class AccountTypePrismaRepository implements IAccountTypeRepository {
     data: Partial<CreateAccountType>
   ): Promise<AccountType | ErrorMessage> {
     try {
-      const updatedAccountType = await prisma.account.update({
+      const updatedAccountType = await prisma.accountType.update({
         where: {
           id,
-          deletedAt: null,
         },
         data,
       });
@@ -67,7 +71,7 @@ export class AccountTypePrismaRepository implements IAccountTypeRepository {
 
   public async detailAccountType(id: string): Promise<AccountType | null> {
     try {
-      return await prisma.account.findUnique({
+      return await prisma.accountType.findUnique({
         where: { id },
       });
     } catch (error: any) {
@@ -80,15 +84,14 @@ export class AccountTypePrismaRepository implements IAccountTypeRepository {
   }
 
   public async deleteAccountType(id: string): Promise<AccountType | null> {
-    const account = await prisma.account.findUnique({
+    const account = await prisma.accountType.findUnique({
       where: { id },
     });
     if (!account) {
- return null;
+      return null;
     }
-    return await prisma.account.update({
+    return await prisma.accountType.delete({
       where: { id },
-      data: { deletedAt: new Date() },
     });
   }
 }

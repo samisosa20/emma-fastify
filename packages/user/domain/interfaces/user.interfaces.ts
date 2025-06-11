@@ -1,5 +1,5 @@
 import { CommonParamsPaginate, ErrorMessage, Paginate } from "packages/shared";
-import { User, CreateUser } from "../user";
+import { User, CreateUser, UserLogin } from "../user";
 
 export interface IUserRepository {
   listUser(
@@ -12,4 +12,13 @@ export interface IUserRepository {
   ): Promise<Omit<User, "password"> | ErrorMessage>;
   detailUser(id: string): Promise<Omit<User, "password"> | null>;
   deleteUser(id: string): Promise<Omit<User, "password"> | null>;
+  login(email: string, password: string): Promise<UserLogin | ErrorMessage>;
+  emailConfirmation(
+    email: string,
+    token: string
+  ): Promise<UserLogin | ErrorMessage>;
+  sendEmailConfirmation(
+    email: string
+  ): Promise<{ token: string } | ErrorMessage>;
+  recoveryPassword(email: string): Promise<ErrorMessage>;
 }

@@ -2,15 +2,21 @@ export type Category = {
   id: string;
   name: string;
   description: string;
-  group_id: number;
-  category_id: number;
-  user_id: string;
-  created_at: Date;
-  updated_at: Date;
-  deleted_at: Date | null;
+  groupId: string;
+  categoryId: string | null;
+  createdAt: Date;
+  updatedAt: Date;
+  deletedAt: Date | null;
+  userId: string;
 };
 
 export type CreateCategory = Omit<
   Category,
-  "id" | "created_at" | "updated_at" | "deleted_at"
+  | "id"
+  | "createdAt"
+  | "updatedAt"
+  | "deletedAt"
+  | "plannedPayments"
+  | "movements"
+  | "budgets"
 >;

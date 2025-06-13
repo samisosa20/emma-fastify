@@ -9,9 +9,7 @@ export class BadgeUseCase {
     this.badgeRepository = _badgeAdapter;
   }
 
-  public async addBadge(
-    data: CreateBadge
-  ): Promise<Badge | ErrorMessage> {
+  public async addBadge(data: CreateBadge): Promise<Badge | ErrorMessage> {
     return await this.badgeRepository.addBadge(data);
   }
 
@@ -34,5 +32,11 @@ export class BadgeUseCase {
 
   public async deleteBadge(id: string): Promise<Badge | null> {
     return await this.badgeRepository.deleteBadge(id);
+  }
+  public async importCurrenciesAsBadges(): Promise<{
+    count: number;
+    message?: string;
+  }> {
+    return await this.badgeRepository.importCurrenciesAsBadges();
   }
 }

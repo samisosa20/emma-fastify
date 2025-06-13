@@ -10,8 +10,7 @@ const authSchema: SchemaDefault[] = [
     body: ["login", "register"],
     private: false,
   },
-  { name: "firstName", type: "string", body: ["register"], private: false },
-  { name: "lastName", type: "string", body: ["register"], private: false },
+  { name: "name", type: "string", body: ["register"], private: false },
   {
     name: "phone",
     type: ["string", "null"],
@@ -20,14 +19,8 @@ const authSchema: SchemaDefault[] = [
   },
   {
     name: "phoneCode",
-    type: ["number", "null"],
+    type: ["string", "null"],
     body: ["register"],
-    private: false,
-  },
-  {
-    name: "language",
-    type: ["string"],
-    body: ["post", "put"],
     private: false,
   },
   {

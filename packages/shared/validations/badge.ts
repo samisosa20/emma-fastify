@@ -6,6 +6,10 @@ export const BadgeCreateInput = z.object({
     .string({ message: "name is required" })
     .min(1, "name cannot be empty")
     .max(100),
+  code: z
+    .string({ message: "code is required" })
+    .min(1, "code cannot be empty")
+    .max(100),
   // userId: z.string({ message: "userId is required" }), // Si Badge está asociado a un User y se pasa en el body
 }) satisfies z.Schema<Omit<Prisma.BadgeUncheckedCreateInput, "userId">>; // Ajusta Omit según los campos que realmente vengan del body
 

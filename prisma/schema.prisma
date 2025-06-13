@@ -88,6 +88,7 @@ model GroupCategory {
 model Badge {
   id          String       @id @default(uuid())
   name        String
+  code        String
   createdAt   DateTime     @default(now())
   updatedAt   DateTime     @updatedAt
   accounts    Account[]

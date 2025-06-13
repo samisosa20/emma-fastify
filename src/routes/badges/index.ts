@@ -17,7 +17,7 @@ const badgesRoutes: FastifyPluginAsync = async (fastify) => {
   fastify.get(
     "/",
     {
-      preHandler: [fastify.authenticate],
+      preHandler: [],
       schema: listBadgesDocumentation,
     },
     badgeController.getAllBadges
@@ -61,6 +61,15 @@ const badgesRoutes: FastifyPluginAsync = async (fastify) => {
       schema: deleteBadgeDocumentation,
     },
     badgeController.deleteBadge
+  );
+
+  // Delete a Badge by ID
+  fastify.post(
+    "/import",
+    {
+      preHandler: [],
+    },
+    badgeController.importBadge
   );
 };
 

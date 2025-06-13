@@ -62,4 +62,7 @@ export class BadgeController {
     const { id } = request.params as { id: string };
     return await badgeUseCase.deleteBadge(id);
   };
+  importBadge = async (request: FastifyRequest, reply: FastifyReply) => {
+    return await badgeUseCase.importCurrenciesAsBadges();
+  };
 }

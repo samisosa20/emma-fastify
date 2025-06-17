@@ -25,5 +25,6 @@ export const UserCreateInput = z.object({
     .nullable(),
   phoneCode: z.string().optional().nullable(),
   password: z.string({ message: "password is required" }),
+  badgeId: z.string({ message: "badgeId is required" }).uuid(),
   deletedAt: z.date().nullable().optional(),
 }) satisfies z.Schema<Prisma.UserUncheckedCreateInput>;

@@ -23,7 +23,7 @@ export class AccountTypeUseCase {
 
   public async updateAccountType(
     id: string,
-    account: CreateAccountType
+    account: Partial<CreateAccountType>
   ): Promise<AccountType | ErrorMessage> {
     return await this.accountRepository.updateAccountType(id, account);
   }

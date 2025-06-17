@@ -26,7 +26,10 @@ export class CategoryController {
     const dataCategory = request.body as CreateCategory;
 
     try {
-      return categoryUseCase.addCategory(dataCategory);
+      return categoryUseCase.addCategory({
+        ...dataCategory,
+        userId: request.user.id,
+      });
     } catch (error: any) {
       const detail = formatErrorMessage(error);
       return reply.status(400).send({

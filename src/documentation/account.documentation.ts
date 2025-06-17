@@ -6,14 +6,47 @@ import {
   paginationParamsDocumentation,
 } from "./components/pagination";
 import { errorDocumentation } from "./components/error";
-import { getBody } from "./components/realtions";
+import { getBody, getProperties } from "./components/realtions";
+import { accountTypeObjectSchema } from "./accountType.documentation";
+import { badgeObjectSchema } from "./badge.documentation";
 
 const accountObjectSchema: SchemaDefault[] = [
   { name: "id", type: "string", body: false, private: false },
   { name: "name", type: "string", body: ["create", "update"], private: false },
-  { name: "type", type: "string", body: ["create", "update"], private: false },
+  {
+    name: "accountTypeId",
+    type: "string",
+    body: ["create", "update"],
+    private: true,
+  },
+  {
+    name: "badgeId",
+    type: "string",
+    body: ["create", "update"],
+    private: true,
+  },
+  {
+    name: "type",
+    type: "object",
+    body: false,
+    private: false,
+    properties: getProperties(accountTypeObjectSchema),
+  },
+  {
+    name: "badge",
+    type: "object",
+    body: false,
+    private: false,
+    properties: getProperties(badgeObjectSchema),
+  },
   {
     name: "balance",
+    type: "number",
+    body: false,
+    private: false,
+  },
+  {
+    name: "initAmount",
     type: "number",
     body: ["create", "update"],
     private: false,
@@ -21,6 +54,7 @@ const accountObjectSchema: SchemaDefault[] = [
   { name: "userId", type: "string", body: ["create"], private: false },
   { name: "createdAt", type: "string", body: false, private: false },
   { name: "updatedAt", type: "string", body: false, private: false },
+  { name: "deletedAt", type: "string", body: false, private: false },
 ];
 
 const accountResponseSchema = defaultSuccesResponse(accountObjectSchema);

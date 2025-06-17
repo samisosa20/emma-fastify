@@ -23,9 +23,12 @@ export class GroupCategoryUseCase {
 
   public async updateGroupCategory(
     id: string,
-    groupCategory: CreateGroupCategory
+    groupCategory: Partial<CreateGroupCategory>
   ): Promise<GroupCategory | ErrorMessage> {
-    return await this.groupCategoryRepository.updateGroupCategory(id, groupCategory);
+    return await this.groupCategoryRepository.updateGroupCategory(
+      id,
+      groupCategory
+    );
   }
   public async detailGroupCategory(id: string): Promise<GroupCategory | null> {
     return await this.groupCategoryRepository.detailGroupCategory(id);

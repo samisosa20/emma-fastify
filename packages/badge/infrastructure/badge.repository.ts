@@ -15,6 +15,13 @@ interface CurrencyAPIResponse {
   code: string;
 }
 
+interface APIResponse {
+  currencies: CurrencyAPIResponse[];
+  accounts_type: Omit<CurrencyAPIResponse, "code">[];
+  groups_category: Omit<CurrencyAPIResponse, "code">[];
+  periods: { value: number; label: string }[];
+}
+
 export class BadgePrismaRepository implements IBadgeRepository {
   public async addBadge(data: CreateBadge): Promise<Badge | ErrorMessage> {
     try {
@@ -34,7 +41,7 @@ export class BadgePrismaRepository implements IBadgeRepository {
   public async listBadge(
     params: CommonParamsPaginate
   ): Promise<{ content: Badge[]; meta: Paginate }> {
-    const { size, page: pageParam, deleted } = params;
+    const { size, page: pageParam } = params;
 
     const shouldPaginate = pageParam && Number(pageParam) > 0;
 
@@ -122,11 +129,23 @@ export class BadgePrismaRepository implements IBadgeRepository {
   }
 
   public async importCurrenciesAsBadges(): Promise<{
-    count: number;
+    badgeCount: number;
+    accountTypeCount: number;
+    periodCount: number;
+    groupCategoryCount: number;
     message?: string;
   }> {
     try {
-      const response = await fetch(`${process.env.API_PROD}/currencies`);
+      const response = await fetch(`${process.env.API_PROD}/login`, {
+        method: "POST",
+        body: JSON.stringify({
+          email: process.env.API_EMAIL,
+          password: process.env.API_PASSWORD,
+        }),
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
 
       if (!response.ok) {
         const errorText = await response.text();
@@ -146,7 +165,17 @@ export class BadgePrismaRepository implements IBadgeRepository {
         );
       }
 
-      const currencies: CurrencyAPIResponse[] = await response.json();
+      const apiResponse: APIResponse = await response.json();
+      const currencies = apiResponse.currencies;
+      const accountTypeCreate = apiResponse.accounts_type.map((account) => ({
+        name: account.name,
+      }));
+      const periodCreate = apiResponse.periods.map((account) => ({
+        name: account.label,
+      }));
+      const groupCategoryCreate = apiResponse.groups_category.map(
+        (account) => ({ name: account.name })
+      );
 
       if (!Array.isArray(currencies)) {
         console.error(
@@ -170,20 +199,32 @@ export class BadgePrismaRepository implements IBadgeRepository {
           code: currency.code,
         }));
 
-      if (badgesToCreate.length === 0) {
-        return {
-          count: 0,
-          message:
-            "No new currencies to import, or data was not in the expected format.",
-        };
-      }
-
       const result = await prisma.badge.createMany({
         data: badgesToCreate,
-        skipDuplicates: true, // Assumes 'name' field has a unique constraint in Badge model
+        skipDuplicates: true,
       });
 
-      return { count: result.count };
+      const accountTypeResult = await prisma.accountType.createMany({
+        data: accountTypeCreate,
+        skipDuplicates: true,
+      });
+
+      const periodResult = await prisma.period.createMany({
+        data: periodCreate,
+        skipDuplicates: true,
+      });
+
+      const groupCategoryResult = await prisma.groupCategory.createMany({
+        data: groupCategoryCreate,
+        skipDuplicates: true,
+      });
+
+      return {
+        badgeCount: result.count,
+        accountTypeCount: accountTypeResult.count,
+        periodCount: periodResult.count,
+        groupCategoryCount: groupCategoryResult.count,
+      };
     } catch (error: any) {
       console.error("Error importing currencies as badges:", error);
       // Re-throw if it's already an error structured by this method or a Prisma known error with code

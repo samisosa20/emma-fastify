@@ -1,7 +1,13 @@
 import { FastifySchema } from "fastify/types/schema";
 import { defaultSuccesResponse, SchemaDefault } from "./components/pagination";
 import { errorDocumentation } from "./components/error";
-import { getBody } from "./components/realtions";
+import { getBody, getProperties } from "./components/realtions";
+
+// Importar los esquemas de objetos para el contenido de las listas paginadas
+import { accountTypeObjectSchema } from "./accountType.documentation";
+import { periodObjectSchema } from "./period.documentation";
+import { badgeObjectSchema } from "./badge.documentation";
+import { groupCategoryObjectSchema } from "./groupCategory.documentation";
 
 const authSchema: SchemaDefault[] = [
   {
@@ -29,7 +35,58 @@ const authSchema: SchemaDefault[] = [
     body: ["login", "register"],
     private: true,
   },
+];
+
+// Define el esquema para la respuesta del login
+const loginSchema: SchemaDefault[] = [
+  {
+    name: "data",
+    type: "object",
+    body: false,
+    private: false,
+    properties: getProperties(authSchema),
+  },
   { name: "token", type: "string", body: false, private: false },
+  {
+    name: "accountsType",
+    type: "array",
+    body: false,
+    private: false,
+    items: {
+      type: "object",
+      properties: getProperties(accountTypeObjectSchema),
+    },
+  },
+  {
+    name: "periods",
+    type: "array",
+    body: false,
+    private: false,
+    items: {
+      type: "object",
+      properties: getProperties(periodObjectSchema),
+    },
+  },
+  {
+    name: "badges",
+    type: "array",
+    body: false,
+    private: false,
+    items: {
+      type: "object",
+      properties: getProperties(badgeObjectSchema),
+    },
+  },
+  {
+    name: "groupsCategory",
+    type: "array",
+    body: false,
+    private: false,
+    items: {
+      type: "object",
+      properties: getProperties(groupCategoryObjectSchema),
+    },
+  },
 ];
 
 export const loginDocumentation: FastifySchema = {
@@ -37,7 +94,7 @@ export const loginDocumentation: FastifySchema = {
   tags: ["Auth"],
   body: getBody(authSchema, "login"),
   response: {
-    200: defaultSuccesResponse(authSchema),
+    200: defaultSuccesResponse(loginSchema),
     ...errorDocumentation,
   },
 };

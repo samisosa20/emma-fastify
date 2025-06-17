@@ -6,8 +6,8 @@ export const CategoryCreateInput = z.object({
   description: z.string({ message: "description is required" }),
   groupId: z.string({ message: "groupId is required" }).uuid(),
   categoryId: z.string().uuid().nullable().optional(),
-  userId: z.string({ message: "userId is required" }).uuid(),
-}) satisfies z.Schema<Prisma.CategoryUncheckedCreateInput>;
+  //userId: z.string({ message: "userId is required" }).uuid(),
+}) satisfies z.Schema<Omit<Prisma.CategoryUncheckedCreateInput, "userId">>;
 
 export const CategoryUpdateInput = CategoryCreateInput.partial();
 

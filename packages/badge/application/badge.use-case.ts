@@ -34,7 +34,10 @@ export class BadgeUseCase {
     return await this.badgeRepository.deleteBadge(id);
   }
   public async importCurrenciesAsBadges(): Promise<{
-    count: number;
+    badgeCount: number;
+    accountTypeCount: number;
+    periodCount: number;
+    groupCategoryCount: number;
     message?: string;
   }> {
     return await this.badgeRepository.importCurrenciesAsBadges();

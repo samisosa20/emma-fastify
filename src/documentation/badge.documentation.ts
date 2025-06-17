@@ -9,8 +9,9 @@ import { errorDocumentation } from "./components/error";
 import { getBody } from "./components/realtions";
 
 // Define el esquema para las propiedades del modelo Badge
-const badgeObjectSchema: SchemaDefault[] = [
+export const badgeObjectSchema: SchemaDefault[] = [
   { name: "id", type: "string", body: false, private: false },
+  { name: "code", type: "string", body: ["create", "update"], private: false },
   { name: "name", type: "string", body: ["create", "update"], private: false },
   { name: "createdAt", type: "string", body: false, private: false },
   { name: "updatedAt", type: "string", body: false, private: false },

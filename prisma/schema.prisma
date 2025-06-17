@@ -16,6 +16,7 @@ model User {
   phone                   String?
   phoneCode               String?
   password                String
+  badgeId                 String
   createdAt               DateTime                 @default(now())
   updatedAt               DateTime                 @updatedAt
   plannedPayments         PlannedPayment[]
@@ -26,6 +27,7 @@ model User {
   heritages               Heritage[]
   investmentAppreciations InvestmentAppreciation[]
   budgets                 Budget[]
+  badge                   Badge                    @relation(fields: [badgeId], references: [id], onUpdate: Cascade)
 }
 
 model EmailConfirmationToken {
@@ -95,6 +97,7 @@ model Badge {
   investments Investment[]
   heritages   Heritage[]
   budgets     Budget[]
+  users       User[]
 }
 
 model Event {

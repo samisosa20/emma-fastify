@@ -26,7 +26,10 @@ export class AccountController {
     const dataAccount = request.body as CreateAccount;
 
     try {
-      return accountUseCase.addAccount(dataAccount);
+      return accountUseCase.addAccount({
+        ...dataAccount,
+        userId: request.user.id,
+      });
     } catch (error: any) {
       const detail = formatErrorMessage(error);
       return reply.status(400).send({

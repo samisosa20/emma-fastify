@@ -8,3 +8,6 @@ export * from "./budget.controller";
 export * from "./account.controller";
 export * from "./plannedPayment.controller";
 export * from "./movement.controller";
+export * from "./period.controller";
+export * from "./accountType.controller";
+export * from "./groupCategory.controller";

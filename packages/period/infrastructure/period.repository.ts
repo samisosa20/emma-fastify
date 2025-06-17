@@ -1,5 +1,5 @@
-import { AccountType, CreateAccountType } from "../domain/accountType";
-import { IAccountTypeRepository } from "../domain/interfaces/accountType.interfaces";
+import { Period, CreatePeriod } from "../domain/period";
+import { IPeriodRepository } from "../domain/interfaces/period.interfaces";
 
 import prisma from "packages/shared/settings/prisma.client";
 import {
@@ -9,15 +9,13 @@ import {
   handleShowDeleteData,
 } from "packages/shared";
 
-export class AccountTypePrismaRepository implements IAccountTypeRepository {
-  public async addAccountType(
-    data: CreateAccountType
-  ): Promise<AccountType | ErrorMessage> {
+export class PeriodPrismaRepository implements IPeriodRepository {
+  public async addPeriod(data: CreatePeriod): Promise<Period | ErrorMessage> {
     try {
-      const newAccountType = await prisma.accountType.create({
+      const newPeriod = await prisma.period.create({
         data,
       });
-      return newAccountType;
+      return newPeriod;
     } catch (error: any) {
       throw Object.assign(new Error("Validation Error"), {
         statusCode: 400,
@@ -27,9 +25,9 @@ export class AccountTypePrismaRepository implements IAccountTypeRepository {
     }
   }
 
-  public async listAccountType(
+  public async listPeriod(
     params: CommonParamsPaginate
-  ): Promise<{ content: AccountType[]; meta: Paginate }> {
+  ): Promise<{ content: Period[]; meta: Paginate }> {
     const { size, page: pageParam } = params;
 
     const shouldPaginate = pageParam && Number(pageParam) > 0;
@@ -38,7 +36,7 @@ export class AccountTypePrismaRepository implements IAccountTypeRepository {
       const currentPage = Number(pageParam);
       const effectiveSize = size && Number(size) > 0 ? Number(size) : 10;
 
-      const [content, metaFromPrisma] = await prisma.accountType
+      const [content, metaFromPrisma] = await prisma.period
         .paginate()
         .withPages({
           limit: effectiveSize,
@@ -50,7 +48,7 @@ export class AccountTypePrismaRepository implements IAccountTypeRepository {
         meta: metaFromPrisma,
       };
     } else {
-      const content = await prisma.accountType.findMany();
+      const content = await prisma.period.findMany();
 
       const totalCount = content.length;
       const meta: Paginate = {
@@ -70,18 +68,18 @@ export class AccountTypePrismaRepository implements IAccountTypeRepository {
     }
   }
 
-  public async updateAccountType(
+  public async updatePeriod(
     id: string,
-    data: Partial<CreateAccountType>
-  ): Promise<AccountType | ErrorMessage> {
+    data: Partial<CreatePeriod>
+  ): Promise<Period | ErrorMessage> {
     try {
-      const updatedAccountType = await prisma.accountType.update({
+      const updatedPeriod = await prisma.period.update({
         where: {
           id,
         },
         data,
       });
-      return updatedAccountType;
+      return updatedPeriod;
     } catch (error: any) {
       throw Object.assign(new Error("Validation Error"), {
         statusCode: 400,
@@ -91,9 +89,9 @@ export class AccountTypePrismaRepository implements IAccountTypeRepository {
     }
   }
 
-  public async detailAccountType(id: string): Promise<AccountType | null> {
+  public async detailPeriod(id: string): Promise<Period | null> {
     try {
-      return await prisma.accountType.findUnique({
+      return await prisma.period.findUnique({
         where: { id },
       });
     } catch (error: any) {
@@ -105,14 +103,14 @@ export class AccountTypePrismaRepository implements IAccountTypeRepository {
     }
   }
 
-  public async deleteAccountType(id: string): Promise<AccountType | null> {
-    const account = await prisma.accountType.findUnique({
+  public async deletePeriod(id: string): Promise<Period | null> {
+    const period = await prisma.period.findUnique({
       where: { id },
     });
-    if (!account) {
+    if (!period) {
       return null;
     }
-    return await prisma.accountType.delete({
+    return await prisma.period.delete({
       where: { id },
     });
   }

@@ -13,7 +13,10 @@ export interface IBadgeRepository {
   detailBadge(id: string): Promise<Badge | null>;
   deleteBadge(id: string): Promise<Badge | null>;
   importCurrenciesAsBadges(): Promise<{
-    count: number;
+    badgeCount: number;
+    accountTypeCount: number;
+    periodCount: number;
+    groupCategoryCount: number;
     message?: string;
   }>;
 }

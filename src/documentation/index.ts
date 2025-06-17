@@ -8,3 +8,6 @@ export * from "./budget.documentation";
 export * from "./account.documentation";
 export * from "./plannedPayment.documentation";
 export * from "./movement.documentation";
+export * from "./period.documentation";
+export * from "./accountType.documentation";
+export * from "./groupCategory.documentation";

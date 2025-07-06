@@ -35,4 +35,10 @@ export class CategoryUseCase {
   public async deleteCategory(id: string): Promise<Category | null> {
     return await this.categoryRepository.deleteCategory(id);
   }
+
+  public async importCategories(
+    id?: string
+  ): Promise<{ categoryCount: number }> {
+    return await this.categoryRepository.importCategories(id);
+  }
 }

@@ -1,4 +1,4 @@
-import { InvestmentController } from "@controllers";
+import { InvestmentController, AppreciationController } from "@controllers";
 import {
   createInvestmentDocumentation,
   deleteInvestmentDocumentation,
@@ -15,6 +15,7 @@ import {
 
 const investmentsRoutes: FastifyPluginAsync = async (fastify) => {
   const investmentController = new InvestmentController();
+  const appreciationController = new AppreciationController();
 
   fastify.get(
     "/",
@@ -59,6 +60,22 @@ const investmentsRoutes: FastifyPluginAsync = async (fastify) => {
       schema: deleteInvestmentDocumentation,
     },
     investmentController.deleteInvestment
+  );
+
+  fastify.post(
+    "/import-investments",
+    {
+      preHandler: [fastify.authenticate],
+    },
+    investmentController.importInvestments
+  );
+
+  fastify.post(
+    "/import-appreciations",
+    {
+      preHandler: [fastify.authenticate],
+    },
+    appreciationController.importAppreciations
   );
 };
 

@@ -66,4 +66,8 @@ export class BudgetController {
     }
     return result;
   };
+
+  importBudgets = async (request: FastifyRequest, reply: FastifyReply) => {
+    return budgetUseCase.importBudgets();
+  };
 }

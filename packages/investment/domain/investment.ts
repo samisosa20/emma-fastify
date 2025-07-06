@@ -13,7 +13,29 @@ export type Investment = {
   deletedAt: Date | null;
 };
 
+export type ExtraInfoInvestment = {
+  totalReturns: number;
+  totalWithdrawal: number;
+  valorization: string;
+  totalRate: string;
+};
+
+export type InvestmentAppreciation = {
+  id: string;
+  dateAppreciation: Date;
+  amount: Decimal | number;
+  investmentId: string;
+  userId: string;
+  createdAt: Date;
+  updatedAt: Date;
+};
+
 export type CreateInvestment = Omit<
   Investment,
   "id" | "createdAt" | "updatedAt" | "deletedAt"
+>;
+
+export type CreateInvestmentAppreciation = Omit<
+  InvestmentAppreciation,
+  "id" | "createdAt" | "updatedAt"
 >;

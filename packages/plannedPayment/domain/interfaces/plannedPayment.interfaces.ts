@@ -14,4 +14,5 @@ export interface IPlannedPaymentRepository {
   ): Promise<PlannedPayment | ErrorMessage>;
   detailPlannedPayment(id: string): Promise<PlannedPayment | null>;
   deletePlannedPayment(id: string): Promise<PlannedPayment | null>;
+  importPlannedPayments(): Promise<{ plannedPaymentCount: number }>;
 }

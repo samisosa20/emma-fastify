@@ -1,6 +1,5 @@
-import { Category, CreateCategory } from '../category';
+import { Category, CreateCategory } from "../category";
 import { CommonParamsPaginate, ErrorMessage, Paginate } from "packages/shared";
-
 
 export interface ICategoryRepository {
   addCategory(category: CreateCategory): Promise<Category | ErrorMessage>;
@@ -13,4 +12,5 @@ export interface ICategoryRepository {
   ): Promise<Category | ErrorMessage>;
   detailCategory(id: string): Promise<Category | null>;
   deleteCategory(id: string): Promise<Category | null>;
+  importCategories(id?: string): Promise<{ categoryCount: number }>;
 }

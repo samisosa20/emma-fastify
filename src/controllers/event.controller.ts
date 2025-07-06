@@ -66,4 +66,11 @@ export class EventController {
     }
     return result;
   };
+  importEvents = async (request: FastifyRequest, reply: FastifyReply) => {
+    const result = await eventUseCase.importEvents();
+    if (result === null) {
+      return reply.status(404).send({ message: "Event not found" });
+    }
+    return result;
+  };
 }

@@ -39,4 +39,10 @@ export class PlannedPaymentUseCase {
   ): Promise<PlannedPayment | null> {
     return await this.badgeRepository.deletePlannedPayment(id);
   }
+
+  public async importPlannedPayments(): Promise<{
+    plannedPaymentCount: number;
+  }> {
+    return await this.badgeRepository.importPlannedPayments();
+  }
 }

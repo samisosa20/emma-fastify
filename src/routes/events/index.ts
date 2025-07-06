@@ -57,6 +57,14 @@ const eventsRoutes: FastifyPluginAsync = async (fastify) => {
     },
     eventController.deleteEvent
   );
+
+  fastify.post(
+    "/import-events",
+    {
+      preHandler: [fastify.authenticate],
+    },
+    eventController.importEvents
+  );
 };
 
 export default eventsRoutes;

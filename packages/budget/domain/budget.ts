@@ -3,7 +3,7 @@ import { Decimal } from "@prisma/client/runtime/library";
 export type Budget = {
   id: string;
   categoryId: string;
-  amount: Decimal;
+  amount: Decimal | number;
   badgeId: string;
   periodId: string;
   year: number;

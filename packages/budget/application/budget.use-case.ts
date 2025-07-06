@@ -33,4 +33,8 @@ export class BudgetUseCase {
   public async deleteBudget(id: string): Promise<Budget | null> {
     return await this.badgeRepository.deleteBudget(id);
   }
+
+  public async importBudgets(): Promise<{ budgetCount: number }> {
+    return await this.badgeRepository.importBudgets();
+  }
 }

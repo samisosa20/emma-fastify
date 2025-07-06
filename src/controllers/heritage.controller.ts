@@ -69,4 +69,8 @@ export class HeritageController {
     }
     return result;
   };
+
+  importHeritages = async (request: FastifyRequest, reply: FastifyReply) => {
+    return heritageUseCase.importHeritages();
+  };
 }

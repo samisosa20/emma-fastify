@@ -6,25 +6,64 @@ import {
   paginationParamsDocumentation,
 } from "./components/pagination";
 import { errorDocumentation } from "./components/error";
-import { getBody } from "./components/realtions";
+import { getBody, getProperties } from "./components/realtions";
+import { badgeObjectSchema } from "./badge.documentation";
+
+const extraInvestmentObjectSchema: SchemaDefault[] = [
+  {
+    name: "movements",
+    type: "array",
+    body: false,
+    private: false,
+    items: {
+      type: "object",
+      properties: {
+        amount: { type: "number" },
+      },
+    },
+  },
+  {
+    name: "appreciations",
+    type: "array",
+    body: false,
+    private: false,
+    items: {
+      type: "object",
+      properties: {
+        amount: { type: "number" },
+      },
+    },
+  },
+];
 
 const investmentObjectSchema: SchemaDefault[] = [
   { name: "id", type: "string", body: false, private: false },
   { name: "name", type: "string", body: ["create", "update"], private: false },
   {
-    name: "amount",
+    name: "initAmount",
     type: "number",
     body: ["create", "update"],
     private: false,
   },
-  { name: "type", type: "string", body: ["create", "update"], private: false },
   {
-    name: "investmentDate",
-    type: "string",
+    name: "endAmount",
+    type: "number",
     body: ["create", "update"],
     private: false,
   },
-  { name: "userId", type: "string", body: ["create"], private: false },
+  {
+    name: "badge",
+    type: "object",
+    body: false,
+    private: false,
+    properties: getProperties(badgeObjectSchema),
+  },
+  { name: "totalReturns", type: "number", body: false, private: false },
+  { name: "totalWithdrawal", type: "number", body: false, private: false },
+  { name: "valorization", type: "string", body: false, private: false },
+  { name: "totalRate", type: "string", body: false, private: false },
+  { name: "badgeId", type: "string", body: ["create"], private: true },
+  { name: "userId", type: "string", body: ["create"], private: true },
   { name: "createdAt", type: "string", body: false, private: false },
   { name: "updatedAt", type: "string", body: false, private: false },
 ];
@@ -67,7 +106,10 @@ export const getInvestmentDocumentation: FastifySchema = {
     },
   },
   response: {
-    200: investmentResponseSchema,
+    200: defaultSuccesResponse([
+      ...investmentObjectSchema,
+      ...extraInvestmentObjectSchema,
+    ]),
     ...errorDocumentation,
   },
 };

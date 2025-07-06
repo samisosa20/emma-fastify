@@ -33,4 +33,10 @@ export class EventUseCase {
   public async deleteEvent(id: string): Promise<Event | null> {
     return await this.badgeRepository.deleteEvent(id);
   }
+
+  public async importEvents(): Promise<{
+    eventCount: number;
+  }> {
+    return await this.badgeRepository.importEvents();
+  }
 }

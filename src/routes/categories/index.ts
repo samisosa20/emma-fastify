@@ -60,6 +60,14 @@ const categoriesRoutes: FastifyPluginAsync = async (fastify) => {
     },
     categoryController.deleteCategory
   );
+
+  fastify.post(
+    "/import-categories",
+    {
+      preHandler: [fastify.authenticate],
+    },
+    categoryController.importCategories
+  );
 };
 
 export default categoriesRoutes;

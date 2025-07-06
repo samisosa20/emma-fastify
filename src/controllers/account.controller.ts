@@ -69,4 +69,12 @@ export class AccountController {
     }
     return result;
   };
+
+  importAccounts = async (request: FastifyRequest, reply: FastifyReply) => {
+    const result = await accountUseCase.importAccounts();
+    if (result === null) {
+      return reply.status(404).send({ message: "Account not found" });
+    }
+    return result;
+  };
 }

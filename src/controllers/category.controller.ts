@@ -69,4 +69,12 @@ export class CategoryController {
     }
     return result;
   };
+  importCategories = async (request: FastifyRequest, reply: FastifyReply) => {
+    const { id } = request.query as { id: string };
+    const result = await categoryUseCase.importCategories(id);
+    if (result === null) {
+      return reply.status(404).send({ message: "Category not found" });
+    }
+    return result;
+  };
 }

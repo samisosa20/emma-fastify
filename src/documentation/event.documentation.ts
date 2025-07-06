@@ -12,21 +12,87 @@ const eventObjectSchema: SchemaDefault[] = [
   { name: "id", type: "string", body: false, private: false },
   { name: "name", type: "string", body: ["create", "update"], private: false },
   {
-    name: "description",
+    name: "endEvent",
     type: "string",
     body: ["create", "update"],
     private: false,
   },
-  { name: "date", type: "string", body: ["create", "update"], private: false },
-  {
-    name: "location",
-    type: "string",
-    body: ["create", "update"],
-    private: false,
-  },
-  { name: "userId", type: "string", body: ["create"], private: false },
+  { name: "userId", type: "string", body: ["create"], private: true },
   { name: "createdAt", type: "string", body: false, private: false },
   { name: "updatedAt", type: "string", body: false, private: false },
+];
+
+const eventBalancesObjectSchema: SchemaDefault[] = [
+  {
+    name: "balances",
+    type: "array",
+    body: false,
+    private: false,
+    items: {
+      type: "object",
+      properties: {
+        badge: { type: "string" },
+        balance: { type: "number" },
+      },
+    },
+  },
+];
+const eventDetailObjectSchema: SchemaDefault[] = [
+  {
+    name: "movements",
+    type: "array",
+    body: false,
+    private: false,
+    items: {
+      type: "object",
+      properties: {
+        amount: { type: "number" },
+        description: { type: "string" },
+        datePurchase: { type: "string" },
+        category: {
+          type: "object",
+          properties: {
+            name: { type: "string" },
+          },
+        },
+        account: {
+          type: "object",
+          properties: {
+            name: { type: "string" },
+            badge: {
+              type: "object",
+              properties: {
+                code: { type: "string" },
+              },
+            },
+          },
+        },
+      },
+    },
+  },
+  {
+    name: "categories",
+    type: "array",
+    body: false,
+    private: false,
+    items: {
+      type: "object",
+      properties: {
+        badge: { type: "string" },
+        categories: {
+          type: "array",
+          items: {
+            type: "object",
+            properties: {
+              amount: { type: "number" },
+              name: { type: "string" },
+              percentage: { type: "number" },
+            },
+          },
+        },
+      },
+    },
+  },
 ];
 
 // Esquema para la respuesta de un solo evento
@@ -52,7 +118,10 @@ export const listEventsDocumentation: FastifySchema = {
     },
   },
   response: {
-    200: paginationDocumentation(eventObjectSchema),
+    200: paginationDocumentation([
+      ...eventObjectSchema,
+      ...eventBalancesObjectSchema,
+    ]),
     ...errorDocumentation,
   },
 };
@@ -68,7 +137,10 @@ export const getEventDocumentation: FastifySchema = {
     },
   },
   response: {
-    200: eventResponseSchema,
+    200: defaultSuccesResponse([
+      ...eventDetailObjectSchema,
+      ...eventObjectSchema,
+    ]),
     ...errorDocumentation,
   },
 };

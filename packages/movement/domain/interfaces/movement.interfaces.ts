@@ -12,4 +12,5 @@ export interface IMovementRepository {
   ): Promise<Movement | ErrorMessage>;
   detailMovement(id: string): Promise<Movement | null>;
   deleteMovement(id: string): Promise<Movement | null>;
+  importMovements(): Promise<{ movementCount: number }>;
 }

@@ -12,4 +12,7 @@ export interface IHeritageRepository {
   ): Promise<Heritage | ErrorMessage>;
   detailHeritage(id: string): Promise<Heritage | null>;
   deleteHeritage(id: string): Promise<Heritage | null>;
+  importHeritages(): Promise<{
+    heritageCount: number;
+  }>;
 }

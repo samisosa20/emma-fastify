@@ -5,7 +5,7 @@ export type Movement = {
   accountId: string;
   categoryId: string;
   description: string | null;
-  amount: Decimal;
+  amount: Decimal | number;
   trm: Decimal;
   datePurchase: Date;
   transferId: string | null;
@@ -19,5 +19,5 @@ export type Movement = {
 
 export type CreateMovement = Omit<
   Movement,
-  "id" | "createdAt" | "updatedAt" | "trm" // trm has a default value
+  "id" | "createdAt" | "updatedAt" | "trm"
 >;

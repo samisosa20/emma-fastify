@@ -12,4 +12,7 @@ export interface IEventRepository {
   ): Promise<Event | ErrorMessage>;
   detailEvent(id: string): Promise<Event | null>;
   deleteEvent(id: string): Promise<Event | null>;
+  importEvents(): Promise<{
+    eventCount: number;
+  }>;
 }

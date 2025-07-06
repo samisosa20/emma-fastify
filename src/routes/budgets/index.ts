@@ -57,6 +57,14 @@ const budgetsRoutes: FastifyPluginAsync = async (fastify) => {
     },
     budgetController.deleteBudget
   );
+
+  fastify.post(
+    "/import-budgets",
+    {
+      preHandler: [fastify.authenticate],
+    },
+    budgetController.importBudgets
+  );
 };
 
 export default budgetsRoutes;

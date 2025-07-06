@@ -51,7 +51,7 @@ const accountObjectSchema: SchemaDefault[] = [
     body: ["create", "update"],
     private: false,
   },
-  { name: "userId", type: "string", body: ["create"], private: false },
+  { name: "userId", type: "string", body: ["create"], private: true },
   { name: "createdAt", type: "string", body: false, private: false },
   { name: "updatedAt", type: "string", body: false, private: false },
   { name: "deletedAt", type: "string", body: false, private: false },

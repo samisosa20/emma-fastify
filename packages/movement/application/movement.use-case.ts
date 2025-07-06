@@ -35,4 +35,8 @@ export class MovementUseCase {
   public async deleteMovement(id: string): Promise<Movement | null> {
     return await this.badgeRepository.deleteMovement(id);
   }
+
+  public async importMovements(): Promise<{ movementCount: number }> {
+    return await this.badgeRepository.importMovements();
+  }
 }

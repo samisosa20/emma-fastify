@@ -12,4 +12,7 @@ export interface IInvestmentRepository {
   ): Promise<Investment | ErrorMessage>;
   detailInvestment(id: string): Promise<Investment | null>;
   deleteInvestment(id: string): Promise<Investment | null>;
+  importInvestments(): Promise<{
+    investmentCount: number;
+  }>;
 }

@@ -60,6 +60,14 @@ const heritagesRoutes: FastifyPluginAsync = async (fastify) => {
     },
     heritageController.deleteHeritage
   );
+
+  fastify.post(
+    "/import-heritages",
+    {
+      preHandler: [fastify.authenticate],
+    },
+    heritageController.importHeritages
+  );
 };
 
 export default heritagesRoutes;

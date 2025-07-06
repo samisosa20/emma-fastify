@@ -66,4 +66,12 @@ export class InvestmentController {
     }
     return result;
   };
+
+  importInvestments = async (request: FastifyRequest, reply: FastifyReply) => {
+    const result = await investmentUseCase.importInvestments();
+    if (result === null) {
+      return reply.status(404).send({ message: "Investment not found" });
+    }
+    return result;
+  };
 }

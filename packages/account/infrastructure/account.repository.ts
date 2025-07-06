@@ -1,3 +1,5 @@
+import { Decimal } from "@prisma/client/runtime/library";
+
 import { Account, CreateAccount } from "../domain/account";
 import { IAccountRepository } from "../domain/interfaces/account.interfaces";
 
@@ -8,11 +10,29 @@ import {
   ErrorMessage,
   handleShowDeleteData,
 } from "packages/shared";
-import { Movement } from "packages/movement/domain/movement";
+import { APIResponse } from "packages/badge/infrastructure/badge.repository";
 
 // Definimos un tipo que extiende Account para incluir la suma de los movimientos
 export type AccountWithTotalMovements = Account & {
   balance: number;
+};
+
+type APIAccountResponse = {
+  accounts: {
+    name: string;
+    description: string | null;
+    init_amount: number;
+    limit: number;
+    type: {
+      name: string;
+    };
+    currency: {
+      code: string;
+    };
+    created_at: string;
+    updated_at: string;
+    deleted_at: string | null;
+  }[];
 };
 
 export class AccountPrismaRepository implements IAccountRepository {
@@ -40,7 +60,7 @@ export class AccountPrismaRepository implements IAccountRepository {
 
     const shouldPaginate = pageParam && Number(pageParam) > 0;
 
-    let rawContent: (Account & { movements: Movement[] })[]; // Tipo para el contenido antes de procesar
+    let rawContent: (Account & { movements: { amount: Decimal | number }[] })[];
     let metaResult: Paginate;
 
     if (shouldPaginate) {
@@ -55,7 +75,11 @@ export class AccountPrismaRepository implements IAccountRepository {
           include: {
             badge: true,
             type: true,
-            movements: true,
+            movements: {
+              select: {
+                amount: true,
+              },
+            },
           },
         })
         .withPages({
@@ -63,16 +87,23 @@ export class AccountPrismaRepository implements IAccountRepository {
           page: currentPage,
         });
 
-      rawContent = content as (Account & { movements: Movement[] })[];
+      rawContent = content as (Account & {
+        movements: { amount: Decimal | number }[];
+      })[];
+
       metaResult = metaFromPrisma;
     } else {
       rawContent = (await prisma.account.findMany({
         include: {
           badge: true,
           type: true,
-          movements: true,
+          movements: {
+            select: {
+              amount: true,
+            },
+          },
         },
-      })) as (Account & { movements: Movement[] })[];
+      })) as (Account & { movements: { amount: Decimal | number }[] })[];
 
       const totalCount = rawContent.length;
       const meta: Paginate = {
@@ -170,5 +201,168 @@ export class AccountPrismaRepository implements IAccountRepository {
       where: { id },
       data: { deletedAt: new Date() },
     });
+  }
+  public async importAccounts(): Promise<{
+    accountCount: number;
+  }> {
+    try {
+      // Validar que las variables de entorno esenciales estén definidas
+      const apiProd = process.env.API_PROD;
+      const apiEmail = process.env.API_EMAIL;
+      const apiPassword = process.env.API_PASSWORD;
+      const userId = process.env.USER_ID;
+
+      if (!apiProd || !apiEmail || !apiPassword || !userId) {
+        throw Object.assign(new Error("Missing API environment variables"), {
+          statusCode: 500,
+          error: "Configuration Error",
+          message: "API_PROD, API_EMAIL, API_PASSWORD, or USER_ID are not set.",
+        });
+      }
+
+      const loginResponse = await fetch(`${apiProd}/login`, {
+        method: "POST",
+        body: JSON.stringify({
+          email: apiEmail,
+          password: apiPassword,
+        }),
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
+
+      if (!loginResponse.ok) {
+        const errorText = await loginResponse.text();
+        console.error(
+          `API login failed: ${loginResponse.status} ${loginResponse.statusText}`,
+          errorText
+        );
+        throw Object.assign(
+          new Error(`API login failed: ${loginResponse.statusText}`),
+          {
+            statusCode: loginResponse.status,
+            error: "API Error",
+            message: `Failed to login to API: ${loginResponse.status} ${
+              loginResponse.statusText
+            }. ${errorText || ""}`.trim(),
+          }
+        );
+      }
+
+      const apiResponse: APIResponse = await loginResponse.json();
+      const token = apiResponse.token;
+
+      const accountsResponse = await fetch(`${apiProd}/accounts`, {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (!accountsResponse.ok) {
+        const errorText = await accountsResponse.text();
+        console.error(
+          `API accounts fetch failed: ${accountsResponse.status} ${accountsResponse.statusText}`,
+          errorText
+        );
+        throw Object.assign(
+          new Error(
+            `API accounts fetch failed: ${accountsResponse.statusText}`
+          ),
+          {
+            statusCode: accountsResponse.status,
+            error: "API Error",
+            message: `Failed to fetch accounts from API: ${
+              accountsResponse.status
+            } ${accountsResponse.statusText}. ${errorText || ""}`.trim(),
+          }
+        );
+      }
+
+      // CORRECCIÓN: Usar accountsResponse.json() en lugar de loginResponse.json()
+      const apiResponseAccount: APIAccountResponse =
+        await accountsResponse.json();
+      const oldAccounts = apiResponseAccount.accounts;
+
+      // CORRECCIÓN: Usar Promise.all para manejar las promesas dentro del map
+      const accountsToCreatePromises = oldAccounts.map(async (account) => {
+        const type = await prisma.accountType.findFirst({
+          where: {
+            name: account.type.name,
+          },
+        });
+
+        const badge = await prisma.badge.findFirst({
+          where: {
+            code: account.currency.code,
+          },
+        });
+
+        // Manejar casos donde type o badge no se encuentren
+        if (!type) {
+          console.warn(
+            `Account type '${account.type.name}' not found for account '${account.name}'. Skipping.`
+          );
+          return null; // O lanzar un error, dependiendo del comportamiento deseado
+        }
+        if (!badge) {
+          console.warn(
+            `Badge with code '${account.currency.code}' not found for account '${account.name}'. Skipping.`
+          );
+          return null; // O lanzar un error
+        }
+
+        return {
+          name: account.name,
+          description: account.description,
+          badgeId: badge.id,
+          initAmount: account.init_amount ?? 0,
+          limit: account.limit ?? 0,
+          typeId: type.id,
+          userId: userId,
+          createdAt: new Date(account.created_at),
+          deletedAt: account.deleted_at ? new Date(account.deleted_at) : null,
+        } as CreateAccount;
+      });
+
+      // Filtrar los resultados nulos si se omitieron algunas cuentas
+      const accountsToCreate = (
+        await Promise.all(accountsToCreatePromises)
+      ).filter((account): account is CreateAccount => account !== null);
+
+      const result = await prisma.account.createMany({
+        data: accountsToCreate,
+        skipDuplicates: true,
+      });
+
+      return {
+        accountCount: result.count,
+      };
+    } catch (error: unknown) {
+      // Cambiado a 'unknown' para un manejo de errores más seguro
+      console.error("Error importing accounts:", error); // Mensaje de error más específico
+      // Re-throw if it's already an error structured by this method or a Prisma known error with code
+      if (
+        typeof error === "object" &&
+        error !== null &&
+        "statusCode" in error &&
+        "error" in error
+      ) {
+        throw error;
+      }
+
+      // For other unexpected errors
+      throw Object.assign(
+        new Error((error as Error)?.message || "Account import process failed"),
+        {
+          statusCode: (error as any)?.statusCode || 500,
+          error: (error as any)?.error || "Internal Server Error",
+          message:
+            (error as Error)?.message ||
+            "An unexpected error occurred during account import.",
+        }
+      );
+    }
   }
 }

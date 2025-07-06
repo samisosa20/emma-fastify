@@ -8,6 +8,27 @@ import {
   ErrorMessage,
   handleShowDeleteData,
 } from "packages/shared";
+import { APIResponse } from "packages/badge/infrastructure/badge.repository";
+
+// Define el tipo para un solo objeto de presupuesto de la API externa
+type APIBudgetItem = {
+  amount: number;
+  year: number;
+  period: {
+    name: string;
+  };
+  currency: {
+    code: string;
+  };
+  category: {
+    name: string;
+  };
+  created_at: string;
+  updated_at: string;
+};
+
+// El tipo de respuesta para el endpoint /budgets (siempre un array)
+type APIBudgetResponse = APIBudgetItem[];
 
 export class BudgetPrismaRepository implements IBudgetRepository {
   public async addBudget(data: CreateBudget): Promise<Budget | ErrorMessage> {
@@ -91,5 +112,145 @@ export class BudgetPrismaRepository implements IBudgetRepository {
     return await prisma.budget.delete({
       where: { id },
     });
+  }
+
+  public async importBudgets(): Promise<{
+    budgetCount: number;
+  }> {
+    try {
+      // Validar que las variables de entorno esenciales estén definidas
+      const apiProd = process.env.API_PROD;
+      const apiEmail = process.env.API_EMAIL;
+      const apiPassword = process.env.API_PASSWORD;
+      const userId = process.env.USER_ID;
+
+      if (!apiProd || !apiEmail || !apiPassword || !userId) {
+        throw Object.assign(new Error("Missing API environment variables"), {
+          statusCode: 500,
+          error: "Configuration Error",
+          message: "API_PROD, API_EMAIL, API_PASSWORD, or USER_ID are not set.",
+        });
+      }
+
+      // 1. Iniciar sesión para obtener el token
+      const loginResponse = await fetch(`${apiProd}/login`, {
+        method: "POST",
+        body: JSON.stringify({
+          email: apiEmail,
+          password: apiPassword,
+        }),
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
+
+      if (!loginResponse.ok) {
+        const errorText = await loginResponse.text();
+        throw Object.assign(
+          new Error(`API login failed: ${loginResponse.statusText}`),
+          {
+            statusCode: loginResponse.status,
+            error: "API Error",
+            message: `Failed to login to API: ${loginResponse.status} ${
+              loginResponse.statusText
+            }. ${errorText || ""}`.trim(),
+          }
+        );
+      }
+
+      const apiResponse: APIResponse = await loginResponse.json();
+      const token = apiResponse.token;
+
+      // 2. Obtener los presupuestos de la API externa
+      const budgetsResponse = await fetch(`${apiProd}/budgets`, {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (!budgetsResponse.ok) {
+        const errorText = await budgetsResponse.text();
+        throw Object.assign(
+          new Error(`API budgets fetch failed: ${budgetsResponse.statusText}`),
+          {
+            statusCode: budgetsResponse.status,
+            error: "API Error",
+            message: `Failed to fetch budgets from API: ${
+              budgetsResponse.status
+            } ${budgetsResponse.statusText}. ${errorText || ""}`.trim(),
+          }
+        );
+      }
+
+      const oldBudgets: APIBudgetResponse = await budgetsResponse.json();
+
+      // 3. Procesar los presupuestos y prepararlos para la inserción masiva
+      const budgetsToCreatePromises = oldBudgets.map(async (budget) => {
+        const period = await prisma.period.findFirst({
+          where: { name: budget.period.name },
+        });
+        const badge = await prisma.badge.findFirst({
+          where: { code: budget.currency.code },
+        });
+        const category = await prisma.category.findFirst({
+          where: { name: budget.category.name },
+        });
+
+        if (!period || !badge || !category) {
+          console.warn(
+            `Skipping budget for year ${budget.year} due to missing relation (Period, Badge, or Category).`
+          );
+          return null;
+        }
+
+        return {
+          amount: budget.amount,
+          year: budget.year,
+          periodId: period.id,
+          badgeId: badge.id,
+          categoryId: category.id,
+          userId: userId,
+          createdAt: new Date(budget.created_at),
+          updatedAt: new Date(budget.updated_at),
+        } as CreateBudget;
+      });
+
+      const budgetsToCreate = (
+        await Promise.all(budgetsToCreatePromises)
+      ).filter((b): b is CreateBudget => b !== null);
+
+      // 4. Insertar los presupuestos en la base de datos local
+      const result = await prisma.budget.createMany({
+        data: budgetsToCreate,
+        skipDuplicates: true,
+      });
+
+      return {
+        budgetCount: result.count,
+      };
+    } catch (error: unknown) {
+      console.error("Error importing budgets:", error);
+      // Re-lanzar el error para que sea manejado por el controlador
+      if (
+        typeof error === "object" &&
+        error !== null &&
+        "statusCode" in error &&
+        "error" in error
+      ) {
+        throw error;
+      }
+      throw Object.assign(
+        new Error((error as Error)?.message || "Budget import process failed"),
+        {
+          statusCode: (error as any)?.statusCode || 500,
+          error: (error as any)?.error || "Internal Server Error",
+          message:
+            (error as Error)?.message ||
+            "An unexpected error occurred during budget import.",
+        }
+      );
+    }
   }
 }

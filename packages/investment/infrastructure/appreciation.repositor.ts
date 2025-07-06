@@ -1,5 +1,5 @@
-import { PlannedPayment, CreatePlannedPayment } from "../domain/plannedPayment";
-import { IPlannedPaymentRepository } from "../domain/interfaces/plannedPayment.interfaces";
+import { Appreciation, CreateAppreciation } from "../domain/appreciation";
+import { IAppreciationRepository } from "../domain/interfaces/appreciation.interfaces";
 
 import prisma from "packages/shared/settings/prisma.client";
 import {
@@ -8,37 +8,31 @@ import {
   ErrorMessage,
   handleShowDeleteData,
 } from "packages/shared";
-import { APIResponse } from "packages/badge/infrastructure/badge.repository";
+import { APIResponse } from "packages/badge/infrastructure/badge.repository"; // Asumiendo APIResponse para el token
 
-type APIPaymentItem = {
-  description: string | null;
+// Define el tipo para un solo objeto de inversión de la API externa
+type APIAppreciationItem = {
   amount: number;
-  start_date: string;
-  specific_day: number;
-  end_date: string | null;
-  account: {
-    name: string;
-  };
-  category: {
+  date_appreciation: string;
+  investment: {
     name: string;
   };
   created_at: string;
   updated_at: string;
 };
 
-type APIPaymentResponse = APIPaymentItem[];
+// El tipo de respuesta para el endpoint /appreciations
+type APIAppreciationResponse = APIAppreciationItem[];
 
-export class PlannedPaymentPrismaRepository
-  implements IPlannedPaymentRepository
-{
-  public async addPlannedPayment(
-    data: CreatePlannedPayment
-  ): Promise<PlannedPayment | ErrorMessage> {
+export class AppreciationPrismaRepository implements IAppreciationRepository {
+  public async addAppreciation(
+    data: CreateAppreciation
+  ): Promise<Appreciation | ErrorMessage> {
     try {
-      const newPlannedPayment = await prisma.plannedPayment.create({
+      const newAppreciation = await prisma.investmentAppreciation.create({
         data,
       });
-      return newPlannedPayment;
+      return newAppreciation;
     } catch (error: any) {
       throw Object.assign(new Error("Validation Error"), {
         statusCode: 400,
@@ -48,11 +42,11 @@ export class PlannedPaymentPrismaRepository
     }
   }
 
-  public async listPlannedPayment(
+  public async listAppreciation(
     params: CommonParamsPaginate
-  ): Promise<{ content: PlannedPayment[]; meta: Paginate }> {
+  ): Promise<{ content: Appreciation[]; meta: Paginate }> {
     const { deleted, size, page } = params;
-    const [content, meta] = await prisma.plannedPayment
+    const [content, meta] = await prisma.investmentAppreciation
       .paginate({
         where: {
           OR: handleShowDeleteData(deleted === "1"),
@@ -69,18 +63,18 @@ export class PlannedPaymentPrismaRepository
     };
   }
 
-  public async updatePlannedPayment(
+  public async updateAppreciation(
     id: string,
-    data: Partial<CreatePlannedPayment>
-  ): Promise<PlannedPayment | ErrorMessage> {
+    data: Partial<CreateAppreciation>
+  ): Promise<Appreciation | ErrorMessage> {
     try {
-      const updatedPlannedPayment = await prisma.plannedPayment.update({
+      const updatedAppreciation = await prisma.investmentAppreciation.update({
         where: {
           id,
         },
         data,
       });
-      return updatedPlannedPayment;
+      return updatedAppreciation;
     } catch (error: any) {
       throw Object.assign(new Error("Validation Error"), {
         statusCode: 400,
@@ -90,11 +84,9 @@ export class PlannedPaymentPrismaRepository
     }
   }
 
-  public async detailPlannedPayment(
-    id: string
-  ): Promise<PlannedPayment | null> {
+  public async detailAppreciation(id: string): Promise<Appreciation | null> {
     try {
-      return await prisma.plannedPayment.findUnique({
+      return await prisma.investmentAppreciation.findUnique({
         where: { id },
       });
     } catch (error: any) {
@@ -106,22 +98,20 @@ export class PlannedPaymentPrismaRepository
     }
   }
 
-  public async deletePlannedPayment(
-    id: string
-  ): Promise<PlannedPayment | null> {
-    const plannedPayment = await prisma.plannedPayment.findUnique({
+  public async deleteAppreciation(id: string): Promise<Appreciation | null> {
+    const appreciation = await prisma.investmentAppreciation.findUnique({
       where: { id },
     });
-    if (!plannedPayment) {
+    if (!appreciation) {
       return null;
     }
-    return await prisma.plannedPayment.delete({
+    return await prisma.investmentAppreciation.delete({
       where: { id },
     });
   }
 
-  public async importPlannedPayments(): Promise<{
-    plannedPaymentCount: number;
+  public async importAppreciations(): Promise<{
+    appreciationCount: number;
   }> {
     try {
       // Validar que las variables de entorno esenciales estén definidas
@@ -167,8 +157,8 @@ export class PlannedPaymentPrismaRepository
       const apiResponse: APIResponse = await loginResponse.json();
       const token = apiResponse.token;
 
-      // 2. Obtener los pagos planificados de la API externa
-      const paymentsResponse = await fetch(`${apiProd}/payments`, {
+      // 2. Obtener las apreciaciones de la API externa
+      const appreciationsResponse = await fetch(`${apiProd}/appretiations`, {
         method: "GET",
         headers: {
           "Content-Type": "application/json",
@@ -176,69 +166,65 @@ export class PlannedPaymentPrismaRepository
         },
       });
 
-      if (!paymentsResponse.ok) {
-        const errorText = await paymentsResponse.text();
+      if (!appreciationsResponse.ok) {
+        const errorText = await appreciationsResponse.text();
         throw Object.assign(
           new Error(
-            `API payments fetch failed: ${paymentsResponse.statusText}`
+            `API appreciations fetch failed: ${appreciationsResponse.statusText}`
           ),
           {
-            statusCode: paymentsResponse.status,
+            statusCode: appreciationsResponse.status,
             error: "API Error",
-            message: `Failed to fetch payments from API: ${
-              paymentsResponse.status
-            } ${paymentsResponse.statusText}. ${errorText || ""}`.trim(),
+            message: `Failed to fetch appreciations from API: ${
+              appreciationsResponse.status
+            } ${appreciationsResponse.statusText}. ${errorText || ""}`.trim(),
           }
         );
       }
 
-      const oldPayments: APIPaymentResponse = await paymentsResponse.json();
+      const oldAppreciations: APIAppreciationResponse =
+        await appreciationsResponse.json();
 
-      // 3. Procesar los pagos y prepararlos para la inserción masiva
-      const paymentsToCreatePromises = oldPayments.map(async (payment) => {
-        const account = await prisma.account.findFirst({
-          where: { name: payment.account.name },
-        });
-        const category = await prisma.category.findFirst({
-          where: { name: payment.category.name },
-        });
+      // 3. Procesar las apreciaciones y prepararlas para la inserción masiva
+      const appreciationsToCreatePromises = oldAppreciations.map(
+        async (appreciation) => {
+          const investmentAppreciation = await prisma.investment.findFirst({
+            where: { name: appreciation.investment.name },
+          });
 
-        if (!account || !category) {
-          console.warn(
-            `Skipping planned payment "${payment.description}" due to missing Account or Category.`
-          );
-          return null;
+          if (!investmentAppreciation) {
+            console.warn(
+              `Appreciation '${appreciation.investment.name}' not found for appreciation. Skipping.`
+            );
+            return null;
+          }
+
+          return {
+            amount: appreciation.amount,
+            dateAppreciation: new Date(appreciation.date_appreciation),
+            investmentId: investmentAppreciation.id,
+            userId: userId,
+            createdAt: new Date(appreciation.created_at),
+            updatedAt: new Date(appreciation.updated_at),
+          } as CreateAppreciation;
         }
+      );
 
-        return {
-          description: payment.description,
-          amount: payment.amount,
-          startDate: new Date(payment.start_date),
-          endDate: payment.end_date ? new Date(payment.end_date) : null,
-          specificDay: payment.specific_day,
-          categoryId: category.id,
-          accountId: account.id,
-          userId: userId,
-          createdAt: new Date(payment.created_at),
-          updatedAt: new Date(payment.updated_at),
-        } as CreatePlannedPayment;
-      });
+      const appreciationsToCreate = (
+        await Promise.all(appreciationsToCreatePromises)
+      ).filter((app) => app !== null);
 
-      const paymentsToCreate = (
-        await Promise.all(paymentsToCreatePromises)
-      ).filter((p): p is CreatePlannedPayment => p !== null);
-
-      // 4. Insertar los pagos planificados en la base de datos local
-      const result = await prisma.plannedPayment.createMany({
-        data: paymentsToCreate,
+      // 4. Insertar las apreciaciones en la base de datos local
+      const result = await prisma.investmentAppreciation.createMany({
+        data: appreciationsToCreate,
         skipDuplicates: true,
       });
 
       return {
-        plannedPaymentCount: result.count,
+        appreciationCount: result.count,
       };
     } catch (error: unknown) {
-      console.error("Error importing planned payments:", error);
+      console.error("Error importing appreciations:", error);
       if (
         typeof error === "object" &&
         error !== null &&
@@ -249,14 +235,14 @@ export class PlannedPaymentPrismaRepository
       }
       throw Object.assign(
         new Error(
-          (error as Error)?.message || "Planned payment import process failed"
+          (error as Error)?.message || "Appreciation import process failed"
         ),
         {
           statusCode: (error as any)?.statusCode || 500,
           error: (error as any)?.error || "Internal Server Error",
           message:
             (error as Error)?.message ||
-            "An unexpected error occurred during planned payment import.",
+            "An unexpected error occurred during appreciation import.",
         }
       );
     }

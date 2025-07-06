@@ -80,4 +80,11 @@ export class PlannedPaymentController {
     }
     return result;
   };
+
+  importPlannedPayments = async (
+    request: FastifyRequest,
+    reply: FastifyReply
+  ) => {
+    return plannedPaymentUseCase.importPlannedPayments();
+  };
 }

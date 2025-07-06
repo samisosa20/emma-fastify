@@ -12,4 +12,7 @@ export interface IBudgetRepository {
   ): Promise<Budget | ErrorMessage>;
   detailBudget(id: string): Promise<Budget | null>;
   deleteBudget(id: string): Promise<Budget | null>;
+  importBudgets(): Promise<{
+    budgetCount: number;
+  }>;
 }

@@ -60,6 +60,14 @@ const movementsRoutes: FastifyPluginAsync = async (fastify) => {
     },
     movementController.deleteMovement
   );
+
+  fastify.post(
+    "/import-movements",
+    {
+      preHandler: [fastify.authenticate],
+    },
+    movementController.importMovements
+  );
 };
 
 export default movementsRoutes;

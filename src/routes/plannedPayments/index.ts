@@ -60,6 +60,14 @@ const plannedPaymentsRoutes: FastifyPluginAsync = async (fastify) => {
     },
     plannedPaymentController.deletePlannedPayment
   );
+
+  fastify.post(
+    "/import-playments",
+    {
+      preHandler: [fastify.authenticate],
+    },
+    plannedPaymentController.importPlannedPayments
+  );
 };
 
 export default plannedPaymentsRoutes;

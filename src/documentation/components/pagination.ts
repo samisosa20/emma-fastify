@@ -10,6 +10,7 @@ export type SchemaDefault = {
       properties?: {
         [key: string]: {
           type: string | string[];
+          [key: string]: any;
         };
       };
     };
@@ -19,6 +20,7 @@ export type SchemaDefault = {
     properties?: {
       [key: string]: {
         type: string | string[];
+        [key: string]: any;
       };
     };
   };

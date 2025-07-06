@@ -66,4 +66,12 @@ export class MovementController {
     }
     return result;
   };
+
+  importMovements = async (request: FastifyRequest, reply: FastifyReply) => {
+    const result = await movementUseCase.importMovements();
+    if (result === null) {
+      return reply.status(404).send({ message: "Movement not found" });
+    }
+    return result;
+  };
 }

@@ -35,4 +35,10 @@ export class HeritageUseCase {
   public async deleteHeritage(id: string): Promise<Heritage | null> {
     return await this.badgeRepository.deleteHeritage(id);
   }
+
+  public async importHeritages(): Promise<{
+    heritageCount: number;
+  }> {
+    return await this.badgeRepository.importHeritages();
+  }
 }

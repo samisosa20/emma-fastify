@@ -4,7 +4,6 @@ import { z } from "zod";
 export const MovementCreateInput = z.object({
   description: z
     .string({ message: "description is required" })
-    .min(1)
     .max(255)
     .nullable()
     .optional(),
@@ -12,11 +11,27 @@ export const MovementCreateInput = z.object({
   datePurchase: z
     .string({ message: "date is required" })
     .datetime({ message: "Invalid date format" }),
-  categoryId: z.string({ message: "categoryId is required" }).uuid(),
-  accountId: z.string({ message: "accountId is required" }).uuid(),
-  transferId: z.string().uuid().nullable().optional(),
-  eventId: z.string().uuid().nullable().optional(),
-  investmentId: z.string().uuid().nullable().optional(),
+  categoryId: z
+    .string({ message: "categoryId is required" })
+    .uuid({ message: "categoryId invalid id" }),
+  accountId: z
+    .string({ message: "accountId is required" })
+    .uuid({ message: "accountId invalid id" }),
+  transferId: z
+    .string()
+    .uuid({ message: "transferId invalid id" })
+    .nullable()
+    .optional(),
+  eventId: z
+    .string()
+    .uuid({ message: "eventId invalid id" })
+    .nullable()
+    .optional(),
+  investmentId: z
+    .string()
+    .uuid({ message: "investmentId invalid id" })
+    .nullable()
+    .optional(),
   // userId: z.string({ message: "userId is required" }).uuid(),
   addWithdrawal: z.boolean({ message: "addWithdrawal is required" }),
 }) satisfies z.Schema<Omit<Prisma.MovementUncheckedCreateInput, "userId">>;

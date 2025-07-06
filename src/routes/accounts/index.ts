@@ -57,6 +57,14 @@ const accountsRoutes: FastifyPluginAsync = async (fastify) => {
     },
     accountController.deleteAccount
   );
+
+  fastify.post(
+    "/import-accounts",
+    {
+      preHandler: [fastify.authenticate],
+    },
+    accountController.importAccounts
+  );
 };
 
 export default accountsRoutes;

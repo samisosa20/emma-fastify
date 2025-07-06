@@ -35,4 +35,10 @@ export class InvestmentUseCase {
   public async deleteInvestment(id: string): Promise<Investment | null> {
     return await this.badgeRepository.deleteInvestment(id);
   }
+
+  public async importInvestments(): Promise<{
+    investmentCount: number;
+  }> {
+    return await this.badgeRepository.importInvestments();
+  }
 }

@@ -15,11 +15,12 @@ interface CurrencyAPIResponse {
   code: string;
 }
 
-interface APIResponse {
+export interface APIResponse {
   currencies: CurrencyAPIResponse[];
   accounts_type: Omit<CurrencyAPIResponse, "code">[];
   groups_category: Omit<CurrencyAPIResponse, "code">[];
   periods: { value: number; label: string }[];
+  token: string;
 }
 
 export class BadgePrismaRepository implements IBadgeRepository {

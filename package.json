@@ -10,7 +10,7 @@
     "migrate": "prisma migrate deploy",
     "prisma": "prisma generate",
     "start": "node -r tsconfig-paths/register dist/src/index.js",
-    "deploy:prod": "npm run migrate && pm2 start --name fiona-backend --watch --node-args=\"-r tsconfig-paths/register\" dist/src/index.js && pm2 save"
+    "deploy:prod": "npm run migrate && npm run build && pm2 start --name fiona-backend --watch --node-args=\"-r tsconfig-paths/register\" dist/src/index.js && pm2 save"
   },
   "author": "Sammy Guttman",
   "license": "Apache-2.0",

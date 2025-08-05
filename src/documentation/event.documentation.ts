@@ -37,6 +37,7 @@ const eventBalancesObjectSchema: SchemaDefault[] = [
     },
   },
 ];
+
 const eventDetailObjectSchema: SchemaDefault[] = [
   {
     name: "movements",
@@ -103,7 +104,7 @@ export const createEventDocumentation: FastifySchema = {
   tags: ["Event"],
   body: getBody(eventObjectSchema, "create"),
   response: {
-    201: eventResponseSchema,
+    200: eventResponseSchema,
     ...errorDocumentation,
   },
 };

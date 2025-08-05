@@ -25,7 +25,7 @@ export const createBadgeDocumentation: FastifySchema = {
   tags: ["Badge"],
   body: getBody(badgeObjectSchema, "create"),
   response: {
-    201: badgeResponseSchema,
+    200: badgeResponseSchema,
     ...errorDocumentation,
   },
 };

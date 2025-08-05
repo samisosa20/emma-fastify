@@ -34,7 +34,7 @@ export const createAccountTypeDocumentation: FastifySchema = {
   tags: ["AccountType"],
   body: getBody(accountTypeObjectSchema, "create"),
   response: {
-    201: accountTypeResponseSchema,
+    200: accountTypeResponseSchema,
     ...errorDocumentation,
   },
 };

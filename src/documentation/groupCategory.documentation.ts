@@ -34,7 +34,7 @@ export const createGroupCategoryDocumentation: FastifySchema = {
   tags: ["GroupCategory"],
   body: getBody(groupCategoryObjectSchema, "create"),
   response: {
-    201: groupCategoryResponseSchema,
+    200: groupCategoryResponseSchema,
     ...errorDocumentation,
   },
 };

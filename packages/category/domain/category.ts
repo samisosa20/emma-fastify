@@ -3,7 +3,8 @@ export type Category = {
   name: string;
   description: string;
   groupId: string;
-  categoryId: string | null;
+  color: string;
+  icon: string | null;
   createdAt: Date;
   updatedAt: Date;
   deletedAt: Date | null;

@@ -10,7 +10,7 @@ import { getBody, getProperties } from "./components/realtions";
 import { accountTypeObjectSchema } from "./accountType.documentation";
 import { badgeObjectSchema } from "./badge.documentation";
 
-const accountObjectSchema: SchemaDefault[] = [
+export const accountObjectSchema: SchemaDefault[] = [
   { name: "id", type: "string", body: false, private: false },
   { name: "name", type: "string", body: ["create", "update"], private: false },
   {
@@ -64,7 +64,7 @@ export const createAccountDocumentation: FastifySchema = {
   tags: ["Account"],
   body: getBody(accountObjectSchema, "create"),
   response: {
-    201: accountResponseSchema,
+    200: accountResponseSchema,
     ...errorDocumentation,
   },
 };

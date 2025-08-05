@@ -55,7 +55,7 @@ export const formatErrorMessageMiddleware = (error: any) => {
   if (error instanceof ZodError) {
     throw Object.assign(new Error("Validation Error", { cause: "zod" }), {
       statusCode: 400,
-      message: error.errors.map((e) => e.message),
+      message: error.issues.map((e) => e.message),
       error: "Validation Error",
     });
   }

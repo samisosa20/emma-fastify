@@ -44,7 +44,7 @@ export const createPeriodDocumentation: FastifySchema = {
   tags: ["Period"],
   body: getBody(periodObjectSchema, "create"),
   response: {
-    201: periodResponseSchema,
+    200: periodResponseSchema,
     ...errorDocumentation,
   },
 };

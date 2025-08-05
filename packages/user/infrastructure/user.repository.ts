@@ -156,7 +156,20 @@ export class UserRepositoryPrismaPostgres implements IUserRepository {
       },
     });
 
-    if (!user || !(await verifyPassword(password, user.password))) {
+    const transferId = await prisma.category.findFirst({
+      where: {
+        name: "Transferencia",
+      },
+      select: {
+        id: true,
+      },
+    });
+
+    if (
+      !transferId ||
+      !user ||
+      !(await verifyPassword(password, user.password))
+    ) {
       return {
         statusCode: 401,
         message: "Invalid email or password",
@@ -166,7 +179,7 @@ export class UserRepositoryPrismaPostgres implements IUserRepository {
 
     const { password: pssd, ...userWithOutPassword } = user;
 
-    return userWithOutPassword;
+    return { ...userWithOutPassword, transferId: transferId.id };
   }
 
   public async emailConfirmation(
@@ -201,7 +214,16 @@ export class UserRepositoryPrismaPostgres implements IUserRepository {
       },
     });
 
-    if (!user) {
+    const transferId = await prisma.category.findFirst({
+      where: {
+        name: "Transferencia",
+      },
+      select: {
+        id: true,
+      },
+    });
+
+    if (!transferId || !user) {
       return {
         statusCode: 401,
         message: "Invalid user",
@@ -221,7 +243,7 @@ export class UserRepositoryPrismaPostgres implements IUserRepository {
 
     const { password: pssd, ...userWithOutPassword } = user;
 
-    return userWithOutPassword;
+    return { ...userWithOutPassword, transferId: transferId.id };
   }
 
   public async sendEmailConfirmation(

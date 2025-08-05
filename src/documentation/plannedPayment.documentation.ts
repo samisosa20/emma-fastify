@@ -6,11 +6,13 @@ import {
   paginationParamsDocumentation,
 } from "./components/pagination";
 import { errorDocumentation } from "./components/error";
-import { getBody } from "./components/realtions";
+import { getBody, getProperties } from "./components/realtions";
+
+import { categoryObjectSchema } from "./category.documentation";
+import { accountObjectSchema } from "./account.documentation";
 
 const plannedPaymentObjectSchema: SchemaDefault[] = [
   { name: "id", type: "string", body: false, private: false },
-  { name: "name", type: "string", body: ["create", "update"], private: false },
   {
     name: "amount",
     type: "number",
@@ -18,14 +20,26 @@ const plannedPaymentObjectSchema: SchemaDefault[] = [
     private: false,
   },
   {
-    name: "paymentDate",
+    name: "startDate",
     type: "string",
     body: ["create", "update"],
     private: false,
   },
   {
-    name: "frequency",
-    type: "string",
+    name: "endDate",
+    type: ["string", "null"],
+    body: ["create", "update"],
+    private: false,
+  },
+  {
+    name: "description",
+    type: ["string", "null"],
+    body: ["create", "update"],
+    private: false,
+  },
+  {
+    name: "specificDay",
+    type: "number",
     body: ["create", "update"],
     private: false,
   },
@@ -33,13 +47,27 @@ const plannedPaymentObjectSchema: SchemaDefault[] = [
     name: "categoryId",
     type: "string",
     body: ["create", "update"],
-    private: false,
+    private: true,
   },
   {
     name: "accountId",
     type: "string",
     body: ["create", "update"],
+    private: true,
+  },
+  {
+    name: "account",
+    type: "object",
+    body: false,
     private: false,
+    properties: getProperties(accountObjectSchema),
+  },
+  {
+    name: "category",
+    type: "object",
+    body: false,
+    private: false,
+    properties: getProperties(categoryObjectSchema),
   },
   { name: "userId", type: "string", body: ["create"], private: false },
   { name: "createdAt", type: "string", body: false, private: false },
@@ -55,7 +83,7 @@ export const createPlannedPaymentDocumentation: FastifySchema = {
   tags: ["PlannedPayment"],
   body: getBody(plannedPaymentObjectSchema, "create"),
   response: {
-    201: plannedPaymentResponseSchema,
+    200: plannedPaymentResponseSchema,
     ...errorDocumentation,
   },
 };

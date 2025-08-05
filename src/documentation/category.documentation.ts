@@ -8,9 +8,11 @@ import {
 import { errorDocumentation } from "./components/error";
 import { getBody } from "./components/realtions";
 
-const categoryObjectSchema: SchemaDefault[] = [
+export const categoryObjectSchema: SchemaDefault[] = [
   { name: "id", type: "string", body: false, private: false },
   { name: "name", type: "string", body: ["create", "update"], private: false },
+  { name: "color", type: "string", body: ["create", "update"], private: false },
+  { name: "icon", type: "string", body: ["create", "update"], private: false },
   {
     name: "description",
     type: "string",
@@ -19,6 +21,7 @@ const categoryObjectSchema: SchemaDefault[] = [
   },
   { name: "createdAt", type: "string", body: false, private: false },
   { name: "updatedAt", type: "string", body: false, private: false },
+  { name: "deletedAt", type: "string", body: false, private: false },
 ];
 
 const categoryResponseSchema = defaultSuccesResponse(categoryObjectSchema);
@@ -28,7 +31,7 @@ export const createCategoryDocumentation: FastifySchema = {
   tags: ["Category"],
   body: getBody(categoryObjectSchema, "create"),
   response: {
-    201: categoryResponseSchema,
+    200: categoryResponseSchema,
     ...errorDocumentation,
   },
 };

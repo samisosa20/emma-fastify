@@ -47,7 +47,7 @@ export const createHeritageDocumentation: FastifySchema = {
   tags: ["Heritage"],
   body: getBody(heritageObjectSchema, "create"),
   response: {
-    201: heritageResponseSchema,
+    200: heritageResponseSchema,
     ...errorDocumentation,
   },
 };

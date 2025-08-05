@@ -12,3 +12,4 @@ export * from "./period.controller";
 export * from "./accountType.controller";
 export * from "./groupCategory.controller";
 export * from "./appreciation.controller";
+export * from "./report.controller";

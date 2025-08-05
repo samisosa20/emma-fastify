@@ -75,7 +75,7 @@ export const createInvestmentDocumentation: FastifySchema = {
   tags: ["Investment"],
   body: getBody(investmentObjectSchema, "create"),
   response: {
-    201: investmentResponseSchema,
+    200: investmentResponseSchema,
     ...errorDocumentation,
   },
 };

@@ -3,46 +3,49 @@ import { IPlannedPaymentRepository } from "../domain/interfaces/plannedPayment.i
 import { PlannedPayment, CreatePlannedPayment } from "../domain/plannedPayment";
 
 export class PlannedPaymentUseCase {
-  private badgeRepository: IPlannedPaymentRepository;
+  private plannedPaymentRepository: IPlannedPaymentRepository;
 
-  constructor(_badgeAdapter: IPlannedPaymentRepository) {
-    this.badgeRepository = _badgeAdapter;
+  constructor(_plannedPaymentAdapter: IPlannedPaymentRepository) {
+    this.plannedPaymentRepository = _plannedPaymentAdapter;
   }
 
   public async addPlannedPayment(
     data: CreatePlannedPayment
   ): Promise<PlannedPayment | ErrorMessage> {
-    return await this.badgeRepository.addPlannedPayment(data);
+    return await this.plannedPaymentRepository.addPlannedPayment(data);
   }
 
   public async listPlannedPayment(
     params: CommonParamsPaginate
   ): Promise<{ content: PlannedPayment[]; meta: Paginate }> {
-    return await this.badgeRepository.listPlannedPayment(params);
+    return await this.plannedPaymentRepository.listPlannedPayment(params);
   }
 
   public async updatePlannedPayment(
     id: string,
-    badge: Partial<CreatePlannedPayment>
+    plannedPayment: Partial<CreatePlannedPayment>
   ): Promise<PlannedPayment | ErrorMessage> {
-    return await this.badgeRepository.updatePlannedPayment(id, badge);
+    return await this.plannedPaymentRepository.updatePlannedPayment(
+      id,
+      plannedPayment
+    );
   }
 
   public async detailPlannedPayment(
     id: string
   ): Promise<PlannedPayment | null> {
-    return await this.badgeRepository.detailPlannedPayment(id);
+    return await this.plannedPaymentRepository.detailPlannedPayment(id);
   }
 
   public async deletePlannedPayment(
     id: string
   ): Promise<PlannedPayment | null> {
-    return await this.badgeRepository.deletePlannedPayment(id);
+    return await this.plannedPaymentRepository.deletePlannedPayment(id);
   }
 
   public async importPlannedPayments(): Promise<{
     plannedPaymentCount: number;
   }> {
-    return await this.badgeRepository.importPlannedPayments();
+    return await this.plannedPaymentRepository.importPlannedPayments();
   }
 }

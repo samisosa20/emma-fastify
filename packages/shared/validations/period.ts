@@ -3,7 +3,7 @@ import { z } from "zod";
 
 export const PeriodCreateInput = z.object({
   name: z
-    .string({ required_error: "El nombre es requerido" })
+    .string("El nombre es requerido")
     .min(1, "El nombre no puede estar vacío")
     .max(100),
 }) satisfies z.Schema<

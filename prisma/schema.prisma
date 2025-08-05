@@ -12,22 +12,24 @@ model User {
   name                    String
   email                   String                   @unique
   confirmedEmailAt        DateTime?
+  password                String
+  createdAt               DateTime                 @default(now())
+  updatedAt               DateTime                 @updatedAt
   tokenRecoveryPassword   String?
   phone                   String?
   phoneCode               String?
-  password                String
   badgeId                 String
-  createdAt               DateTime                 @default(now())
-  updatedAt               DateTime                 @updatedAt
-  plannedPayments         PlannedPayment[]
   accounts                Account[]
-  events                  Event[]
-  investments             Investment[]
-  movements               Movement[]
-  heritages               Heritage[]
-  investmentAppreciations InvestmentAppreciation[]
   budgets                 Budget[]
-  badge                   Badge                    @relation(fields: [badgeId], references: [id], onUpdate: Cascade)
+  events                  Event[]
+  heritages               Heritage[]
+  investments             Investment[]
+  investmentAppreciations InvestmentAppreciation[]
+  movements               Movement[]
+  plannedPayments         PlannedPayment[]
+  badge                   Badge                    @relation(fields: [badgeId], references: [id])
+
+  @@index([badgeId], map: "User_badgeId_fkey")
 }
 
 model EmailConfirmationToken {
@@ -50,26 +52,31 @@ model Account {
   createdAt       DateTime         @default(now())
   updatedAt       DateTime         @updatedAt
   deletedAt       DateTime?
-  plannedPayments PlannedPayment[]
-  movements       Movement[]
-  user            User             @relation(fields: [userId], references: [id])
-  type            AccountType      @relation(fields: [typeId], references: [id])
   badge           Badge            @relation(fields: [badgeId], references: [id])
+  type            AccountType      @relation(fields: [typeId], references: [id])
+  user            User             @relation(fields: [userId], references: [id])
+  movements       Movement[]
+  plannedPayments PlannedPayment[]
+
+  @@index([badgeId], map: "Account_badgeId_fkey")
+  @@index([typeId], map: "Account_typeId_fkey")
+  @@index([userId], map: "Account_userId_fkey")
 }
 
 model Category {
   id              String           @id @default(uuid())
   name            String
   description     String
+  color           String           @default("#000000") @db.VarChar(10)
+  icon            String?          @db.VarChar(100)
   groupId         String
-  categoryId      String?
   userId          String
-  plannedPayments PlannedPayment[]
-  movements       Movement[]
-  budgets         Budget[]
   createdAt       DateTime         @default(now())
   updatedAt       DateTime         @updatedAt
   deletedAt       DateTime?
+  budgets         Budget[]
+  movements       Movement[]
+  plannedPayments PlannedPayment[]
 }
 
 model AccountType {
@@ -90,13 +97,13 @@ model GroupCategory {
 model Badge {
   id          String       @id @default(uuid())
   name        String
-  code        String
   createdAt   DateTime     @default(now())
   updatedAt   DateTime     @updatedAt
+  code        String
   accounts    Account[]
-  investments Investment[]
-  heritages   Heritage[]
   budgets     Budget[]
+  heritages   Heritage[]
+  investments Investment[]
   users       User[]
 }
 
@@ -109,6 +116,8 @@ model Event {
   updatedAt DateTime   @updatedAt
   user      User       @relation(fields: [userId], references: [id])
   movements Movement[]
+
+  @@index([userId], map: "Event_userId_fkey")
 }
 
 model Investment {
@@ -122,10 +131,13 @@ model Investment {
   createdAt      DateTime                 @default(now())
   updatedAt      DateTime                 @updatedAt
   deletedAt      DateTime?
-  user           User                     @relation(fields: [userId], references: [id])
   badge          Badge                    @relation(fields: [badgeId], references: [id])
-  movements      Movement[]
+  user           User                     @relation(fields: [userId], references: [id])
   appreciations  InvestmentAppreciation[]
+  movements      Movement[]
+
+  @@index([badgeId], map: "Investment_badgeId_fkey")
+  @@index([userId], map: "Investment_userId_fkey")
 }
 
 model PlannedPayment {
@@ -140,9 +152,13 @@ model PlannedPayment {
   userId      String
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
-  account     Account   @relation(fields: [accountId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-  category    Category  @relation(fields: [categoryId], references: [id], onUpdate: Cascade)
-  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  account     Account   @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  category    Category  @relation(fields: [categoryId], references: [id])
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([accountId], map: "PlannedPayment_accountId_fkey")
+  @@index([categoryId], map: "PlannedPayment_categoryId_fkey")
+  @@index([userId], map: "PlannedPayment_userId_fkey")
 }
 
 model Movement {
@@ -160,13 +176,20 @@ model Movement {
   createdAt                DateTime    @default(now())
   updatedAt                DateTime    @updatedAt
   addWithdrawal            Boolean     @default(false)
-  account                  Account     @relation(fields: [accountId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-  category                 Category    @relation(fields: [categoryId], references: [id], onUpdate: Cascade)
-  event                    Event?      @relation(fields: [eventId], references: [id], onDelete: SetNull, onUpdate: Cascade)
-  investment               Investment? @relation(fields: [investmentId], references: [id], onDelete: SetNull, onUpdate: Cascade)
-  user                     User        @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-  originalOrPairedMovement Movement?   @relation(fields: [transferId], references: [id], name: "MovementTransferPair", onDelete: SetNull, onUpdate: Cascade)
-  relatedTransferMovements Movement[]  @relation(name: "MovementTransferPair")
+  account                  Account     @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  category                 Category    @relation(fields: [categoryId], references: [id])
+  event                    Event?      @relation(fields: [eventId], references: [id])
+  investment               Investment? @relation(fields: [investmentId], references: [id])
+  originalOrPairedMovement Movement?   @relation("MovementTransferPair", fields: [transferId], references: [id])
+  relatedTransferMovements Movement[]  @relation("MovementTransferPair")
+  user                     User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([accountId], map: "Movement_accountId_fkey")
+  @@index([categoryId], map: "Movement_categoryId_fkey")
+  @@index([eventId], map: "Movement_eventId_fkey")
+  @@index([investmentId], map: "Movement_investmentId_fkey")
+  @@index([transferId], map: "Movement_transferId_fkey")
+  @@index([userId], map: "Movement_userId_fkey")
 }
 
 model Period {
@@ -187,8 +210,11 @@ model Heritage {
   userId          String
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
-  badge           Badge    @relation(fields: [badgeId], references: [id], onUpdate: Cascade)
-  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  badge           Badge    @relation(fields: [badgeId], references: [id])
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([badgeId], map: "Heritage_badgeId_fkey")
+  @@index([userId], map: "Heritage_userId_fkey")
 }
 
 model InvestmentAppreciation {
@@ -199,8 +225,11 @@ model InvestmentAppreciation {
   userId           String
   createdAt        DateTime   @default(now())
   updatedAt        DateTime   @updatedAt
-  investment       Investment @relation(fields: [investmentId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-  user             User       @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  investment       Investment @relation(fields: [investmentId], references: [id], onDelete: Cascade)
+  user             User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([investmentId], map: "InvestmentAppreciation_investmentId_fkey")
+  @@index([userId], map: "InvestmentAppreciation_userId_fkey")
 }
 
 model Budget {
@@ -213,8 +242,25 @@ model Budget {
   userId     String
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
-  category   Category @relation(fields: [categoryId], references: [id], onUpdate: Cascade)
-  badge      Badge    @relation(fields: [badgeId], references: [id], onUpdate: Cascade)
-  period     Period   @relation(fields: [periodId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  badge      Badge    @relation(fields: [badgeId], references: [id])
+  category   Category @relation(fields: [categoryId], references: [id])
+  period     Period   @relation(fields: [periodId], references: [id], onDelete: Cascade)
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([badgeId], map: "Budget_badgeId_fkey")
+  @@index([categoryId], map: "Budget_categoryId_fkey")
+  @@index([periodId], map: "Budget_periodId_fkey")
+  @@index([userId], map: "Budget_userId_fkey")
+}
+
+model WeeklyExpensiveView {
+  category   String
+  amount     Decimal
+  year       Int
+  weekNumber Int
+  badgeId    String
+  userId     String
+
+  @@id([year, weekNumber])
+  @@map("VW_WeeklyExpensive")
 }

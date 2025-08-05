@@ -30,6 +30,24 @@ const authSchema: SchemaDefault[] = [
     private: false,
   },
   {
+    name: "confirmedEmailAt",
+    type: ["string", "null"],
+    body: false,
+    private: false,
+  },
+  {
+    name: "transferId",
+    type: ["string"],
+    body: false,
+    private: false,
+  },
+  {
+    name: "badgeId",
+    type: ["string"],
+    body: false,
+    private: false,
+  },
+  {
     name: "password",
     type: "string",
     body: ["login", "register"],

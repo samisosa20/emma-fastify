@@ -31,4 +31,6 @@ export type UserLogin = Omit<
   | "updatedAt"
   | "confirmedEmailAt"
   | "tokenRecoveryPassword"
->;
+> & {
+  transferId: string;
+};

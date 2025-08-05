@@ -29,7 +29,7 @@ const bootstrap = async () => {
     // Register routes
     fastify.register(autoload, {
       dir: path.join(__dirname, "routes"),
-      options: { prefix: "/api/v1" },
+      options: { prefix: "/api/v2" },
     });
 
     fastify.register(cors);

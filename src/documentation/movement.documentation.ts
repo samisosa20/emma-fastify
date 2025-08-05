@@ -48,7 +48,7 @@ export const createMovementDocumentation: FastifySchema = {
   tags: ["Movement"],
   body: getBody(movementObjectSchema, "create"),
   response: {
-    201: movementResponseSchema,
+    200: movementResponseSchema,
     ...errorDocumentation,
   },
 };

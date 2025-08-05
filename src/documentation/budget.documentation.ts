@@ -47,7 +47,7 @@ export const createBudgetDocumentation: FastifySchema = {
   tags: ["Budget"],
   body: getBody(budgetObjectSchema, "create"),
   response: {
-    201: budgetResponseSchema,
+    200: budgetResponseSchema,
     ...errorDocumentation,
   },
 };

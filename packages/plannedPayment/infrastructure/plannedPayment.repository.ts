@@ -51,11 +51,22 @@ export class PlannedPaymentPrismaRepository
   public async listPlannedPayment(
     params: CommonParamsPaginate
   ): Promise<{ content: PlannedPayment[]; meta: Paginate }> {
-    const { deleted, size, page } = params;
+    const { size, page } = params;
     const [content, meta] = await prisma.plannedPayment
       .paginate({
-        where: {
-          OR: handleShowDeleteData(deleted === "1"),
+        include: {
+          account: {
+            select: {
+              name: true,
+              id: true,
+            },
+          },
+          category: {
+            select: {
+              name: true,
+              id: true,
+            },
+          },
         },
       })
       .withPages({
@@ -96,6 +107,20 @@ export class PlannedPaymentPrismaRepository
     try {
       return await prisma.plannedPayment.findUnique({
         where: { id },
+        include: {
+          account: {
+            select: {
+              name: true,
+              id: true,
+            },
+          },
+          category: {
+            select: {
+              name: true,
+              id: true,
+            },
+          },
+        },
       });
     } catch (error: any) {
       throw Object.assign(new Error("Validation Error"), {

@@ -12,16 +12,27 @@ export const categoryObjectSchema: SchemaDefault[] = [
   { name: "id", type: "string", body: false, private: false },
   { name: "name", type: "string", body: ["create", "update"], private: false },
   { name: "color", type: "string", body: ["create", "update"], private: false },
-  { name: "icon", type: "string", body: ["create", "update"], private: false },
+  {
+    type: ["string"],
+    name: "icon",
+    body: ["create", "update"],
+    private: false,
+  },
   {
     name: "description",
-    type: "string",
+    type: ["string", "null"],
+    body: ["create", "update"],
+    private: false,
+  },
+  {
+    name: "groupId",
+    type: ["string", "null"],
     body: ["create", "update"],
     private: false,
   },
   { name: "createdAt", type: "string", body: false, private: false },
   { name: "updatedAt", type: "string", body: false, private: false },
-  { name: "deletedAt", type: "string", body: false, private: false },
+  { name: "deletedAt", type: ["string", "null"], body: false, private: false },
 ];
 
 const categoryResponseSchema = defaultSuccesResponse(categoryObjectSchema);
@@ -39,7 +50,7 @@ export const createCategoryDocumentation: FastifySchema = {
 export const listCategoriesDocumentation: FastifySchema = {
   description: "Listar todas las categorías con paginación",
   tags: ["Category"],
-  params: {
+  querystring: {
     type: "object",
     properties: {
       ...paginationParamsDocumentation(),

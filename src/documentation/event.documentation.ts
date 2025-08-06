@@ -8,7 +8,7 @@ import {
 import { errorDocumentation } from "./components/error";
 import { getBody } from "./components/realtions";
 
-const eventObjectSchema: SchemaDefault[] = [
+export const eventObjectSchema: SchemaDefault[] = [
   { name: "id", type: "string", body: false, private: false },
   { name: "name", type: "string", body: ["create", "update"], private: false },
   {

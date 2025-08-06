@@ -9,7 +9,7 @@ import { errorDocumentation } from "./components/error";
 import { getBody, getProperties } from "./components/realtions";
 import { badgeObjectSchema } from "./badge.documentation";
 
-const extraInvestmentObjectSchema: SchemaDefault[] = [
+export const extraInvestmentObjectSchema: SchemaDefault[] = [
   {
     name: "movements",
     type: "array",

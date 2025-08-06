@@ -1,10 +1,10 @@
 import { CommonParamsPaginate, ErrorMessage, Paginate } from "packages/shared";
-import { Movement, CreateMovement } from "../movement";
+import { Movement, CreateMovement, MovementsParams } from "../movement";
 
 export interface IMovementRepository {
   addMovement(data: CreateMovement): Promise<Movement | ErrorMessage>;
   listMovement(
-    params: CommonParamsPaginate
+    params: CommonParamsPaginate & MovementsParams
   ): Promise<{ content: Movement[]; meta: Paginate }>;
   updateMovement(
     id: string,

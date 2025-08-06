@@ -1,4 +1,4 @@
-import { Movement, CreateMovement } from "../domain/movement";
+import { Movement, CreateMovement, MovementsParams } from "../domain/movement";
 import { IMovementRepository } from "../domain/interfaces/movement.interfaces";
 
 import prisma from "packages/shared/settings/prisma.client";
@@ -80,13 +80,22 @@ export class MovementPrismaRepository implements IMovementRepository {
   }
 
   public async listMovement(
-    params: CommonParamsPaginate
+    params: CommonParamsPaginate & MovementsParams
   ): Promise<{ content: Movement[]; meta: Paginate }> {
-    const { deleted, size, page } = params;
+    const { deleted, size, page, category, ...restParams } = params;
     const [content, meta] = await prisma.movement
       .paginate({
         where: {
-          OR: handleShowDeleteData(deleted === "1"),
+          ...restParams,
+        },
+        include: {
+          event: true,
+          account: true,
+          category: true,
+          investment: true,
+        },
+        orderBy: {
+          createdAt: "desc",
         },
       })
       .withPages({

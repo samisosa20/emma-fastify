@@ -256,6 +256,8 @@ model Budget {
 model WeeklyExpensiveView {
   category   String
   amount     Decimal
+  color      String
+  icon       String?
   year       Int
   weekNumber Int
   badgeId    String
@@ -263,4 +265,98 @@ model WeeklyExpensiveView {
 
   @@id([year, weekNumber])
   @@map("VW_WeeklyExpensive")
+}
+
+model WeeklyIncomeView {
+  category   String
+  color      String
+  icon       String?
+  amount     Decimal
+  year       Int
+  weekNumber Int
+  badgeId    String
+  userId     String
+
+  @@id([year, weekNumber])
+  @@map("VW_WeeklyIncome")
+}
+
+model MonthlyIncomeView {
+  category String
+  color    String
+  icon     String?
+  amount   Decimal
+  year     Int
+  month    Int
+  badgeId  String
+  userId   String
+
+  @@id([year, month])
+  @@map("VW_MonthlyIncome")
+}
+
+model MonthlyExpensiveView {
+  category String
+  color    String
+  icon     String?
+  amount   Decimal
+  year     Int
+  month    Int
+  badgeId  String
+  userId   String
+
+  @@id([year, month])
+  @@map("VW_MonthlyExpensive")
+}
+
+model YearlyExpensiveView {
+  category String
+  color    String
+  icon     String?
+  amount   Decimal
+  year     Int
+  badgeId  String
+  userId   String
+
+  @@id([year])
+  @@map("VW_YearlyExpensive")
+}
+
+model YearlyIncomeView {
+  category String
+  color    String
+  icon     String?
+  amount   Decimal
+  year     Int
+  badgeId  String
+  userId   String
+
+  @@id([year])
+  @@map("VW_YearlyIncome")
+}
+
+model DailyExpensyView {
+  category     String
+  color        String
+  icon         String?
+  amount       Decimal
+  datePurchase DateTime
+  badgeId      String
+  userId       String
+
+  @@id([datePurchase])
+  @@map("VW_DailyExpensive")
+}
+
+model DailyIncomeView {
+  category     String
+  color        String
+  icon         String?
+  amount       Decimal
+  datePurchase DateTime
+  badgeId      String
+  userId       String
+
+  @@id([datePurchase])
+  @@map("VW_DailyIncome")
 }

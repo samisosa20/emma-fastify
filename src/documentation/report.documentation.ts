@@ -5,6 +5,9 @@ import { errorDocumentation } from "./components/error";
 export const reportObjectSchema: SchemaDefault[] = [
   { name: "category", type: "string", body: false, private: false },
   { name: "amount", type: "number", body: false, private: false },
+  { name: "participation", type: "number", body: false, private: false },
+  { name: "color", type: "string", body: false, private: false },
+  { name: "icon", type: "string", body: false, private: false },
 ];
 
 const reportResponseSchema = defaultSuccesResponse(reportObjectSchema);

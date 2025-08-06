@@ -1,6 +1,6 @@
 import { CommonParamsPaginate, ErrorMessage, Paginate } from "packages/shared";
 import { IMovementRepository } from "../domain/interfaces/movement.interfaces";
-import { Movement, CreateMovement } from "../domain/movement";
+import { Movement, CreateMovement, MovementsParams } from "../domain/movement";
 
 export class MovementUseCase {
   private badgeRepository: IMovementRepository;
@@ -16,7 +16,7 @@ export class MovementUseCase {
   }
 
   public async listMovement(
-    params: CommonParamsPaginate
+    params: CommonParamsPaginate & MovementsParams
   ): Promise<{ content: Movement[]; meta: Paginate }> {
     return await this.badgeRepository.listMovement(params);
   }

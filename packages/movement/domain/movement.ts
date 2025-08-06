@@ -21,3 +21,13 @@ export type CreateMovement = Omit<
   Movement,
   "id" | "createdAt" | "updatedAt" | "trm"
 >;
+
+export type MovementsParams = {
+  accountId?: string;
+  description?: string;
+  amount?: string;
+  eventId?: string;
+  category?: string;
+  investmentId?: string;
+  datePurchase?: string;
+};

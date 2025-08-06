@@ -6,7 +6,12 @@ import {
   paginationParamsDocumentation,
 } from "./components/pagination";
 import { errorDocumentation } from "./components/error";
-import { getBody } from "./components/realtions";
+import { getBody, getProperties } from "./components/realtions";
+import { categoryObjectSchema } from "./category.documentation";
+import { accountObjectSchema } from "./account.documentation";
+import { eventObjectSchema } from "./event.documentation";
+import { extraInvestmentObjectSchema } from "./investment.documentation";
+import { date } from "zod";
 
 const movementObjectSchema: SchemaDefault[] = [
   { name: "id", type: "string", body: false, private: false },
@@ -22,19 +27,64 @@ const movementObjectSchema: SchemaDefault[] = [
     body: ["create", "update"],
     private: false,
   },
-  { name: "type", type: "string", body: ["create", "update"], private: false },
-  { name: "date", type: "string", body: ["create", "update"], private: false },
+  { name: "type", type: "string", body: ["create", "update"], private: true },
   {
-    name: "categoryId",
+    name: "datePurchase",
     type: "string",
     body: ["create", "update"],
     private: false,
   },
   {
+    name: "categoryId",
+    type: "string",
+    body: ["create", "update"],
+    private: true,
+  },
+  {
+    name: "category",
+    type: "object",
+    body: false,
+    private: false,
+    properties: getProperties(categoryObjectSchema),
+  },
+  {
     name: "accountId",
     type: "string",
     body: ["create", "update"],
+    private: true,
+  },
+  {
+    name: "account",
+    type: "object",
+    body: false,
     private: false,
+    properties: getProperties(accountObjectSchema),
+  },
+  {
+    name: "eventId",
+    type: "string",
+    body: ["create", "update"],
+    private: true,
+  },
+  {
+    name: "event",
+    type: "object",
+    body: false,
+    private: false,
+    properties: getProperties(eventObjectSchema),
+  },
+  {
+    name: "investmentId",
+    type: "string",
+    body: ["create", "update"],
+    private: true,
+  },
+  {
+    name: "investment",
+    type: "object",
+    body: false,
+    private: false,
+    properties: getProperties(extraInvestmentObjectSchema),
   },
   { name: "userId", type: "string", body: ["create"], private: false },
   { name: "createdAt", type: "string", body: false, private: false },
@@ -56,10 +106,15 @@ export const createMovementDocumentation: FastifySchema = {
 export const listMovementsDocumentation: FastifySchema = {
   description: "Listar todos los movimientos con paginación",
   tags: ["Movement"],
-  params: {
+  querystring: {
     type: "object",
     properties: {
       ...paginationParamsDocumentation(),
+      accountId: { type: "string", description: "ID de la Cuenta" },
+      eventId: { type: "string", description: "ID del Evento" },
+      investmentId: { type: "string", description: "ID de la Inversión" },
+      datePurchase: { type: "string", description: "Fecha de Compra" },
+      category: { type: "string", description: "Categoria del movimiento" },
     },
   },
   response: {

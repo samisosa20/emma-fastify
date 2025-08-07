@@ -22,10 +22,7 @@ export class ReportPrismaRepository implements IReportRepository {
         icon: true,
         color: true,
       },
-      orderBy: {
-        year: "desc",
-        weekNumber: "desc",
-      },
+      orderBy: [{ year: "desc" }, { weekNumber: "desc" }, { amount: "asc" }],
     });
 
     // 1. Total de gastos (usando el valor absoluto para la participación)
@@ -72,10 +69,7 @@ export class ReportPrismaRepository implements IReportRepository {
         icon: true,
         color: true,
       },
-      orderBy: {
-        year: "desc",
-        weekNumber: "desc",
-      },
+      orderBy: [{ year: "desc" }, { weekNumber: "desc" }, { amount: "desc" }],
     });
 
     // 1. Total de gastos (usando el valor absoluto para la participación)
@@ -122,10 +116,7 @@ export class ReportPrismaRepository implements IReportRepository {
         icon: true,
         color: true,
       },
-      orderBy: {
-        year: "desc",
-        month: "desc",
-      },
+      orderBy: [{ year: "desc" }, { month: "desc" }, { amount: "asc" }],
     });
 
     // 1. Total de gastos (usando el valor absoluto para la participación)
@@ -172,10 +163,7 @@ export class ReportPrismaRepository implements IReportRepository {
         icon: true,
         color: true,
       },
-      orderBy: {
-        year: "desc",
-        month: "desc",
-      },
+      orderBy: [{ year: "desc" }, { month: "desc" }, { amount: "desc" }],
     });
 
     // 1. Total de gastos (usando el valor absoluto para la participación)
@@ -221,9 +209,7 @@ export class ReportPrismaRepository implements IReportRepository {
         icon: true,
         color: true,
       },
-      orderBy: {
-        year: "desc",
-      },
+      orderBy: [{ year: "desc" }, { amount: "asc" }],
     });
 
     // 1. Total de gastos (usando el valor absoluto para la participación)
@@ -269,9 +255,7 @@ export class ReportPrismaRepository implements IReportRepository {
         icon: true,
         color: true,
       },
-      orderBy: {
-        year: "desc",
-      },
+      orderBy: [{ year: "desc" }, { amount: "desc" }],
     });
 
     // 1. Total de gastos (usando el valor absoluto para la participación)
@@ -317,6 +301,7 @@ export class ReportPrismaRepository implements IReportRepository {
         icon: true,
         color: true,
       },
+      orderBy: [{ amount: "asc" }],
     });
 
     // 1. Total de gastos (usando el valor absoluto para la participación)
@@ -362,6 +347,7 @@ export class ReportPrismaRepository implements IReportRepository {
         icon: true,
         color: true,
       },
+      orderBy: [{ amount: "desc" }],
     });
 
     // 1. Total de gastos (usando el valor absoluto para la participación)

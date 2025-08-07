@@ -10,8 +10,7 @@ import { getBody, getProperties } from "./components/realtions";
 import { categoryObjectSchema } from "./category.documentation";
 import { accountObjectSchema } from "./account.documentation";
 import { eventObjectSchema } from "./event.documentation";
-import { extraInvestmentObjectSchema } from "./investment.documentation";
-import { date } from "zod";
+import { investmentObjectSchema } from "./investment.documentation";
 
 const movementObjectSchema: SchemaDefault[] = [
   { name: "id", type: "string", body: false, private: false },
@@ -80,11 +79,17 @@ const movementObjectSchema: SchemaDefault[] = [
     private: true,
   },
   {
+    name: "addWithdrawal",
+    type: "boolean",
+    body: ["create", "update"],
+    private: false,
+  },
+  {
     name: "investment",
     type: "object",
     body: false,
     private: false,
-    properties: getProperties(extraInvestmentObjectSchema),
+    properties: getProperties(investmentObjectSchema),
   },
   { name: "userId", type: "string", body: ["create"], private: false },
   { name: "createdAt", type: "string", body: false, private: false },

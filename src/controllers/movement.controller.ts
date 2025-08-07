@@ -26,7 +26,10 @@ export class MovementController {
     const dataMovement = request.body as CreateMovement;
 
     try {
-      return movementUseCase.addMovement(dataMovement);
+      return movementUseCase.addMovement({
+        ...dataMovement,
+        userId: request.user.id,
+      });
     } catch (error: any) {
       const detail = formatErrorMessage(error);
       return reply.status(400).send({

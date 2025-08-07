@@ -37,21 +37,50 @@ export class CategoryPrismaRepository implements ICategoryRepository {
   async listCategories(
     params: CommonParamsPaginate
   ): Promise<{ content: Category[]; meta: Paginate }> {
-    const { deleted, size, page } = params;
-    const [content, meta] = await prisma.category
-      .paginate({
-        where: {
-          OR: handleShowDeleteData(deleted === "1"),
-        },
-      })
-      .withPages({
-        limit: size ? Number(size) : 10,
-        page: page && page > 0 ? Number(page) : 1,
-      });
+    const { deleted, size, page: pageParam } = params;
 
+    const shouldPaginate = pageParam && Number(pageParam) > 0;
+
+    let rawContent: Category[];
+    let metaResult: Paginate;
+
+    if (shouldPaginate) {
+      const currentPage = Number(pageParam);
+      const effectiveSize = size && Number(size) > 0 ? Number(size) : 10;
+
+      const [content, metaFromPrisma] = await prisma.category
+        .paginate({
+          where: {
+            OR: handleShowDeleteData(deleted === "1"),
+          },
+        })
+        .withPages({
+          limit: effectiveSize,
+          page: currentPage,
+        });
+
+      rawContent = content as Category[];
+
+      metaResult = metaFromPrisma;
+    } else {
+      rawContent = (await prisma.category.findMany({})) as Category[];
+
+      const totalCount = rawContent.length;
+      const meta: Paginate = {
+        isFirstPage: totalCount > 0,
+        isLastPage: totalCount > 0,
+        currentPage: totalCount > 0 ? 1 : 0,
+        previousPage: null,
+        nextPage: null,
+        pageCount: totalCount > 0 ? 1 : 0,
+        totalCount: totalCount,
+      };
+
+      metaResult = meta;
+    }
     return {
-      content,
-      meta,
+      content: rawContent,
+      meta: metaResult,
     };
   }
 

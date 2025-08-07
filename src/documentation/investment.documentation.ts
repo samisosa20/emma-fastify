@@ -36,7 +36,7 @@ export const extraInvestmentObjectSchema: SchemaDefault[] = [
   },
 ];
 
-const investmentObjectSchema: SchemaDefault[] = [
+export const investmentObjectSchema: SchemaDefault[] = [
   { name: "id", type: "string", body: false, private: false },
   { name: "name", type: "string", body: ["create", "update"], private: false },
   {

@@ -32,7 +32,11 @@ const bootstrap = async () => {
       options: { prefix: "/api/v2" },
     });
 
-    fastify.register(cors);
+    fastify.register(cors, {
+      origin: "*",
+      methods: ["GET", "POST", "PUT", "DELETE"],
+      allowedHeaders: "*",
+    });
 
     fastify.register(rateLimit, {
       max: 10,

@@ -20,7 +20,9 @@ export type Movement = {
 export type CreateMovement = Omit<
   Movement,
   "id" | "createdAt" | "updatedAt" | "trm"
->;
+> & {
+  type: "move" | "transfer";
+};
 
 export type MovementsParams = {
   accountId?: string;

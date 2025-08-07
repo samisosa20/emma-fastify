@@ -61,7 +61,41 @@ export class MovementPrismaRepository implements IMovementRepository {
   ): Promise<Movement | ErrorMessage> {
     try {
       const newMovement = await prisma.movement.create({
-        data,
+        data: {
+          amount: data.amount,
+          datePurchase: data.datePurchase,
+          description: data.description,
+          user: {
+            connect: {
+              id: data.userId,
+            },
+          },
+          account: {
+            connect: {
+              id: data.accountId,
+            },
+          },
+
+          category: {
+            connect: {
+              id: data.categoryId,
+            },
+          },
+          ...(data.eventId && {
+            event: {
+              connect: {
+                id: data.eventId,
+              },
+            },
+          }),
+          ...(data.investmentId && {
+            investment: {
+              connect: {
+                id: data.investmentId,
+              },
+            },
+          }),
+        },
         include: {
           account: true,
           category: true,
@@ -71,6 +105,7 @@ export class MovementPrismaRepository implements IMovementRepository {
       });
       return newMovement;
     } catch (error: any) {
+      console.log(error);
       throw Object.assign(new Error("Validation Error"), {
         statusCode: 400,
         error: "Bad Request",
@@ -118,7 +153,42 @@ export class MovementPrismaRepository implements IMovementRepository {
         where: {
           id,
         },
-        data,
+        data: {
+          amount: data.amount,
+          datePurchase: data.datePurchase,
+          description: data.description,
+          account: {
+            connect: {
+              id: data.accountId,
+            },
+          },
+
+          category: {
+            connect: {
+              id: data.categoryId,
+            },
+          },
+          ...(data.eventId && {
+            event: {
+              connect: {
+                id: data.eventId,
+              },
+            },
+          }),
+          ...(data.investmentId && {
+            investment: {
+              connect: {
+                id: data.investmentId,
+              },
+            },
+          }),
+        },
+        include: {
+          account: true,
+          category: true,
+          event: true,
+          investment: true,
+        },
       });
       return updatedMovement;
     } catch (error: any) {
@@ -134,6 +204,12 @@ export class MovementPrismaRepository implements IMovementRepository {
     try {
       return await prisma.movement.findUnique({
         where: { id },
+        include: {
+          account: true,
+          category: true,
+          event: true,
+          investment: true,
+        },
       });
     } catch (error: any) {
       throw Object.assign(new Error("Validation Error"), {
@@ -153,6 +229,12 @@ export class MovementPrismaRepository implements IMovementRepository {
     }
     return await prisma.movement.delete({
       where: { id },
+      include: {
+        account: true,
+        category: true,
+        event: true,
+        investment: true,
+      },
     });
   }
 
@@ -345,7 +427,7 @@ export class MovementPrismaRepository implements IMovementRepository {
           investmentId: investmentId,
           createdAt: new Date(movement.created_at),
           updatedAt: new Date(movement.updated_at),
-        } as CreateMovement;
+        } as Omit<CreateMovement, "type">;
 
         const move = await prisma.movement.create({
           data,

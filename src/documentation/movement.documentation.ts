@@ -116,6 +116,7 @@ export const listMovementsDocumentation: FastifySchema = {
     properties: {
       ...paginationParamsDocumentation(),
       accountId: { type: "string", description: "ID de la Cuenta" },
+      categoryId: { type: "string", description: "ID de la Categoria" },
       eventId: { type: "string", description: "ID del Evento" },
       investmentId: { type: "string", description: "ID de la Inversión" },
       datePurchase: { type: "string", description: "Fecha de Compra" },

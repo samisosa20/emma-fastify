@@ -61,7 +61,7 @@ const movementObjectSchema: SchemaDefault[] = [
   },
   {
     name: "eventId",
-    type: "string",
+    type: ["string", "null"],
     body: ["create", "update"],
     private: true,
   },
@@ -74,7 +74,7 @@ const movementObjectSchema: SchemaDefault[] = [
   },
   {
     name: "investmentId",
-    type: "string",
+    type: ["string", "null"],
     body: ["create", "update"],
     private: true,
   },
@@ -94,6 +94,45 @@ const movementObjectSchema: SchemaDefault[] = [
   { name: "userId", type: "string", body: ["create"], private: false },
   { name: "createdAt", type: "string", body: false, private: false },
   { name: "updatedAt", type: "string", body: false, private: false },
+];
+
+const movementTransferObjectSchema: SchemaDefault[] = [
+  {
+    name: "transferOut",
+    type: ["object"],
+    body: false,
+    private: false,
+    properties: {
+      id: { type: "string" },
+      account: {
+        type: "object",
+        properties: {
+          id: { type: "string" },
+          name: { type: "string" },
+          badgeId: { type: "string" },
+        },
+      },
+      amount: { type: "number" },
+    },
+  },
+  {
+    name: "transferIn",
+    type: ["object"],
+    body: false,
+    private: false,
+    properties: {
+      id: { type: "string" },
+      account: {
+        type: "object",
+        properties: {
+          id: { type: "string" },
+          name: { type: "string" },
+          badgeId: { type: "string" },
+        },
+      },
+      amount: { type: "number" },
+    },
+  },
 ];
 
 const movementResponseSchema = defaultSuccesResponse(movementObjectSchema);
@@ -140,7 +179,10 @@ export const getMovementDocumentation: FastifySchema = {
     },
   },
   response: {
-    200: movementResponseSchema,
+    200: defaultSuccesResponse([
+      ...movementObjectSchema,
+      ...movementTransferObjectSchema,
+    ]),
     ...errorDocumentation,
   },
 };

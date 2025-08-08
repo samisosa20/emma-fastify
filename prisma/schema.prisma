@@ -1,5 +1,6 @@
 generator client {
-  provider = "prisma-client-js"
+  provider        = "prisma-client-js"
+  previewFeatures = ["views"]
 }
 
 datasource db {
@@ -21,6 +22,7 @@ model User {
   badgeId                 String
   accounts                Account[]
   budgets                 Budget[]
+  Category                Category[]
   events                  Event[]
   heritages               Heritage[]
   investments             Investment[]
@@ -75,8 +77,13 @@ model Category {
   updatedAt       DateTime         @updatedAt
   deletedAt       DateTime?
   budgets         Budget[]
+  GroupCategory   GroupCategory    @relation(fields: [groupId], references: [id], map: "Category_GroupCategory_FK")
+  User            User             @relation(fields: [userId], references: [id], onDelete: Cascade, map: "Category_User_FK")
   movements       Movement[]
   plannedPayments PlannedPayment[]
+
+  @@index([groupId], map: "Category_GroupCategory_FK")
+  @@index([userId], map: "Category_User_FK")
 }
 
 model AccountType {
@@ -88,10 +95,11 @@ model AccountType {
 }
 
 model GroupCategory {
-  id        String   @id @default(uuid())
+  id        String     @id @default(uuid())
   name      String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+  Category  Category[]
 }
 
 model Badge {
@@ -253,110 +261,86 @@ model Budget {
   @@index([userId], map: "Budget_userId_fkey")
 }
 
-model WeeklyExpensiveView {
-  category   String
-  amount     Decimal
-  color      String
-  icon       String?
-  year       Int
-  weekNumber Int
-  badgeId    String
-  userId     String
-
-  @@id([year, weekNumber])
-  @@map("VW_WeeklyExpensive")
-}
-
-model WeeklyIncomeView {
-  category   String
-  color      String
-  icon       String?
-  amount     Decimal
-  year       Int
-  weekNumber Int
-  badgeId    String
-  userId     String
-
-  @@id([year, weekNumber])
-  @@map("VW_WeeklyIncome")
-}
-
-model MonthlyIncomeView {
-  category String
-  color    String
-  icon     String?
-  amount   Decimal
-  year     Int
-  month    Int
-  badgeId  String
-  userId   String
-
-  @@id([year, month])
-  @@map("VW_MonthlyIncome")
-}
-
-model MonthlyExpensiveView {
-  category String
-  color    String
-  icon     String?
-  amount   Decimal
-  year     Int
-  month    Int
-  badgeId  String
-  userId   String
-
-  @@id([year, month])
-  @@map("VW_MonthlyExpensive")
-}
-
-model YearlyExpensiveView {
-  category String
-  color    String
-  icon     String?
-  amount   Decimal
-  year     Int
-  badgeId  String
-  userId   String
-
-  @@id([year])
-  @@map("VW_YearlyExpensive")
-}
-
-model YearlyIncomeView {
-  category String
-  color    String
-  icon     String?
-  amount   Decimal
-  year     Int
-  badgeId  String
-  userId   String
-
-  @@id([year])
-  @@map("VW_YearlyIncome")
-}
-
-model DailyExpensyView {
+view vw_dailyexpensive {
   category     String
-  color        String
-  icon         String?
-  amount       Decimal
-  datePurchase DateTime
+  icon         String?   @db.VarChar(100)
+  color        String    @default("#000000") @db.VarChar(10)
+  amount       Decimal?  @db.Decimal(37, 2)
+  datePurchase DateTime? @db.Date
   badgeId      String
   userId       String
-
-  @@id([datePurchase])
-  @@map("VW_DailyExpensive")
 }
 
-model DailyIncomeView {
+view vw_dailyincome {
   category     String
-  color        String
-  icon         String?
-  amount       Decimal
-  datePurchase DateTime
+  icon         String?   @db.VarChar(100)
+  color        String    @default("#000000") @db.VarChar(10)
+  amount       Decimal?  @db.Decimal(37, 2)
+  datePurchase DateTime? @db.Date
   badgeId      String
   userId       String
+}
 
-  @@id([datePurchase])
-  @@map("VW_DailyIncome")
+view vw_monthlyexpensive {
+  category String
+  icon     String?  @db.VarChar(100)
+  color    String   @default("#000000") @db.VarChar(10)
+  amount   Decimal? @db.Decimal(37, 2)
+  year     Int?
+  month    Int?
+  badgeId  String
+  userId   String
+}
+
+view vw_monthlyincome {
+  category String
+  icon     String?  @db.VarChar(100)
+  color    String   @default("#000000") @db.VarChar(10)
+  amount   Decimal? @db.Decimal(37, 2)
+  year     Int?
+  month    Int?
+  badgeId  String
+  userId   String
+}
+
+view vw_weeklyexpensive {
+  category   String
+  icon       String?  @db.VarChar(100)
+  color      String   @default("#000000") @db.VarChar(10)
+  amount     Decimal? @db.Decimal(37, 2)
+  year       Int?
+  weekNumber Int?
+  badgeId    String
+  userId     String
+}
+
+view vw_weeklyincome {
+  category   String
+  icon       String?  @db.VarChar(100)
+  color      String   @default("#000000") @db.VarChar(10)
+  amount     Decimal? @db.Decimal(37, 2)
+  year       Int?
+  weekNumber Int?
+  badgeId    String
+  userId     String
+}
+
+view vw_yearlyexpensive {
+  category String
+  icon     String?  @db.VarChar(100)
+  color    String   @default("#000000") @db.VarChar(10)
+  amount   Decimal? @db.Decimal(37, 2)
+  year     Int?
+  badgeId  String
+  userId   String
+}
+
+view vw_yearlyincome {
+  category String
+  icon     String?  @db.VarChar(100)
+  color    String   @default("#000000") @db.VarChar(10)
+  amount   Decimal? @db.Decimal(37, 2)
+  year     Int?
+  badgeId  String
+  userId   String
 }

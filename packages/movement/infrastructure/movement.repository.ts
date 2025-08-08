@@ -1,4 +1,9 @@
-import { Movement, CreateMovement, MovementsParams } from "../domain/movement";
+import {
+  Movement,
+  CreateMovement,
+  MovementsParams,
+  TranferMovement,
+} from "../domain/movement";
 import { IMovementRepository } from "../domain/interfaces/movement.interfaces";
 
 import prisma from "packages/shared/settings/prisma.client";
@@ -9,6 +14,7 @@ import {
   handleShowDeleteData,
 } from "packages/shared";
 import { APIResponse } from "packages/badge/infrastructure/badge.repository"; // Asumiendo APIResponse para el token
+import { includes } from "zod";
 
 // Define el tipo para un solo objeto de movimiento de la API externa
 interface APIMovementsResponse {
@@ -60,6 +66,26 @@ export class MovementPrismaRepository implements IMovementRepository {
     data: CreateMovement
   ): Promise<Movement | ErrorMessage> {
     try {
+      let categoryId = data.categoryId;
+      let trm = 1;
+      if (data.type === "transfer") {
+        const transfer = await prisma.category.findFirst({
+          where: {
+            GroupCategory: {
+              name: "Transferencia",
+            },
+          },
+          include: {
+            GroupCategory: true,
+          },
+        });
+
+        if (transfer) {
+          categoryId = transfer.id;
+        }
+        trm = Math.abs(Number(data.amount) / Number(data.amountEnd));
+      }
+
       const newMovement = await prisma.movement.create({
         data: {
           amount: data.amount,
@@ -75,10 +101,9 @@ export class MovementPrismaRepository implements IMovementRepository {
               id: data.accountId,
             },
           },
-
           category: {
             connect: {
-              id: data.categoryId,
+              id: categoryId,
             },
           },
           ...(data.eventId && {
@@ -95,6 +120,9 @@ export class MovementPrismaRepository implements IMovementRepository {
               },
             },
           }),
+          ...(data.type === "transfer" && {
+            trm,
+          }),
         },
         include: {
           account: true,
@@ -103,6 +131,40 @@ export class MovementPrismaRepository implements IMovementRepository {
           investment: true,
         },
       });
+
+      if (newMovement && data.type === "transfer") {
+        await prisma.movement.create({
+          data: {
+            amount: Number(data.amountEnd),
+            datePurchase: data.datePurchase,
+            description: data.description,
+            user: {
+              connect: {
+                id: data.userId,
+              },
+            },
+            account: {
+              connect: {
+                id: data.accountEndId,
+              },
+            },
+            category: {
+              connect: {
+                id: categoryId,
+              },
+            },
+            originalOrPairedMovement: {
+              connect: { id: newMovement.id },
+            },
+            trm: Math.abs(Number(data.amountEnd) / Number(data.amount)),
+          },
+          include: {
+            account: true,
+            category: true,
+          },
+        });
+      }
+
       return newMovement;
     } catch (error: any) {
       console.log(error);
@@ -149,38 +211,80 @@ export class MovementPrismaRepository implements IMovementRepository {
     data: Partial<CreateMovement>
   ): Promise<Movement | ErrorMessage> {
     try {
+      let categoryId = data.categoryId;
+      let trm = 1;
+
+      const movement = await prisma.movement.findFirst({
+        where: { id },
+        include: {
+          originalOrPairedMovement: true,
+          relatedTransferMovements: true,
+        },
+      });
+
+      if (!movement) {
+        throw Object.assign(new Error("Movement not found"), {
+          statusCode: 404,
+          error: "Not Found",
+          message: "Movement not found",
+        });
+      }
+
+      const isTransferOut = movement.transferId === null;
+
+      if (data.type === "transfer") {
+        const transfer = await prisma.category.findFirst({
+          where: {
+            GroupCategory: {
+              name: "Transferencia",
+            },
+          },
+          include: {
+            GroupCategory: true,
+          },
+        });
+
+        if (transfer) {
+          categoryId = transfer.id;
+        }
+        trm = isTransferOut
+          ? Math.abs(Number(data.amount) / Number(data.amountEnd))
+          : Math.abs(Number(data.amountEnd) / Number(data.amount));
+      }
+
       const updatedMovement = await prisma.movement.update({
         where: {
           id,
         },
         data: {
-          amount: data.amount,
+          amount: isTransferOut ? data.amount : data.amountEnd,
           datePurchase: data.datePurchase,
           description: data.description,
           account: {
             connect: {
-              id: data.accountId,
+              id: isTransferOut ? data.accountId : data.accountEndId,
             },
           },
-
           category: {
             connect: {
-              id: data.categoryId,
+              id: categoryId,
             },
           },
-          ...(data.eventId && {
-            event: {
-              connect: {
-                id: data.eventId,
-              },
-            },
-          }),
-          ...(data.investmentId && {
-            investment: {
-              connect: {
-                id: data.investmentId,
-              },
-            },
+          event:
+            data.eventId === null
+              ? { disconnect: true }
+              : data.eventId
+              ? { connect: { id: data.eventId } }
+              : undefined,
+          investment:
+            data.investmentId === null
+              ? { disconnect: true }
+              : data.investmentId
+              ? { connect: { id: data.investmentId } }
+              : undefined,
+          trm,
+          ...(data.addWithdrawal && {
+            addWithdrawal: data.addWithdrawal,
           }),
         },
         include: {
@@ -190,6 +294,31 @@ export class MovementPrismaRepository implements IMovementRepository {
           investment: true,
         },
       });
+
+      if (updatedMovement && data.type === "transfer") {
+        let whereClause = undefined;
+        if (!isTransferOut && movement.originalOrPairedMovement) {
+          whereClause = { id: String(movement.originalOrPairedMovement.id) };
+        } else {
+          whereClause = { id: String(movement.relatedTransferMovements[0].id) };
+        }
+        await prisma.movement.update({
+          where: whereClause,
+          data: {
+            amount: !isTransferOut ? data.amount : data.amountEnd,
+            datePurchase: data.datePurchase,
+            description: data.description,
+            account: {
+              connect: {
+                id: !isTransferOut ? data.accountId : data.accountEndId,
+              },
+            },
+            trm: !isTransferOut
+              ? Math.abs(Number(data.amountEnd) / Number(data.amount))
+              : Math.abs(Number(data.amount) / Number(data.amountEnd)),
+          },
+        });
+      }
       return updatedMovement;
     } catch (error: any) {
       throw Object.assign(new Error("Validation Error"), {
@@ -200,17 +329,56 @@ export class MovementPrismaRepository implements IMovementRepository {
     }
   }
 
-  public async detailMovement(id: string): Promise<Movement | null> {
+  public async detailMovement(
+    id: string
+  ): Promise<(Movement & TranferMovement) | null> {
     try {
-      return await prisma.movement.findUnique({
+      let movementAdjust: (Movement & TranferMovement) | null = null;
+      const movement = await prisma.movement.findFirst({
         where: { id },
         include: {
           account: true,
           category: true,
           event: true,
           investment: true,
+          relatedTransferMovements: {
+            select: {
+              id: true,
+              amount: true,
+              account: {
+                select: {
+                  id: true,
+                  name: true,
+                  badgeId: true,
+                },
+              },
+            },
+          },
+          originalOrPairedMovement: {
+            select: {
+              id: true,
+              amount: true,
+              account: {
+                select: {
+                  id: true,
+                  name: true,
+                  badgeId: true,
+                },
+              },
+            },
+          },
         },
       });
+
+      if (movement) {
+        const { originalOrPairedMovement, relatedTransferMovements, ...res } =
+          movement;
+        movementAdjust = { ...res, transferIn: {}, transferOut: {} };
+        movementAdjust.transferOut = movement?.originalOrPairedMovement ?? {};
+        movementAdjust.transferIn = movement?.relatedTransferMovements[0] ?? {};
+      }
+
+      return movementAdjust;
     } catch (error: any) {
       throw Object.assign(new Error("Validation Error"), {
         statusCode: 400,
@@ -223,19 +391,31 @@ export class MovementPrismaRepository implements IMovementRepository {
   public async deleteMovement(id: string): Promise<Movement | null> {
     const movement = await prisma.movement.findUnique({
       where: { id },
-    });
-    if (!movement) {
-      return null;
-    }
-    return await prisma.movement.delete({
-      where: { id },
       include: {
         account: true,
         category: true,
         event: true,
         investment: true,
+        originalOrPairedMovement: true,
+        relatedTransferMovements: true,
       },
     });
+    if (!movement) {
+      return null;
+    }
+
+    const isTransferOut = movement.transferId === null;
+    let whereClause = undefined;
+    if (!isTransferOut && movement.originalOrPairedMovement) {
+      whereClause = { id: String(movement.originalOrPairedMovement?.id) };
+    } else {
+      whereClause = { id: String(movement.relatedTransferMovements[0]?.id) };
+    }
+    await prisma.movement.deleteMany({
+      where: { OR: [whereClause, { id }] },
+    });
+
+    return movement;
   }
 
   public async importMovements(): Promise<{

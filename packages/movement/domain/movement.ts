@@ -17,11 +17,38 @@ export type Movement = {
   addWithdrawal: boolean;
 };
 
+export type TranferMovement = {
+  transferOut:
+    | {
+        id: string;
+        account: {
+          id: string;
+          name: string;
+          badgeId: string;
+        };
+        amount: Decimal | number;
+      }
+    | {};
+  transferIn:
+    | {
+        id: string;
+        account: {
+          id: string;
+          name: string;
+          badgeId: string;
+        };
+        amount: Decimal | number;
+      }
+    | {};
+};
+
 export type CreateMovement = Omit<
   Movement,
-  "id" | "createdAt" | "updatedAt" | "trm"
+  "id" | "createdAt" | "updatedAt" | "trm" | "transferId" | "transferOut"
 > & {
   type: "move" | "transfer";
+  amountEnd?: string;
+  accountEndId?: string;
 };
 
 export type MovementsParams = {

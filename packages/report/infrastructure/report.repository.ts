@@ -9,7 +9,7 @@ export class ReportPrismaRepository implements IReportRepository {
   public async weeklyExpensive(
     params: ReportParams
   ): Promise<Report | ErrorMessage> {
-    const report = await prisma.weeklyExpensiveView.findMany({
+    const report = await prisma.vw_weeklyexpensive.findMany({
       where: {
         weekNumber: params.weekNumber,
         year: params.year,
@@ -28,14 +28,14 @@ export class ReportPrismaRepository implements IReportRepository {
     // 1. Total de gastos (usando el valor absoluto para la participación)
     // Se inicializa con un objeto Decimal para mantener la precisión
     const totalAbsoluto = report.reduce(
-      (sum, item) => sum.plus(item.amount.abs()), // <-- Usamos .abs() para sumar el valor absoluto
+      (sum, item) => sum.plus((item.amount ?? new Decimal(0)).abs()), // <-- Usamos .abs() para sumar el valor absoluto
       new Decimal(0)
     );
 
     // 2. Agregar % de participación
     const reportWithPercentage = report.map((item) => {
       // Asegúrate de que los cálculos se hacen con Decimal
-      const itemAmountAbsoluto = item.amount.abs();
+      const itemAmountAbsoluto = (item.amount ?? new Decimal(0)).abs();
 
       // Calcula la participación.
       // Evitamos la división por cero y usamos el total absoluto.
@@ -45,7 +45,7 @@ export class ReportPrismaRepository implements IReportRepository {
 
       return {
         ...item,
-        amount: item.amount.abs(),
+        amount: (item.amount ?? new Decimal(0)).abs(),
         // Asegúrate de que `participation` sea un tipo `Decimal` o conviértelo a `string`
         participation: participation.toFixed(1),
       };
@@ -56,7 +56,7 @@ export class ReportPrismaRepository implements IReportRepository {
   public async weeklyIncome(
     params: ReportParams
   ): Promise<Report | ErrorMessage> {
-    const report = await prisma.weeklyIncomeView.findMany({
+    const report = await prisma.vw_weeklyincome.findMany({
       where: {
         weekNumber: params.weekNumber,
         year: params.year,
@@ -75,14 +75,14 @@ export class ReportPrismaRepository implements IReportRepository {
     // 1. Total de gastos (usando el valor absoluto para la participación)
     // Se inicializa con un objeto Decimal para mantener la precisión
     const totalAbsoluto = report.reduce(
-      (sum, item) => sum.plus(item.amount.abs()), // <-- Usamos .abs() para sumar el valor absoluto
+      (sum, item) => sum.plus((item.amount ?? new Decimal(0)).abs()), // <-- Usamos .abs() para sumar el valor absoluto
       new Decimal(0)
     );
 
     // 2. Agregar % de participación
     const reportWithPercentage = report.map((item) => {
       // Asegúrate de que los cálculos se hacen con Decimal
-      const itemAmountAbsoluto = item.amount.abs();
+      const itemAmountAbsoluto = (item.amount ?? new Decimal(0)).abs();
 
       // Calcula la participación.
       // Evitamos la división por cero y usamos el total absoluto.
@@ -92,7 +92,7 @@ export class ReportPrismaRepository implements IReportRepository {
 
       return {
         ...item,
-        amount: item.amount.abs(),
+        amount: (item.amount ?? new Decimal(0)).abs(),
         // Asegúrate de que `participation` sea un tipo `Decimal` o conviértelo a `string`
         participation: participation.toFixed(1),
       };
@@ -103,7 +103,7 @@ export class ReportPrismaRepository implements IReportRepository {
   public async monthlyExpensive(
     params: ReportParams
   ): Promise<Report | ErrorMessage> {
-    const report = await prisma.monthlyExpensiveView.findMany({
+    const report = await prisma.vw_monthlyexpensive.findMany({
       where: {
         month: params.month,
         year: params.year,
@@ -122,14 +122,14 @@ export class ReportPrismaRepository implements IReportRepository {
     // 1. Total de gastos (usando el valor absoluto para la participación)
     // Se inicializa con un objeto Decimal para mantener la precisión
     const totalAbsoluto = report.reduce(
-      (sum, item) => sum.plus(item.amount.abs()), // <-- Usamos .abs() para sumar el valor absoluto
+      (sum, item) => sum.plus((item.amount ?? new Decimal(0)).abs()), // <-- Usamos .abs() para sumar el valor absoluto
       new Decimal(0)
     );
 
     // 2. Agregar % de participación
     const reportWithPercentage = report.map((item) => {
       // Asegúrate de que los cálculos se hacen con Decimal
-      const itemAmountAbsoluto = item.amount.abs();
+      const itemAmountAbsoluto = (item.amount ?? new Decimal(0)).abs();
 
       // Calcula la participación.
       // Evitamos la división por cero y usamos el total absoluto.
@@ -139,7 +139,7 @@ export class ReportPrismaRepository implements IReportRepository {
 
       return {
         ...item,
-        amount: item.amount.abs(),
+        amount: (item.amount ?? new Decimal(0)).abs(),
         // Asegúrate de que `participation` sea un tipo `Decimal` o conviértelo a `string`
         participation: participation.toFixed(1),
       };
@@ -150,7 +150,7 @@ export class ReportPrismaRepository implements IReportRepository {
   public async monthlyIncome(
     params: ReportParams
   ): Promise<Report | ErrorMessage> {
-    const report = await prisma.monthlyIncomeView.findMany({
+    const report = await prisma.vw_monthlyincome.findMany({
       where: {
         month: params.month,
         year: params.year,
@@ -169,14 +169,14 @@ export class ReportPrismaRepository implements IReportRepository {
     // 1. Total de gastos (usando el valor absoluto para la participación)
     // Se inicializa con un objeto Decimal para mantener la precisión
     const totalAbsoluto = report.reduce(
-      (sum, item) => sum.plus(item.amount.abs()), // <-- Usamos .abs() para sumar el valor absoluto
+      (sum, item) => sum.plus((item.amount ?? new Decimal(0)).abs()), // <-- Usamos .abs() para sumar el valor absoluto
       new Decimal(0)
     );
 
     // 2. Agregar % de participación
     const reportWithPercentage = report.map((item) => {
       // Asegúrate de que los cálculos se hacen con Decimal
-      const itemAmountAbsoluto = item.amount.abs();
+      const itemAmountAbsoluto = (item.amount ?? new Decimal(0)).abs();
 
       // Calcula la participación.
       // Evitamos la división por cero y usamos el total absoluto.
@@ -186,7 +186,7 @@ export class ReportPrismaRepository implements IReportRepository {
 
       return {
         ...item,
-        amount: item.amount.abs(),
+        amount: (item.amount ?? new Decimal(0)).abs(),
         // Asegúrate de que `participation` sea un tipo `Decimal` o conviértelo a `string`
         participation: participation.toFixed(1),
       };
@@ -197,7 +197,7 @@ export class ReportPrismaRepository implements IReportRepository {
   public async yearlyExpensive(
     params: ReportParams
   ): Promise<Report | ErrorMessage> {
-    const report = await prisma.yearlyExpensiveView.findMany({
+    const report = await prisma.vw_yearlyexpensive.findMany({
       where: {
         year: params.year,
         badgeId: params.badgeId,
@@ -215,14 +215,14 @@ export class ReportPrismaRepository implements IReportRepository {
     // 1. Total de gastos (usando el valor absoluto para la participación)
     // Se inicializa con un objeto Decimal para mantener la precisión
     const totalAbsoluto = report.reduce(
-      (sum, item) => sum.plus(item.amount.abs()), // <-- Usamos .abs() para sumar el valor absoluto
+      (sum, item) => sum.plus((item.amount ?? new Decimal(0)).abs()), // <-- Usamos .abs() para sumar el valor absoluto
       new Decimal(0)
     );
 
     // 2. Agregar % de participación
     const reportWithPercentage = report.map((item) => {
       // Asegúrate de que los cálculos se hacen con Decimal
-      const itemAmountAbsoluto = item.amount.abs();
+      const itemAmountAbsoluto = (item.amount ?? new Decimal(0)).abs();
 
       // Calcula la participación.
       // Evitamos la división por cero y usamos el total absoluto.
@@ -232,7 +232,7 @@ export class ReportPrismaRepository implements IReportRepository {
 
       return {
         ...item,
-        amount: item.amount.abs(),
+        amount: (item.amount ?? new Decimal(0)).abs(),
         // Asegúrate de que `participation` sea un tipo `Decimal` o conviértelo a `string`
         participation: participation.toFixed(1),
       };
@@ -243,7 +243,7 @@ export class ReportPrismaRepository implements IReportRepository {
   public async yearlyIncome(
     params: ReportParams
   ): Promise<Report | ErrorMessage> {
-    const report = await prisma.yearlyIncomeView.findMany({
+    const report = await prisma.vw_yearlyincome.findMany({
       where: {
         year: params.year,
         badgeId: params.badgeId,
@@ -261,14 +261,14 @@ export class ReportPrismaRepository implements IReportRepository {
     // 1. Total de gastos (usando el valor absoluto para la participación)
     // Se inicializa con un objeto Decimal para mantener la precisión
     const totalAbsoluto = report.reduce(
-      (sum, item) => sum.plus(item.amount.abs()), // <-- Usamos .abs() para sumar el valor absoluto
+      (sum, item) => sum.plus((item.amount ?? new Decimal(0)).abs()), // <-- Usamos .abs() para sumar el valor absoluto
       new Decimal(0)
     );
 
     // 2. Agregar % de participación
     const reportWithPercentage = report.map((item) => {
       // Asegúrate de que los cálculos se hacen con Decimal
-      const itemAmountAbsoluto = item.amount.abs();
+      const itemAmountAbsoluto = (item.amount ?? new Decimal(0)).abs();
 
       // Calcula la participación.
       // Evitamos la división por cero y usamos el total absoluto.
@@ -278,7 +278,7 @@ export class ReportPrismaRepository implements IReportRepository {
 
       return {
         ...item,
-        amount: item.amount.abs(),
+        amount: (item.amount ?? new Decimal(0)).abs(),
         // Asegúrate de que `participation` sea un tipo `Decimal` o conviértelo a `string`
         participation: participation.toFixed(1),
       };
@@ -289,7 +289,7 @@ export class ReportPrismaRepository implements IReportRepository {
   public async dailyExpensive(
     params: ReportParams
   ): Promise<Report | ErrorMessage> {
-    const report = await prisma.dailyExpensyView.findMany({
+    const report = await prisma.vw_dailyexpensive.findMany({
       where: {
         datePurchase: params.date,
         badgeId: params.badgeId,
@@ -307,14 +307,14 @@ export class ReportPrismaRepository implements IReportRepository {
     // 1. Total de gastos (usando el valor absoluto para la participación)
     // Se inicializa con un objeto Decimal para mantener la precisión
     const totalAbsoluto = report.reduce(
-      (sum, item) => sum.plus(item.amount.abs()), // <-- Usamos .abs() para sumar el valor absoluto
+      (sum, item) => sum.plus((item.amount ?? new Decimal(0)).abs()), // <-- Usamos .abs() para sumar el valor absoluto
       new Decimal(0)
     );
 
     // 2. Agregar % de participación
     const reportWithPercentage = report.map((item) => {
       // Asegúrate de que los cálculos se hacen con Decimal
-      const itemAmountAbsoluto = item.amount.abs();
+      const itemAmountAbsoluto = (item.amount ?? new Decimal(0)).abs();
 
       // Calcula la participación.
       // Evitamos la división por cero y usamos el total absoluto.
@@ -324,7 +324,7 @@ export class ReportPrismaRepository implements IReportRepository {
 
       return {
         ...item,
-        amount: item.amount.abs(),
+        amount: (item.amount ?? new Decimal(0)).abs(),
         // Asegúrate de que `participation` sea un tipo `Decimal` o conviértelo a `string`
         participation: participation.toFixed(1),
       };
@@ -335,7 +335,7 @@ export class ReportPrismaRepository implements IReportRepository {
   public async dailyIncome(
     params: ReportParams
   ): Promise<Report | ErrorMessage> {
-    const report = await prisma.dailyIncomeView.findMany({
+    const report = await prisma.vw_dailyincome.findMany({
       where: {
         datePurchase: params.date,
         badgeId: params.badgeId,
@@ -353,14 +353,14 @@ export class ReportPrismaRepository implements IReportRepository {
     // 1. Total de gastos (usando el valor absoluto para la participación)
     // Se inicializa con un objeto Decimal para mantener la precisión
     const totalAbsoluto = report.reduce(
-      (sum, item) => sum.plus(item.amount.abs()), // <-- Usamos .abs() para sumar el valor absoluto
+      (sum, item) => sum.plus((item.amount ?? new Decimal(0)).abs()), // <-- Usamos .abs() para sumar el valor absoluto
       new Decimal(0)
     );
 
     // 2. Agregar % de participación
     const reportWithPercentage = report.map((item) => {
       // Asegúrate de que los cálculos se hacen con Decimal
-      const itemAmountAbsoluto = item.amount.abs();
+      const itemAmountAbsoluto = (item.amount ?? new Decimal(0)).abs();
 
       // Calcula la participación.
       // Evitamos la división por cero y usamos el total absoluto.
@@ -370,7 +370,7 @@ export class ReportPrismaRepository implements IReportRepository {
 
       return {
         ...item,
-        amount: item.amount.abs(),
+        amount: (item.amount ?? new Decimal(0)).abs(),
         // Asegúrate de que `participation` sea un tipo `Decimal` o conviértelo a `string`
         participation: participation.toFixed(1),
       };

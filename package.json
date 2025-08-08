@@ -8,7 +8,7 @@
     "dev": "nodemon",
     "build": "tsc && tsc-alias",
     "migrate": "prisma db pull",
-    "prisma": "npm run migrate && prisma generate",
+    "prisma": "prisma generate",
     "start": "node -r tsconfig-paths/register dist/src/index.js",
     "deploy:prod": "npm run prisma && npm run build && pm2 describe fiona-backend > /dev/null && pm2 restart fiona-backend || pm2 start --name fiona-backend --watch --node-args='-r tsconfig-paths/register' dist/src/index.js && pm2 save"
   },

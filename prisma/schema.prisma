@@ -108,6 +108,8 @@ model Badge {
   createdAt   DateTime     @default(now())
   updatedAt   DateTime     @updatedAt
   code        String
+  symbol      String?      @default("$") @db.VarChar(5)
+  flag        String?      @db.VarChar(50)
   accounts    Account[]
   budgets     Budget[]
   heritages   Heritage[]
@@ -343,4 +345,40 @@ view vw_yearlyincome {
   year     Int?
   badgeId  String
   userId   String
+}
+
+view vw_accountbalances {
+  userId        String
+  accountId     String
+  name          String
+  code          String
+  flag          String?  @db.VarChar(50)
+  symbol        String?  @default("$") @db.VarChar(5)
+  totalAmount   Decimal?
+  yearlyAmount  Decimal  @default(0.000000000000000000000000000000)
+  monthlyAmount Decimal  @default(0.000000000000000000000000000000)
+}
+
+view vw_genneralbalances {
+  badgeId String
+  code    String
+  flag    String?  @db.VarChar(50)
+  symbol  String?  @default("$") @db.VarChar(5)
+  amount  Decimal?
+  userId  String
+}
+
+view vw_monthlycategorystats {
+  userId            String
+  categoryId        String
+  categoryName      String
+  code              String
+  flag              String?  @db.VarChar(50)
+  symbol            String?  @default("$") @db.VarChar(5)
+  avgMonthlyIncome  Decimal? @db.Decimal(41, 6)
+  incomeLowerLimit  Float?
+  incomeUpperLimit  Float?
+  avgMonthlyExpense Decimal? @db.Decimal(41, 6)
+  expenseLowerLimit Float?
+  expenseUpperLimit Float?
 }

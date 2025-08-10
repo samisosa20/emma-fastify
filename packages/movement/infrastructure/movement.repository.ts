@@ -167,7 +167,6 @@ export class MovementPrismaRepository implements IMovementRepository {
 
       return newMovement;
     } catch (error: any) {
-      console.log(error);
       throw Object.assign(new Error("Validation Error"), {
         statusCode: 400,
         error: "Bad Request",
@@ -187,12 +186,16 @@ export class MovementPrismaRepository implements IMovementRepository {
         },
         include: {
           event: true,
-          account: true,
+          account: {
+            include: {
+              badge: true,
+            },
+          },
           category: true,
           investment: true,
         },
         orderBy: {
-          createdAt: "desc",
+          datePurchase: "desc",
         },
       })
       .withPages({
@@ -614,9 +617,6 @@ export class MovementPrismaRepository implements IMovementRepository {
         });
         if (move) {
           count++;
-        }
-        if (movement.transfer_out && !transferInId) {
-          console.log(move.id);
         }
       }
       return {

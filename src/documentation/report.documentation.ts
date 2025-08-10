@@ -8,9 +8,48 @@ export const reportObjectSchema: SchemaDefault[] = [
   { name: "participation", type: "number", body: false, private: false },
   { name: "color", type: "string", body: false, private: false },
   { name: "icon", type: "string", body: false, private: false },
+  { name: "symbol", type: "string", body: false, private: false },
+  { name: "flag", type: "string", body: false, private: false },
+];
+
+export const generalReportBalanceObjectSchema: SchemaDefault[] = [
+  { name: "code", type: "string", body: false, private: false },
+  { name: "symbol", type: "string", body: false, private: false },
+  { name: "flag", type: "string", body: false, private: false },
+  { name: "amount", type: "number", body: false, private: false },
+];
+
+export const accountReportBalanceObjectSchema: SchemaDefault[] = [
+  { name: "code", type: "string", body: false, private: false },
+  { name: "symbol", type: "string", body: false, private: false },
+  { name: "flag", type: "string", body: false, private: false },
+  { name: "yearlyAmount", type: "number", body: false, private: false },
+  { name: "monthlyAmount", type: "number", body: false, private: false },
+  { name: "totalAmount", type: "number", body: false, private: false },
+];
+
+export const categoryReportStatsObjectSchema: SchemaDefault[] = [
+  { name: "code", type: "string", body: false, private: false },
+  { name: "symbol", type: "string", body: false, private: false },
+  { name: "flag", type: "string", body: false, private: false },
+  { name: "avgMonthlyIncome", type: "number", body: false, private: false },
+  { name: "incomeLowerLimit", type: "number", body: false, private: false },
+  { name: "incomeUpperLimit", type: "number", body: false, private: false },
+  { name: "avgMonthlyExpense", type: "number", body: false, private: false },
+  { name: "expenseLowerLimit", type: "number", body: false, private: false },
+  { name: "expenseUpperLimit", type: "number", body: false, private: false },
 ];
 
 const reportResponseSchema = defaultSuccesResponse(reportObjectSchema);
+const accountReportBalanceSchema = defaultSuccesResponse(
+  accountReportBalanceObjectSchema
+);
+const generalReportBalanceSchema = defaultSuccesResponse(
+  generalReportBalanceObjectSchema
+);
+const categoryReportStatsSchema = defaultSuccesResponse(
+  categoryReportStatsObjectSchema
+);
 
 export const movementReportDocumentation: FastifySchema = {
   description: "Reporte de movimientos por periodo",
@@ -61,6 +100,57 @@ export const movementReportDocumentation: FastifySchema = {
     200: {
       type: "array",
       items: reportResponseSchema,
+    },
+    ...errorDocumentation,
+  },
+};
+export const accountReportBalanceDocumentation: FastifySchema = {
+  description: "Balance de una cuenta",
+  tags: ["Report"],
+  params: {
+    type: "object",
+    required: ["id"],
+    properties: {
+      id: {
+        type: "string",
+        description: "Id de la cuenta",
+      },
+    },
+  },
+  response: {
+    200: accountReportBalanceSchema,
+    ...errorDocumentation,
+  },
+};
+export const generalReportBalanceDocumentation: FastifySchema = {
+  description: "Balance general del usuario",
+  tags: ["Report"],
+  response: {
+    200: {
+      type: "array",
+      items: generalReportBalanceSchema,
+    },
+    ...errorDocumentation,
+  },
+};
+export const categoryReportDocumentation: FastifySchema = {
+  description:
+    "Reporte para obtener el promedio y los limites de una categoria",
+  tags: ["Report"],
+  params: {
+    type: "object",
+    required: ["id"],
+    properties: {
+      id: {
+        type: "string",
+        description: "Id de la category",
+      },
+    },
+  },
+  response: {
+    200: {
+      type: "array",
+      items: categoryReportStatsSchema,
     },
     ...errorDocumentation,
   },

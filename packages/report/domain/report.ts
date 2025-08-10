@@ -8,8 +8,32 @@ export type Report = {
 export type ReportParams = {
   weekNumber?: number;
   year?: number;
-  badgeId: string;
-  userId: string;
+  badgeId?: string;
+  userId?: string;
   date?: string;
   month?: number;
+  accountId?: string;
+  categoryId?: string;
 };
+
+export type ReportBalance = {
+  code: string;
+  amount: Decimal | number | null;
+}[];
+
+export type ReportAccountBalance = {
+  code: string;
+  yearlyAmount: Decimal | number | null;
+  monthlyAmount: Decimal | number | null;
+  totalAmount: Decimal | number | null;
+};
+
+export type ReportCategoryStats = {
+  code: string;
+  avgMonthlyIncome: Decimal | number | null;
+  incomeLowerLimit: Decimal | number | null;
+  incomeUpperLimit: Decimal | number | null;
+  avgMonthlyExpense: Decimal | number | null;
+  expenseLowerLimit: Decimal | number | null;
+  expenseUpperLimit: Decimal | number | null;
+}[];

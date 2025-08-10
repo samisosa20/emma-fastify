@@ -57,7 +57,7 @@ const movementObjectSchema: SchemaDefault[] = [
     type: "object",
     body: false,
     private: false,
-    properties: getProperties(accountObjectSchema),
+    properties: getProperties(accountObjectSchema, 1),
   },
   {
     name: "eventId",

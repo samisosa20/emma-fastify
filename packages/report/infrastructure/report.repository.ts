@@ -1,4 +1,10 @@
-import { Report, ReportParams } from "../domain/report";
+import {
+  Report,
+  ReportAccountBalance,
+  ReportBalance,
+  ReportCategoryStats,
+  ReportParams,
+} from "../domain/report";
 import { IReportRepository } from "../domain/interfaces/report.interfaces";
 
 import prisma from "packages/shared/settings/prisma.client";
@@ -16,13 +22,13 @@ export class ReportPrismaRepository implements IReportRepository {
         badgeId: params.badgeId,
         userId: params.userId,
       },
-      select: {
-        category: true,
-        amount: true,
-        icon: true,
-        color: true,
-      },
       orderBy: [{ year: "desc" }, { weekNumber: "desc" }, { amount: "asc" }],
+    });
+
+    const badge = await prisma.badge.findFirst({
+      where: {
+        id: params.badgeId,
+      },
     });
 
     // 1. Total de gastos (usando el valor absoluto para la participación)
@@ -48,6 +54,9 @@ export class ReportPrismaRepository implements IReportRepository {
         amount: (item.amount ?? new Decimal(0)).abs(),
         // Asegúrate de que `participation` sea un tipo `Decimal` o conviértelo a `string`
         participation: participation.toFixed(1),
+        code: badge?.code,
+        symbol: badge?.symbol,
+        flag: badge?.flag,
       };
     });
 
@@ -63,13 +72,13 @@ export class ReportPrismaRepository implements IReportRepository {
         badgeId: params.badgeId,
         userId: params.userId,
       },
-      select: {
-        category: true,
-        amount: true,
-        icon: true,
-        color: true,
-      },
       orderBy: [{ year: "desc" }, { weekNumber: "desc" }, { amount: "desc" }],
+    });
+
+    const badge = await prisma.badge.findFirst({
+      where: {
+        id: params.badgeId,
+      },
     });
 
     // 1. Total de gastos (usando el valor absoluto para la participación)
@@ -95,6 +104,9 @@ export class ReportPrismaRepository implements IReportRepository {
         amount: (item.amount ?? new Decimal(0)).abs(),
         // Asegúrate de que `participation` sea un tipo `Decimal` o conviértelo a `string`
         participation: participation.toFixed(1),
+        code: badge?.code,
+        symbol: badge?.symbol,
+        flag: badge?.flag,
       };
     });
 
@@ -110,13 +122,13 @@ export class ReportPrismaRepository implements IReportRepository {
         badgeId: params.badgeId,
         userId: params.userId,
       },
-      select: {
-        category: true,
-        amount: true,
-        icon: true,
-        color: true,
-      },
       orderBy: [{ year: "desc" }, { month: "desc" }, { amount: "asc" }],
+    });
+
+    const badge = await prisma.badge.findFirst({
+      where: {
+        id: params.badgeId,
+      },
     });
 
     // 1. Total de gastos (usando el valor absoluto para la participación)
@@ -142,6 +154,9 @@ export class ReportPrismaRepository implements IReportRepository {
         amount: (item.amount ?? new Decimal(0)).abs(),
         // Asegúrate de que `participation` sea un tipo `Decimal` o conviértelo a `string`
         participation: participation.toFixed(1),
+        code: badge?.code,
+        symbol: badge?.symbol,
+        flag: badge?.flag,
       };
     });
 
@@ -157,13 +172,13 @@ export class ReportPrismaRepository implements IReportRepository {
         badgeId: params.badgeId,
         userId: params.userId,
       },
-      select: {
-        category: true,
-        amount: true,
-        icon: true,
-        color: true,
-      },
       orderBy: [{ year: "desc" }, { month: "desc" }, { amount: "desc" }],
+    });
+
+    const badge = await prisma.badge.findFirst({
+      where: {
+        id: params.badgeId,
+      },
     });
 
     // 1. Total de gastos (usando el valor absoluto para la participación)
@@ -189,6 +204,9 @@ export class ReportPrismaRepository implements IReportRepository {
         amount: (item.amount ?? new Decimal(0)).abs(),
         // Asegúrate de que `participation` sea un tipo `Decimal` o conviértelo a `string`
         participation: participation.toFixed(1),
+        code: badge?.code,
+        symbol: badge?.symbol,
+        flag: badge?.flag,
       };
     });
 
@@ -203,13 +221,13 @@ export class ReportPrismaRepository implements IReportRepository {
         badgeId: params.badgeId,
         userId: params.userId,
       },
-      select: {
-        category: true,
-        amount: true,
-        icon: true,
-        color: true,
-      },
       orderBy: [{ year: "desc" }, { amount: "asc" }],
+    });
+
+    const badge = await prisma.badge.findFirst({
+      where: {
+        id: params.badgeId,
+      },
     });
 
     // 1. Total de gastos (usando el valor absoluto para la participación)
@@ -235,6 +253,9 @@ export class ReportPrismaRepository implements IReportRepository {
         amount: (item.amount ?? new Decimal(0)).abs(),
         // Asegúrate de que `participation` sea un tipo `Decimal` o conviértelo a `string`
         participation: participation.toFixed(1),
+        code: badge?.code,
+        symbol: badge?.symbol,
+        flag: badge?.flag,
       };
     });
 
@@ -249,13 +270,13 @@ export class ReportPrismaRepository implements IReportRepository {
         badgeId: params.badgeId,
         userId: params.userId,
       },
-      select: {
-        category: true,
-        amount: true,
-        icon: true,
-        color: true,
-      },
       orderBy: [{ year: "desc" }, { amount: "desc" }],
+    });
+
+    const badge = await prisma.badge.findFirst({
+      where: {
+        id: params.badgeId,
+      },
     });
 
     // 1. Total de gastos (usando el valor absoluto para la participación)
@@ -281,6 +302,9 @@ export class ReportPrismaRepository implements IReportRepository {
         amount: (item.amount ?? new Decimal(0)).abs(),
         // Asegúrate de que `participation` sea un tipo `Decimal` o conviértelo a `string`
         participation: participation.toFixed(1),
+        code: badge?.code,
+        symbol: badge?.symbol,
+        flag: badge?.flag,
       };
     });
 
@@ -295,13 +319,13 @@ export class ReportPrismaRepository implements IReportRepository {
         badgeId: params.badgeId,
         userId: params.userId,
       },
-      select: {
-        category: true,
-        amount: true,
-        icon: true,
-        color: true,
-      },
       orderBy: [{ amount: "asc" }],
+    });
+
+    const badge = await prisma.badge.findFirst({
+      where: {
+        id: params.badgeId,
+      },
     });
 
     // 1. Total de gastos (usando el valor absoluto para la participación)
@@ -327,6 +351,9 @@ export class ReportPrismaRepository implements IReportRepository {
         amount: (item.amount ?? new Decimal(0)).abs(),
         // Asegúrate de que `participation` sea un tipo `Decimal` o conviértelo a `string`
         participation: participation.toFixed(1),
+        code: badge?.code,
+        symbol: badge?.symbol,
+        flag: badge?.flag,
       };
     });
 
@@ -341,13 +368,13 @@ export class ReportPrismaRepository implements IReportRepository {
         badgeId: params.badgeId,
         userId: params.userId,
       },
-      select: {
-        category: true,
-        amount: true,
-        icon: true,
-        color: true,
-      },
       orderBy: [{ amount: "desc" }],
+    });
+
+    const badge = await prisma.badge.findFirst({
+      where: {
+        id: params.badgeId,
+      },
     });
 
     // 1. Total de gastos (usando el valor absoluto para la participación)
@@ -373,9 +400,56 @@ export class ReportPrismaRepository implements IReportRepository {
         amount: (item.amount ?? new Decimal(0)).abs(),
         // Asegúrate de que `participation` sea un tipo `Decimal` o conviértelo a `string`
         participation: participation.toFixed(1),
+        code: badge?.code,
+        symbol: badge?.symbol,
+        flag: badge?.flag,
       };
     });
 
     return reportWithPercentage;
+  }
+  public async reportBalance(
+    params: ReportParams
+  ): Promise<ReportBalance | ErrorMessage> {
+    const report = await prisma.vw_genneralbalances.findMany({
+      where: {
+        userId: params.userId,
+      },
+    });
+
+    return report;
+  }
+  public async reportAccountBalance(
+    params: ReportParams
+  ): Promise<ReportAccountBalance | ErrorMessage> {
+    const { accountId, userId } = params;
+    const reportAccount = {
+      code: "",
+      yearlyAmount: 0,
+      totalAmount: 0,
+      monthlyAmount: 0,
+      symbol: "",
+      flag: "",
+    };
+    const report = await prisma.vw_accountbalances.findFirst({
+      where: {
+        accountId,
+        userId,
+      },
+    });
+
+    return report ?? reportAccount;
+  }
+  public async reportCategoryStats(
+    params: ReportParams
+  ): Promise<ReportCategoryStats | ErrorMessage> {
+    const report = await prisma.vw_monthlycategorystats.findMany({
+      where: {
+        categoryId: params.categoryId,
+        userId: params.userId,
+      },
+    });
+
+    return report;
   }
 }

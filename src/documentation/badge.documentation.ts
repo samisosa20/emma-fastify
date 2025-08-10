@@ -13,6 +13,13 @@ export const badgeObjectSchema: SchemaDefault[] = [
   { name: "id", type: "string", body: false, private: false },
   { name: "code", type: "string", body: ["create", "update"], private: false },
   { name: "name", type: "string", body: ["create", "update"], private: false },
+  { name: "flag", type: "string", body: ["create", "update"], private: false },
+  {
+    name: "symbol",
+    type: "string",
+    body: ["create", "update"],
+    private: false,
+  },
   { name: "createdAt", type: "string", body: false, private: false },
   { name: "updatedAt", type: "string", body: false, private: false },
 ];

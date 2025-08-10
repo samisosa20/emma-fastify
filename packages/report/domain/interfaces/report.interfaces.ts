@@ -1,5 +1,11 @@
 import { ErrorMessage } from "packages/shared";
-import { Report, ReportParams } from "../report";
+import {
+  Report,
+  ReportAccountBalance,
+  ReportBalance,
+  ReportCategoryStats,
+  ReportParams,
+} from "../report";
 
 export interface IReportRepository {
   weeklyExpensive(params: ReportParams): Promise<Report | ErrorMessage>;
@@ -10,4 +16,11 @@ export interface IReportRepository {
   yearlyIncome(params: ReportParams): Promise<Report | ErrorMessage>;
   dailyExpensive(params: ReportParams): Promise<Report | ErrorMessage>;
   dailyIncome(params: ReportParams): Promise<Report | ErrorMessage>;
+  reportBalance(params: ReportParams): Promise<ReportBalance | ErrorMessage>;
+  reportAccountBalance(
+    params: ReportParams
+  ): Promise<ReportAccountBalance | ErrorMessage>;
+  reportCategoryStats(
+    params: ReportParams
+  ): Promise<ReportCategoryStats | ErrorMessage>;
 }

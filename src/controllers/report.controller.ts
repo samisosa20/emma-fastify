@@ -65,4 +65,53 @@ export class ReportController {
       return reply.status(500).send({ error: "Error generating report" });
     }
   };
+  reportBalance = async (request: FastifyRequest, reply: FastifyReply) => {
+    try {
+      const user = request.user;
+      const result = await reportUseCase.reportBalance({
+        userId: user.id,
+      });
+
+      return reply.send(result);
+    } catch (err) {
+      console.error(err);
+      return reply.status(500).send({ error: "Error generating report" });
+    }
+  };
+  reportAccountBalance = async (
+    request: FastifyRequest,
+    reply: FastifyReply
+  ) => {
+    try {
+      const { id } = request.params as { id: string };
+      const user = request.user;
+      const result = await reportUseCase.reportAccountBalance({
+        userId: user.id,
+        accountId: id,
+      });
+
+      return reply.send(result);
+    } catch (err) {
+      console.error(err);
+      return reply.status(500).send({ error: "Error generating report" });
+    }
+  };
+  reportCategoryStats = async (
+    request: FastifyRequest,
+    reply: FastifyReply
+  ) => {
+    try {
+      const { id } = request.params as { id: string };
+      const user = request.user;
+      const result = await reportUseCase.reportCategoryStats({
+        userId: user.id,
+        categoryId: id,
+      });
+
+      return reply.send(result);
+    } catch (err) {
+      console.error(err);
+      return reply.status(500).send({ error: "Error generating report" });
+    }
+  };
 }

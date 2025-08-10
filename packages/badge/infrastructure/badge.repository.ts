@@ -198,6 +198,8 @@ export class BadgePrismaRepository implements IBadgeRepository {
         .map((currency) => ({
           name: currency.name,
           code: currency.code,
+          symbol: "",
+          flag: "",
         }));
 
       const result = await prisma.badge.createMany({

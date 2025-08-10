@@ -1,6 +1,12 @@
 import { ErrorMessage } from "packages/shared";
 import { IReportRepository } from "../domain/interfaces/report.interfaces";
-import { Report, ReportParams } from "../domain/report";
+import {
+  Report,
+  ReportAccountBalance,
+  ReportBalance,
+  ReportCategoryStats,
+  ReportParams,
+} from "../domain/report";
 
 export class ReportUseCase {
   private reportRepository: IReportRepository;
@@ -38,5 +44,23 @@ export class ReportUseCase {
 
   async dailyIncome(params: ReportParams): Promise<Report | ErrorMessage> {
     return this.reportRepository.dailyIncome(params);
+  }
+
+  async reportBalance(
+    params: ReportParams
+  ): Promise<ReportBalance | ErrorMessage> {
+    return this.reportRepository.reportBalance(params);
+  }
+
+  async reportAccountBalance(
+    params: ReportParams
+  ): Promise<ReportAccountBalance | ErrorMessage> {
+    return this.reportRepository.reportAccountBalance(params);
+  }
+
+  async reportCategoryStats(
+    params: ReportParams
+  ): Promise<ReportCategoryStats | ErrorMessage> {
+    return this.reportRepository.reportCategoryStats(params);
   }
 }

@@ -17,7 +17,10 @@ export class EventPrismaRepository implements IEventRepository {
   public async addEvent(data: CreateEvent): Promise<Event | ErrorMessage> {
     try {
       const newEvent = await prisma.event.create({
-        data,
+        data: {
+          ...data,
+          endEvent: new Date(data.endEvent),
+        },
       });
       return newEvent;
     } catch (error: any) {
@@ -32,9 +35,48 @@ export class EventPrismaRepository implements IEventRepository {
   public async listEvent(
     params: CommonParamsPaginate
   ): Promise<{ content: Event[]; meta: Paginate }> {
-    const { deleted, size, page } = params;
-    const [content, meta] = await prisma.event
-      .paginate({
+    const { size, page: pageParam } = params;
+
+    const shouldPaginate = pageParam && Number(pageParam) > 0;
+
+    let rawContent: (Event & { movements: any[] })[];
+    let metaResult: Paginate;
+
+    if (shouldPaginate) {
+      const currentPage = Number(pageParam);
+      const effectiveSize = size && Number(size) > 0 ? Number(size) : 10;
+
+      const [content, metaFromPrisma] = await prisma.event
+        .paginate({
+          include: {
+            movements: {
+              select: {
+                amount: true,
+                account: {
+                  select: {
+                    badge: {
+                      select: {
+                        code: true,
+                        flag: true,
+                        symbol: true,
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        })
+        .withPages({
+          limit: effectiveSize,
+          page: currentPage,
+        });
+
+      rawContent = content as (Event & { movements: any[] })[];
+
+      metaResult = metaFromPrisma;
+    } else {
+      rawContent = (await prisma.event.findMany({
         include: {
           movements: {
             select: {
@@ -44,6 +86,8 @@ export class EventPrismaRepository implements IEventRepository {
                   badge: {
                     select: {
                       code: true,
+                      flag: true,
+                      symbol: true,
                     },
                   },
                 },
@@ -51,35 +95,58 @@ export class EventPrismaRepository implements IEventRepository {
             },
           },
         },
-      })
-      .withPages({
-        limit: size ? Number(size) : 10,
-        page: page && page > 0 ? Number(page) : 1,
-      });
+      })) as (Event & { movements: any[] })[];
 
-    const contentWithBalances = content.map((event) => {
-      const balancesMap = new Map<string, number>();
+      const totalCount = rawContent.length;
+      const meta: Paginate = {
+        isFirstPage: totalCount > 0,
+        isLastPage: totalCount > 0,
+        currentPage: totalCount > 0 ? 1 : 0,
+        previousPage: null,
+        nextPage: null,
+        pageCount: totalCount > 0 ? 1 : 0,
+        totalCount: totalCount,
+      };
+
+      metaResult = meta;
+    }
+
+    const contentWithBalances = rawContent.map((event) => {
+      // 💡 Corrección: El valor del Map debe ser un objeto para guardar varias propiedades.
+      const balancesMap = new Map();
 
       event.movements.forEach((movement) => {
-        const amount = movement.amount
-          ? movement.amount.toNumber()
-          : Number(movement.amount || 0);
+        // 💡 Mejora: Simplificación en la obtención del monto.
+        const amount = movement.amount?.toNumber() ?? 0;
 
-        const badgeName = movement.account?.badge?.code;
+        const code = movement.account?.badge?.code;
+        const symbol = String(movement.account?.badge?.symbol);
+        const flag = String(movement.account?.badge?.flag);
 
-        if (badgeName) {
-          const currentBalance = balancesMap.get(badgeName) || 0;
-          balancesMap.set(badgeName, currentBalance + amount);
+        if (code) {
+          // 💡 Corrección: Obtener el objeto de balance actual o crear uno nuevo.
+          // El valor del Map es un objeto, no un número.
+          const currentBalanceData = balancesMap.get(code) || {
+            symbol: symbol,
+            flag: flag,
+            balance: 0,
+          };
+
+          // 💡 Corrección: Actualizar la propiedad `balance` del objeto y volver a guardarlo.
+          currentBalanceData.balance += amount;
+          balancesMap.set(code, currentBalanceData);
         }
       });
 
-      const balances: { badge: string; balance: number }[] = Array.from(
-        balancesMap,
-        ([badge, decimalBalance]) => ({
-          badge,
-          balance: parseFloat(decimalBalance.toFixed(2)),
-        })
-      );
+      // 💡 Corrección: Iterar sobre el Map. La función de mapeo ahora recibe
+      // la clave (code) y el valor (data, que es el objeto).
+      const balances = Array.from(balancesMap, ([code, data]) => ({
+        code,
+        symbol: data.symbol,
+        flag: data.flag,
+        // Usamos el balance del objeto.
+        balance: parseFloat(data.balance.toFixed(2)),
+      }));
 
       const { movements, ...restOfEvent } = event;
 
@@ -88,7 +155,7 @@ export class EventPrismaRepository implements IEventRepository {
 
     return {
       content: contentWithBalances,
-      meta,
+      meta: metaResult,
     };
   }
 
@@ -101,7 +168,10 @@ export class EventPrismaRepository implements IEventRepository {
         where: {
           id,
         },
-        data,
+        data: {
+          ...data,
+          ...(data.endEvent && { endEvent: new Date(data.endEvent) }),
+        },
       });
       return updatedEvent;
     } catch (error: any) {
@@ -129,6 +199,8 @@ export class EventPrismaRepository implements IEventRepository {
                   badge: {
                     select: {
                       code: true,
+                      flag: true,
+                      symbol: true,
                     },
                   },
                 },
@@ -136,6 +208,8 @@ export class EventPrismaRepository implements IEventRepository {
               category: {
                 select: {
                   name: true,
+                  color: true,
+                  icon: true,
                 },
               },
             },
@@ -154,7 +228,12 @@ export class EventPrismaRepository implements IEventRepository {
       }
       const groupedByBadge = new Map<
         string,
-        { total_amount: Decimal; categories: Map<string, Decimal> }
+        {
+          symbol: string;
+          flag: string;
+          total_amount: Decimal;
+          categories: Map<string, Decimal>;
+        }
       >();
 
       for (const movement of movements) {
@@ -165,6 +244,8 @@ export class EventPrismaRepository implements IEventRepository {
         if (badgeCode && categoryName) {
           if (!groupedByBadge.has(badgeCode)) {
             groupedByBadge.set(badgeCode, {
+              symbol: String(movement.account?.badge?.symbol),
+              flag: String(movement.account?.badge?.flag),
               total_amount: new Decimal(0),
               categories: new Map<string, Decimal>(),
             });
@@ -202,7 +283,9 @@ export class EventPrismaRepository implements IEventRepository {
           );
 
           return {
-            badge: badgeCode,
+            code: badgeCode,
+            flag: data.flag,
+            symbol: data.symbol,
             categories: categoriesList,
           };
         }

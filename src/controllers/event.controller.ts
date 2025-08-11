@@ -26,7 +26,7 @@ export class EventController {
     const dataEvent = request.body as CreateEvent;
 
     try {
-      return eventUseCase.addEvent(dataEvent);
+      return eventUseCase.addEvent({ ...dataEvent, userId: request.user.id });
     } catch (error: any) {
       const detail = formatErrorMessage(error);
       return reply.status(400).send({

@@ -31,7 +31,9 @@ const eventBalancesObjectSchema: SchemaDefault[] = [
     items: {
       type: "object",
       properties: {
-        badge: { type: "string" },
+        code: { type: "string" },
+        flag: { type: "string" },
+        symbol: { type: "string" },
         balance: { type: "number" },
       },
     },
@@ -54,6 +56,8 @@ const eventDetailObjectSchema: SchemaDefault[] = [
           type: "object",
           properties: {
             name: { type: "string" },
+            color: { type: "string" },
+            icon: { type: "string" },
           },
         },
         account: {
@@ -79,7 +83,9 @@ const eventDetailObjectSchema: SchemaDefault[] = [
     items: {
       type: "object",
       properties: {
-        badge: { type: "string" },
+        code: { type: "string" },
+        flag: { type: "string" },
+        symbol: { type: "string" },
         categories: {
           type: "array",
           items: {

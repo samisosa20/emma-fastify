@@ -12,4 +12,18 @@ export type Heritage = {
   updatedAt: Date;
 };
 
+export type HeritageReport = {
+  year: number | null;
+  code: string | null;
+  flag: string | null;
+  symbol: string | null;
+  amount: Decimal | number;
+  userId: string;
+};
+
+export type ParamsHeritage = {
+  year?: number;
+  userId?: string;
+};
+
 export type CreateHeritage = Omit<Heritage, "id" | "createdAt" | "updatedAt">;

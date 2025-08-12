@@ -1,4 +1,9 @@
-import { Heritage, CreateHeritage } from "../domain/heritage";
+import {
+  Heritage,
+  CreateHeritage,
+  HeritageReport,
+  ParamsHeritage,
+} from "../domain/heritage";
 import { IHeritageRepository } from "../domain/interfaces/heritage.interfaces";
 
 import prisma from "packages/shared/settings/prisma.client";
@@ -50,16 +55,10 @@ export class HeritagePrismaRepository implements IHeritageRepository {
     params: CommonParamsPaginate
   ): Promise<{ content: Heritage[]; meta: Paginate }> {
     const { deleted, size, page } = params;
-    const [content, meta] = await prisma.heritage
-      .paginate({
-        where: {
-          OR: handleShowDeleteData(deleted === "1"),
-        },
-      })
-      .withPages({
-        limit: size ? Number(size) : 10,
-        page: page && page > 0 ? Number(page) : 1,
-      });
+    const [content, meta] = await prisma.heritage.paginate({}).withPages({
+      limit: size ? Number(size) : 10,
+      page: page && page > 0 ? Number(page) : 1,
+    });
 
     return {
       content,
@@ -251,5 +250,41 @@ export class HeritagePrismaRepository implements IHeritageRepository {
         }
       );
     }
+  }
+
+  public async yearHeritage(
+    params: ParamsHeritage
+  ): Promise<HeritageReport[] | null> {
+    const { year, userId } = params;
+    const heritage = await prisma.vw_heritagebyyear.findMany({
+      where: {
+        year,
+        userId,
+      },
+    });
+    const heritageMap = new Map();
+
+    heritage.forEach((item) => {
+      const { year, userId, code, flag, symbol, amount } = item;
+
+      if (!heritageMap.has(year)) {
+        heritageMap.set(year, {
+          year,
+          userId,
+          balances: [],
+        });
+      }
+
+      const currentYearEntry = heritageMap.get(year);
+      currentYearEntry.balances.push({
+        code,
+        flag,
+        symbol,
+        amount,
+      });
+    });
+
+    const finalHeritageReport = Array.from(heritageMap.values());
+    return finalHeritageReport;
   }
 }

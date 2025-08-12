@@ -5,6 +5,7 @@ import {
   getHeritageDocumentation,
   updateHeritageDocumentation,
   listHeritagesDocumentation,
+  yearHeritageDocumentation,
 } from "src/documentation";
 import { FastifyPluginAsync } from "fastify";
 
@@ -67,6 +68,15 @@ const heritagesRoutes: FastifyPluginAsync = async (fastify) => {
       preHandler: [fastify.authenticate],
     },
     heritageController.importHeritages
+  );
+
+  fastify.get(
+    "/year",
+    {
+      preHandler: [fastify.authenticate],
+      schema: yearHeritageDocumentation,
+    },
+    heritageController.yearHeritage
   );
 };
 

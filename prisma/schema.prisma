@@ -382,3 +382,12 @@ view vw_monthlycategorystats {
   expenseLowerLimit Float?
   expenseUpperLimit Float?
 }
+
+view vw_heritagebyyear {
+  year   Int?
+  code   String
+  flag   String? @db.VarChar(50)
+  symbol String? @default("$") @db.VarChar(5)
+  amount Decimal @default(0.00) @db.Decimal(60, 2)
+  userId String  @default("")
+}

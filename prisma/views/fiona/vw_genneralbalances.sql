@@ -20,17 +20,6 @@ WITH `totalbalance` AS (
       )
       JOIN `fiona`.`badge` `b` ON((`a`.`badgeId` = `b`.`id`))
     )
-  WHERE
-    (
-      (
-        (`m`.`trm` = 1)
-        AND (`gc`.`name` <> 'Transferencia')
-      )
-      OR (
-        (`m`.`trm` <> 1)
-        AND (`gc`.`name` = 'Transferencia')
-      )
-    )
   GROUP BY
     `a`.`badgeId`,
     `m`.`userId`

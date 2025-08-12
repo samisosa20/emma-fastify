@@ -1,44 +1,55 @@
 import { CommonParamsPaginate, ErrorMessage, Paginate } from "packages/shared";
 import { IHeritageRepository } from "../domain/interfaces/heritage.interfaces";
-import { Heritage, CreateHeritage } from "../domain/heritage";
+import {
+  Heritage,
+  CreateHeritage,
+  ParamsHeritage,
+  HeritageReport,
+} from "../domain/heritage";
 
 export class HeritageUseCase {
-  private badgeRepository: IHeritageRepository;
+  private heritageRepository: IHeritageRepository;
 
-  constructor(_badgeAdapter: IHeritageRepository) {
-    this.badgeRepository = _badgeAdapter;
+  constructor(_heritageAdapter: IHeritageRepository) {
+    this.heritageRepository = _heritageAdapter;
   }
 
   public async addHeritage(
     data: CreateHeritage
   ): Promise<Heritage | ErrorMessage> {
-    return await this.badgeRepository.addHeritage(data);
+    return await this.heritageRepository.addHeritage(data);
   }
 
   public async listHeritage(
     params: CommonParamsPaginate
   ): Promise<{ content: Heritage[]; meta: Paginate }> {
-    return await this.badgeRepository.listHeritage(params);
+    return await this.heritageRepository.listHeritage(params);
   }
 
   public async updateHeritage(
     id: string,
-    badge: Partial<CreateHeritage>
+    heritage: Partial<CreateHeritage>
   ): Promise<Heritage | ErrorMessage> {
-    return await this.badgeRepository.updateHeritage(id, badge);
+    return await this.heritageRepository.updateHeritage(id, heritage);
   }
 
   public async detailHeritage(id: string): Promise<Heritage | null> {
-    return await this.badgeRepository.detailHeritage(id);
+    return await this.heritageRepository.detailHeritage(id);
   }
 
   public async deleteHeritage(id: string): Promise<Heritage | null> {
-    return await this.badgeRepository.deleteHeritage(id);
+    return await this.heritageRepository.deleteHeritage(id);
   }
 
   public async importHeritages(): Promise<{
     heritageCount: number;
   }> {
-    return await this.badgeRepository.importHeritages();
+    return await this.heritageRepository.importHeritages();
+  }
+
+  public async yearHeritage(
+    params: ParamsHeritage
+  ): Promise<HeritageReport[] | null> {
+    return await this.heritageRepository.yearHeritage(params);
   }
 }

@@ -39,6 +39,8 @@ WITH `monthlystats` AS (
     `c`.`id`,
     `c`.`name`,
     `b`.`code`,
+    `b`.`flag`,
+    `b`.`symbol`,
     `month`
 )
 SELECT
@@ -68,4 +70,6 @@ GROUP BY
   `ms`.`userId`,
   `ms`.`categoryId`,
   `ms`.`categoryName`,
-  `ms`.`code`
+  `ms`.`code`,
+  `ms`.`flag`,
+  `ms`.`symbol`

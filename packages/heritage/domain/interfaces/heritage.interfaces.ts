@@ -1,5 +1,10 @@
 import { CommonParamsPaginate, ErrorMessage, Paginate } from "packages/shared";
-import { Heritage, CreateHeritage } from "../heritage";
+import {
+  Heritage,
+  CreateHeritage,
+  HeritageReport,
+  ParamsHeritage,
+} from "../heritage";
 
 export interface IHeritageRepository {
   addHeritage(data: CreateHeritage): Promise<Heritage | ErrorMessage>;
@@ -15,4 +20,5 @@ export interface IHeritageRepository {
   importHeritages(): Promise<{
     heritageCount: number;
   }>;
+  yearHeritage(params: ParamsHeritage): Promise<HeritageReport[] | null>;
 }

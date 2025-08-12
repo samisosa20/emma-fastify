@@ -40,7 +40,27 @@ const heritageObjectSchema: SchemaDefault[] = [
   { name: "updatedAt", type: "string", body: false, private: false },
 ];
 
+const yearHeritageObjectSchema: SchemaDefault[] = [
+  { name: "year", type: "number", body: false, private: false },
+  {
+    name: "balances",
+    type: "array",
+    body: false,
+    private: false,
+    items: {
+      type: "object",
+      properties: {
+        code: { type: "string" },
+        flag: { type: "string" },
+        symbol: { type: "string" },
+        amount: { type: "number" },
+      },
+    },
+  },
+];
+
 const heritageResponseSchema = defaultSuccesResponse(heritageObjectSchema);
+const yearHeritageSchema = defaultSuccesResponse(yearHeritageObjectSchema);
 
 export const createHeritageDocumentation: FastifySchema = {
   description: "Crear un nuevo activo patrimonial",
@@ -55,7 +75,7 @@ export const createHeritageDocumentation: FastifySchema = {
 export const listHeritagesDocumentation: FastifySchema = {
   description: "Listar todos los activos patrimoniales con paginación",
   tags: ["Heritage"],
-  params: {
+  querystring: {
     type: "object",
     properties: {
       ...paginationParamsDocumentation(),
@@ -112,6 +132,24 @@ export const deleteHeritageDocumentation: FastifySchema = {
   },
   response: {
     200: heritageResponseSchema,
+    ...errorDocumentation,
+  },
+};
+
+export const yearHeritageDocumentation: FastifySchema = {
+  description: "Eliminar un activo patrimonial por ID",
+  tags: ["Heritage"],
+  querystring: {
+    type: "object",
+    properties: {
+      year: { type: "number", description: "Año" },
+    },
+  },
+  response: {
+    200: {
+      type: "array",
+      items: yearHeritageSchema,
+    },
     ...errorDocumentation,
   },
 };

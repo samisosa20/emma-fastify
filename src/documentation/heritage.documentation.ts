@@ -2,11 +2,11 @@ import { FastifySchema } from "fastify/types/schema";
 import {
   defaultSuccesResponse,
   SchemaDefault,
-  paginationDocumentation,
   paginationParamsDocumentation,
 } from "./components/pagination";
 import { errorDocumentation } from "./components/error";
-import { getBody } from "./components/realtions";
+import { getBody, getProperties } from "./components/realtions";
+import { badgeObjectSchema } from "./badge.documentation";
 
 const heritageObjectSchema: SchemaDefault[] = [
   { name: "id", type: "string", body: false, private: false },
@@ -27,15 +27,16 @@ const heritageObjectSchema: SchemaDefault[] = [
     name: "badgeId",
     type: "string",
     body: ["create", "update"],
+    private: true,
+  },
+  {
+    name: "badge",
+    type: "object",
+    body: false,
     private: false,
+    properties: getProperties(badgeObjectSchema),
   },
   { name: "year", type: "integer", body: ["create", "update"], private: false },
-  {
-    name: "userId",
-    type: "string",
-    body: ["create", "update"],
-    private: false,
-  },
   { name: "createdAt", type: "string", body: false, private: false },
   { name: "updatedAt", type: "string", body: false, private: false },
 ];
@@ -62,6 +63,31 @@ const yearHeritageObjectSchema: SchemaDefault[] = [
 const heritageResponseSchema = defaultSuccesResponse(heritageObjectSchema);
 const yearHeritageSchema = defaultSuccesResponse(yearHeritageObjectSchema);
 
+const detailHeritageSchema = defaultSuccesResponse([
+  {
+    name: "content",
+    type: "array",
+    body: false,
+    private: false,
+    items: heritageResponseSchema,
+  },
+  {
+    name: "balances",
+    type: "array",
+    body: false,
+    private: false,
+    items: {
+      type: "object",
+      properties: {
+        code: { type: "string" },
+        flag: { type: "string" },
+        symbol: { type: "string" },
+        amount: { type: "number" },
+      },
+    },
+  },
+]);
+
 export const createHeritageDocumentation: FastifySchema = {
   description: "Crear un nuevo activo patrimonial",
   tags: ["Heritage"],
@@ -79,10 +105,14 @@ export const listHeritagesDocumentation: FastifySchema = {
     type: "object",
     properties: {
       ...paginationParamsDocumentation(),
+      year: {
+        type: "number",
+        description: "Año del activo patrimonial",
+      },
     },
   },
   response: {
-    200: paginationDocumentation(heritageObjectSchema),
+    200: detailHeritageSchema,
     ...errorDocumentation,
   },
 };

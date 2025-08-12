@@ -5,12 +5,13 @@ import {
   HeritageReport,
   ParamsHeritage,
 } from "../heritage";
+import { ReportBalance } from "packages/report/domain/report";
 
 export interface IHeritageRepository {
   addHeritage(data: CreateHeritage): Promise<Heritage | ErrorMessage>;
   listHeritage(
-    params: CommonParamsPaginate
-  ): Promise<{ content: Heritage[]; meta: Paginate }>;
+    params: CommonParamsPaginate & ParamsHeritage
+  ): Promise<{ balances: ReportBalance; content: Heritage[]; meta: Paginate }>;
   updateHeritage(
     id: string,
     account: Partial<CreateHeritage>

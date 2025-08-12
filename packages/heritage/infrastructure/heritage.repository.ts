@@ -14,6 +14,9 @@ import {
   handleShowDeleteData,
 } from "packages/shared";
 import { APIResponse } from "packages/badge/infrastructure/badge.repository";
+import { ReportPrismaRepository } from "packages/report/infrastructure/report.repository";
+import { ReportUseCase } from "packages/report/application/report.use-case";
+import { ReportBalance } from "packages/report/domain/report";
 
 // Define el tipo para un solo objeto de patrimonio de la API externa
 type APIHeritageItem = {
@@ -33,6 +36,8 @@ type APIHeritageResponse = {
   heritages: APIHeritageItem[];
 };
 
+const reportRepository = new ReportPrismaRepository();
+const reportUseCase = new ReportUseCase(reportRepository);
 export class HeritagePrismaRepository implements IHeritageRepository {
   public async addHeritage(
     data: CreateHeritage
@@ -40,6 +45,9 @@ export class HeritagePrismaRepository implements IHeritageRepository {
     try {
       const newHeritage = await prisma.heritage.create({
         data,
+        include: {
+          badge: true,
+        },
       });
       return newHeritage;
     } catch (error: any) {
@@ -52,15 +60,104 @@ export class HeritagePrismaRepository implements IHeritageRepository {
   }
 
   public async listHeritage(
-    params: CommonParamsPaginate
-  ): Promise<{ content: Heritage[]; meta: Paginate }> {
-    const { deleted, size, page } = params;
-    const [content, meta] = await prisma.heritage.paginate({}).withPages({
-      limit: size ? Number(size) : 10,
-      page: page && page > 0 ? Number(page) : 1,
+    params: CommonParamsPaginate & ParamsHeritage
+  ): Promise<{ balances: ReportBalance; content: Heritage[]; meta: Paginate }> {
+    const { deleted, size, page, year, userId } = params;
+    const [content, meta] = await prisma.heritage
+      .paginate({
+        where: {
+          year,
+        },
+        include: {
+          badge: true,
+        },
+      })
+      .withPages({
+        limit: size ? Number(size) : 10,
+        page: page && page > 0 ? Number(page) : 1,
+      });
+
+    const reportIcome = await prisma.vw_yearlyincome.findMany({
+      where: {
+        year: params.year,
+        userId: params.userId,
+      },
+      orderBy: [{ year: "desc" }, { amount: "desc" }],
     });
 
+    const reportExport = await prisma.vw_yearlyexpensive.findMany({
+      where: {
+        year: params.year,
+        userId: params.userId,
+      },
+      orderBy: [{ year: "desc" }, { amount: "desc" }],
+    });
+
+    // 2. Extract all unique badge IDs from both reports
+    const allBadgeIds = [
+      ...new Set([
+        ...reportIcome.map((item) => item.badgeId),
+        ...reportExport.map((item) => item.badgeId),
+      ]),
+    ];
+
+    // 3. Fetch all required badge information in a single query
+    const badges = await prisma.badge.findMany({
+      where: {
+        id: { in: allBadgeIds },
+      },
+    });
+
+    // 4. Create a map for quick badge lookup
+    const badgesMap = new Map(badges.map((badge) => [badge.id, badge]));
+
+    // 5. Process reports and combine data in-memory
+    const incomeBalances = reportIcome.map((item) => {
+      const badge = badgesMap.get(item.badgeId);
+      return {
+        amount: Number(item.amount),
+        code: String(badge?.code),
+        flag: String(badge?.flag),
+        symbol: String(badge?.symbol),
+      };
+    });
+
+    const expenseBalances = reportExport.map((item) => {
+      const badge = badgesMap.get(item.badgeId);
+      return {
+        amount: Number(item.amount),
+        code: String(badge?.code),
+        flag: String(badge?.flag),
+        symbol: String(badge?.symbol),
+      };
+    });
+
+    // 6. Combine all balances into a single array
+    const generalBalances = [...incomeBalances, ...expenseBalances];
+
+    const aggregatedBalancesMap = new Map();
+
+    for (const balance of generalBalances) {
+      const { code, amount, flag, symbol } = balance;
+
+      if (code) {
+        const existingBalance = aggregatedBalancesMap.get(code) || {
+          code,
+          flag,
+          symbol,
+          amount: 0,
+        };
+
+        existingBalance.amount += amount;
+        aggregatedBalancesMap.set(code, existingBalance);
+      }
+    }
+
+    // 4. Convertir el Map a un arreglo final
+    const finalBalances = Array.from(aggregatedBalancesMap.values());
+
     return {
+      balances: finalBalances,
       content,
       meta,
     };
@@ -76,6 +173,9 @@ export class HeritagePrismaRepository implements IHeritageRepository {
           id,
         },
         data,
+        include: {
+          badge: true,
+        },
       });
       return updatedHeritage;
     } catch (error: any) {
@@ -91,6 +191,9 @@ export class HeritagePrismaRepository implements IHeritageRepository {
     try {
       return await prisma.heritage.findUnique({
         where: { id },
+        include: {
+          badge: true,
+        },
       });
     } catch (error: any) {
       throw Object.assign(new Error("Validation Error"), {
@@ -110,6 +213,9 @@ export class HeritagePrismaRepository implements IHeritageRepository {
     }
     return await prisma.heritage.delete({
       where: { id },
+      include: {
+        badge: true,
+      },
     });
   }
 

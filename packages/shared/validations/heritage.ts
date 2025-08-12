@@ -7,8 +7,8 @@ export const HeritageCreateInput = z.object({
   legalAmount: z.number({ message: "legalAmount is required" }),
   badgeId: z.string({ message: "badgeId is required" }),
   year: z.number({ message: "year is required" }).int(),
-  userId: z.string({ message: "userId is required" }),
-}) satisfies z.Schema<Prisma.HeritageUncheckedCreateInput>;
+  //userId: z.string({ message: "userId is required" }),
+}) satisfies z.Schema<Omit<Prisma.HeritageUncheckedCreateInput, "userId">>;
 
 export const HeritageUpdateInput = HeritageCreateInput.partial();
 

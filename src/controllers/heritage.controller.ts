@@ -20,14 +20,20 @@ export class HeritageController {
   getAllHeritages = async (request: FastifyRequest, reply: FastifyReply) => {
     const params = request.query as HeritageParams;
     // Asumiendo que el use case tiene un método listHeritage o similar
-    return await heritageUseCase.listHeritage(params);
+    return await heritageUseCase.listHeritage({
+      ...params,
+      userId: request.user.id,
+    });
   };
 
   addHeritage = async (request: FastifyRequest, reply: FastifyReply) => {
     const dataHeritage = request.body as CreateHeritage;
 
     try {
-      return heritageUseCase.addHeritage(dataHeritage);
+      return heritageUseCase.addHeritage({
+        ...dataHeritage,
+        userId: request.user.id,
+      });
     } catch (error: any) {
       const detail = formatErrorMessage(error);
       return reply.status(400).send({

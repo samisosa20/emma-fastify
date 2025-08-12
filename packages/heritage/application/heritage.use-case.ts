@@ -6,6 +6,7 @@ import {
   ParamsHeritage,
   HeritageReport,
 } from "../domain/heritage";
+import { ReportBalance } from "packages/report/domain/report";
 
 export class HeritageUseCase {
   private heritageRepository: IHeritageRepository;
@@ -21,8 +22,8 @@ export class HeritageUseCase {
   }
 
   public async listHeritage(
-    params: CommonParamsPaginate
-  ): Promise<{ content: Heritage[]; meta: Paginate }> {
+    params: CommonParamsPaginate & ParamsHeritage
+  ): Promise<{ balances: ReportBalance; content: Heritage[]; meta: Paginate }> {
     return await this.heritageRepository.listHeritage(params);
   }
 

@@ -563,19 +563,19 @@ export class ReportPrismaRepository implements IReportRepository {
 
     while (currentDate <= endDate) {
       const dateKey = currentDate.toISOString().split("T")[0];
-      let dailyRecord = reportMap.get(dateKey);
+      let dailyRecord: any = reportMap.get(dateKey);
 
       if (dailyRecord) {
         fullReport.push({
           badgeId: String(dailyRecord.badgeId),
           code: String(dailyRecord.code),
-          flag: dailyRecord.flag ?? "",
-          symbol: dailyRecord.symbol ?? "",
+          flag: String(dailyRecord.flag),
+          symbol: String(dailyRecord.symbol),
           date: dateKey,
           dailyAmount: dailyRecord.dailyAmount ?? new Decimal(0),
-          cumulativeBalance: dailyRecord.cumulativeBalance ?? new Decimal(0),
+          cumulativeBalance: dailyRecord.cumulativeBalance,
         });
-        lastBalance = dailyRecord.cumulativeBalance ?? new Decimal(0);
+        lastBalance = dailyRecord.cumulativeBalance as Decimal;
       } else {
         const previousDayData = fullReport[fullReport.length - 1];
         if (previousDayData)

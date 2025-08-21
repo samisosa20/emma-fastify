@@ -1,5 +1,6 @@
 import {
   BalanceHistory,
+  ItemBalanceHistory,
   Report,
   ReportAccountBalance,
   ReportBalance,
@@ -556,7 +557,7 @@ export class ReportPrismaRepository implements IReportRepository {
       report.map((item) => [item.date?.toISOString().split("T")[0], item])
     );
 
-    const fullReport = [];
+    const fullReport: ItemBalanceHistory[] = [];
     let currentDate = startDate;
     let lastBalance = new Prisma.Decimal(0);
 
@@ -568,23 +569,15 @@ export class ReportPrismaRepository implements IReportRepository {
         fullReport.push({
           badgeId: String(dailyRecord.badgeId),
           code: String(dailyRecord.code),
-          flag: String(dailyRecord.flag),
-          symbol: String(dailyRecord.symbol),
+          flag: dailyRecord.flag ?? "",
+          symbol: dailyRecord.symbol ?? "",
           date: dateKey,
           dailyAmount: dailyRecord.dailyAmount ?? new Decimal(0),
-          cumulativeBalance: dailyRecord.cumulativeBalance,
+          cumulativeBalance: dailyRecord.cumulativeBalance ?? new Decimal(0),
         });
-        lastBalance = dailyRecord.cumulativeBalance as Decimal;
+        lastBalance = dailyRecord.cumulativeBalance ?? new Decimal(0);
       } else {
-        const previousDayData = fullReport[fullReport.length - 1] as {
-          badgeId: string;
-          code: string;
-          flag: string;
-          symbol: string;
-          date: string;
-          dailyAmount: Decimal;
-          cumulativeBalance: Decimal;
-        };
+        const previousDayData = fullReport[fullReport.length - 1];
         if (previousDayData)
           fullReport.push({
             badgeId: previousDayData.badgeId,

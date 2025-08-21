@@ -46,12 +46,14 @@ export type ReportBalanceHistory = {
   previousPeriod: BalanceHistory;
 };
 
-export type BalanceHistory = {
+export type ItemBalanceHistory = {
   badgeId: string;
   code: string;
   flag: string;
   symbol: string;
-  date: string;
+  date: string | Date;
   dailyAmount: Decimal | number | null;
   cumulativeBalance: Decimal | number | null;
-}[];
+};
+
+export type BalanceHistory = ItemBalanceHistory[];

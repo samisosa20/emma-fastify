@@ -16,6 +16,37 @@ WITH `summovements` AS (
   ORDER BY
     `year` DESC
 ),
+`initamount` AS (
+  SELECT
+    year(`a`.`createdAt`) AS `year`,
+    `a`.`badgeId` AS `badgeId`,
+    sum(`a`.`initAmount`) AS `amount`,
+    `a`.`userId` AS `userId`
+  FROM
+    `fiona`.`account` `a`
+  GROUP BY
+    year(`a`.`createdAt`),
+    `a`.`badgeId`,
+    `a`.`userId`
+),
+`unionbalance` AS (
+  SELECT
+    `ia`.`year` AS `year`,
+    `ia`.`badgeId` AS `badgeId`,
+(`ia`.`amount` + `tb`.`amount`) AS `amount`,
+    `ia`.`userId` AS `userId`
+  FROM
+    (
+      `initamount` `ia`
+      LEFT JOIN `summovements` `tb` ON(
+        (
+          (`tb`.`badgeId` = `ia`.`badgeId`)
+          AND (`tb`.`userId` = `ia`.`userId`)
+          AND (`ia`.`year` = `tb`.`year`)
+        )
+      )
+    )
+),
 `sumheritage` AS (
   SELECT
     `fiona`.`heritage`.`year` AS `year`,
@@ -47,12 +78,12 @@ WITH `summovements` AS (
 ),
 `unionheritage` AS (
   SELECT
-    `summovements`.`year` AS `year`,
-    `summovements`.`badgeId` AS `badgeId`,
-    `summovements`.`amount` AS `amount`,
-    `summovements`.`userId` AS `userId`
+    `unionbalance`.`year` AS `year`,
+    `unionbalance`.`badgeId` AS `badgeId`,
+    `unionbalance`.`amount` AS `amount`,
+    `unionbalance`.`userId` AS `userId`
   FROM
-    `summovements`
+    `unionbalance`
   UNION
   ALL
   SELECT

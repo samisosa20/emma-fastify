@@ -388,6 +388,17 @@ view vw_heritagebyyear {
   code   String
   flag   String? @db.VarChar(50)
   symbol String? @default("$") @db.VarChar(5)
-  amount Decimal @default(0.00) @db.Decimal(60, 2)
+  amount Decimal @default(0.000000000000000000000000000000)
   userId String  @default("")
+}
+
+view vw_historybalance {
+  badgeId           String    @default("")
+  code              String    @default("")
+  flag              String?   @db.VarChar(50)
+  symbol            String?   @db.VarChar(5)
+  date              DateTime? @db.Date
+  dailyAmount       Decimal?
+  userId            String    @default("")
+  cumulativeBalance Decimal?
 }

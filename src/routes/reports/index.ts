@@ -3,6 +3,7 @@ import {
   accountReportBalanceDocumentation,
   categoryReportDocumentation,
   generalReportBalanceDocumentation,
+  historyReportDocumentation,
   movementReportDocumentation,
 } from "src/documentation";
 import { FastifyPluginAsync } from "fastify";
@@ -41,6 +42,14 @@ const reportsRoutes: FastifyPluginAsync = async (fastify) => {
       schema: categoryReportDocumentation,
     },
     reportController.reportCategoryStats
+  );
+  fastify.get(
+    "/history",
+    {
+      preHandler: [fastify.authenticate],
+      schema: historyReportDocumentation,
+    },
+    reportController.reportBalanceHistory
   );
 };
 

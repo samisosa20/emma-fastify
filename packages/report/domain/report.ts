@@ -14,6 +14,8 @@ export type ReportParams = {
   month?: number;
   accountId?: string;
   categoryId?: string;
+  endDate?: string;
+  startDate?: string;
 };
 
 export type ReportBalance = {
@@ -36,4 +38,20 @@ export type ReportCategoryStats = {
   avgMonthlyExpense: Decimal | number | null;
   expenseLowerLimit: Decimal | number | null;
   expenseUpperLimit: Decimal | number | null;
+}[];
+
+export type ReportBalanceHistory = {
+  current: BalanceHistory;
+  lastYear: BalanceHistory;
+  previousPeriod: BalanceHistory;
+};
+
+export type BalanceHistory = {
+  badgeId: string;
+  code: string;
+  flag: string;
+  symbol: string;
+  date: string;
+  dailyAmount: Decimal | number | null;
+  cumulativeBalance: Decimal | number | null;
 }[];

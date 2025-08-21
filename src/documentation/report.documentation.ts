@@ -1,6 +1,7 @@
 import { FastifySchema } from "fastify/types/schema";
 import { defaultSuccesResponse, SchemaDefault } from "./components/pagination";
 import { errorDocumentation } from "./components/error";
+import { getProperties } from "./components/realtions";
 
 export const reportObjectSchema: SchemaDefault[] = [
   { name: "category", type: "string", body: false, private: false },
@@ -40,6 +41,48 @@ export const categoryReportStatsObjectSchema: SchemaDefault[] = [
   { name: "expenseUpperLimit", type: "number", body: false, private: false },
 ];
 
+export const historyBalanceObjectSchema: SchemaDefault[] = [
+  { name: "code", type: "string", body: false, private: false },
+  { name: "symbol", type: "string", body: false, private: false },
+  { name: "flag", type: "string", body: false, private: false },
+  { name: "date", type: "string", body: false, private: false },
+  { name: "dailyAmount", type: "number", body: false, private: false },
+  { name: "cumulativeBalance", type: "number", body: false, private: false },
+];
+
+export const historyReportObjectSchema: SchemaDefault[] = [
+  {
+    name: "current",
+    type: "array",
+    body: false,
+    private: false,
+    items: {
+      type: "object",
+      properties: getProperties(historyBalanceObjectSchema),
+    },
+  },
+  {
+    name: "lastYear",
+    type: "array",
+    body: false,
+    private: false,
+    items: {
+      type: "object",
+      properties: getProperties(historyBalanceObjectSchema),
+    },
+  },
+  {
+    name: "previousPeriod",
+    type: "array",
+    body: false,
+    private: false,
+    items: {
+      type: "object",
+      properties: getProperties(historyBalanceObjectSchema),
+    },
+  },
+];
+
 const reportResponseSchema = defaultSuccesResponse(reportObjectSchema);
 const accountReportBalanceSchema = defaultSuccesResponse(
   accountReportBalanceObjectSchema
@@ -50,6 +93,7 @@ const generalReportBalanceSchema = defaultSuccesResponse(
 const categoryReportStatsSchema = defaultSuccesResponse(
   categoryReportStatsObjectSchema
 );
+const historyReportSchema = defaultSuccesResponse(historyReportObjectSchema);
 
 export const movementReportDocumentation: FastifySchema = {
   description: "Reporte de movimientos por periodo",
@@ -152,6 +196,32 @@ export const categoryReportDocumentation: FastifySchema = {
       type: "array",
       items: categoryReportStatsSchema,
     },
+    ...errorDocumentation,
+  },
+};
+export const historyReportDocumentation: FastifySchema = {
+  description: "Balance historico",
+  tags: ["Report"],
+  querystring: {
+    type: "object",
+    required: ["startDate", "endDate"],
+    properties: {
+      badgeId: {
+        type: "string",
+        description: "moneda",
+      },
+      startDate: {
+        type: "string",
+        description: "Fecha inicio",
+      },
+      endDate: {
+        type: "string",
+        description: "Fecha final",
+      },
+    },
+  },
+  response: {
+    200: historyReportSchema,
     ...errorDocumentation,
   },
 };

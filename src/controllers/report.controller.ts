@@ -114,4 +114,27 @@ export class ReportController {
       return reply.status(500).send({ error: "Error generating report" });
     }
   };
+  reportBalanceHistory = async (
+    request: FastifyRequest,
+    reply: FastifyReply
+  ) => {
+    try {
+      const query = request.query as {
+        badgeId: string;
+        startDate: string;
+        endDate: string;
+      };
+      const user = request.user;
+      const result = await reportUseCase.reportBalanceHistory({
+        userId: user.id,
+        ...query,
+        badgeId: query.badgeId ?? user.badgeId,
+      });
+
+      return reply.send(result);
+    } catch (err) {
+      console.error(err);
+      return reply.status(500).send({ error: "Error generating report" });
+    }
+  };
 }

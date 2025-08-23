@@ -19,6 +19,36 @@ export const extraInvestmentObjectSchema: SchemaDefault[] = [
       type: "object",
       properties: {
         amount: { type: "number" },
+        datePurchase: { type: "string" },
+        id: { type: "string" },
+        description: { type: "string" },
+        account: {
+          type: "object",
+          properties: {
+            name: { type: "string" },
+            badge: {
+              type: "object",
+              properties: {
+                id: { type: "string" },
+                code: { type: "string" },
+                flag: { type: "string" },
+                symbol: { type: "string" },
+              },
+            },
+          },
+        },
+        event: {
+          type: "object",
+          properties: {
+            name: { type: "string" },
+          },
+        },
+        category: {
+          type: "object",
+          properties: {
+            name: { type: "string" },
+          },
+        },
       },
     },
   },
@@ -30,7 +60,9 @@ export const extraInvestmentObjectSchema: SchemaDefault[] = [
     items: {
       type: "object",
       properties: {
+        id: { type: "string" },
         amount: { type: "number" },
+        dateAppreciation: { type: "string" },
       },
     },
   },
@@ -52,6 +84,12 @@ export const investmentObjectSchema: SchemaDefault[] = [
     private: false,
   },
   {
+    name: "dateInvestment",
+    type: "string",
+    body: ["create", "update"],
+    private: false,
+  },
+  {
     name: "badge",
     type: "object",
     body: false,
@@ -68,7 +106,28 @@ export const investmentObjectSchema: SchemaDefault[] = [
   { name: "updatedAt", type: "string", body: false, private: false },
 ];
 
+export const appreciationObjectSchema: SchemaDefault[] = [
+  { name: "id", type: "string", body: false, private: false },
+  {
+    name: "amount",
+    type: "number",
+    body: ["create", "update"],
+    private: false,
+  },
+  {
+    name: "dateAppreciation",
+    type: "string",
+    body: ["create", "update"],
+    private: false,
+  },
+  { name: "createdAt", type: "string", body: false, private: false },
+  { name: "updatedAt", type: "string", body: false, private: false },
+];
+
 const investmentResponseSchema = defaultSuccesResponse(investmentObjectSchema);
+const appreciationResponseSchema = defaultSuccesResponse(
+  appreciationObjectSchema
+);
 
 export const createInvestmentDocumentation: FastifySchema = {
   description: "Crear una nueva inversión",
@@ -76,6 +135,16 @@ export const createInvestmentDocumentation: FastifySchema = {
   body: getBody(investmentObjectSchema, "create"),
   response: {
     200: investmentResponseSchema,
+    ...errorDocumentation,
+  },
+};
+
+export const createAppreciationDocumentation: FastifySchema = {
+  description: "Crear una nueva apreciación",
+  tags: ["Investment"],
+  body: getBody(appreciationObjectSchema, "create"),
+  response: {
+    200: appreciationResponseSchema,
     ...errorDocumentation,
   },
 };
@@ -131,6 +200,24 @@ export const updateInvestmentDocumentation: FastifySchema = {
   },
 };
 
+export const updateAppreciationDocumentation: FastifySchema = {
+  description: "Actualizar una apreciación existente por ID",
+  tags: ["Investment"],
+  params: {
+    type: "object",
+    required: ["id"],
+    properties: {
+      id: { type: "string", description: "ID de la Inversión" },
+      appreciationId: { type: "string", description: "ID de la apreciación" },
+    },
+  },
+  body: getBody(appreciationObjectSchema, "update"),
+  response: {
+    200: appreciationResponseSchema,
+    ...errorDocumentation,
+  },
+};
+
 export const deleteInvestmentDocumentation: FastifySchema = {
   description: "Eliminar una inversión por ID",
   tags: ["Investment"],
@@ -143,6 +230,23 @@ export const deleteInvestmentDocumentation: FastifySchema = {
   },
   response: {
     200: investmentResponseSchema,
+    ...errorDocumentation,
+  },
+};
+
+export const deleteAppreciationDocumentation: FastifySchema = {
+  description: "Eliminar una apreciación existente por ID",
+  tags: ["Investment"],
+  params: {
+    type: "object",
+    required: ["id"],
+    properties: {
+      id: { type: "string", description: "ID de la Inversión" },
+      appreciationId: { type: "string", description: "ID de la apreciación" },
+    },
+  },
+  response: {
+    200: appreciationResponseSchema,
     ...errorDocumentation,
   },
 };

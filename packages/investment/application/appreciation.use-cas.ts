@@ -23,17 +23,25 @@ export class AppreciationUseCase {
 
   public async updateAppreciation(
     id: string,
+    appreciationId: string,
     badge: Partial<CreateAppreciation>
   ): Promise<Appreciation | ErrorMessage> {
-    return await this.badgeRepository.updateAppreciation(id, badge);
+    return await this.badgeRepository.updateAppreciation(
+      id,
+      appreciationId,
+      badge
+    );
   }
 
   public async detailAppreciation(id: string): Promise<Appreciation | null> {
     return await this.badgeRepository.detailAppreciation(id);
   }
 
-  public async deleteAppreciation(id: string): Promise<Appreciation | null> {
-    return await this.badgeRepository.deleteAppreciation(id);
+  public async deleteAppreciation(
+    id: string,
+    appreciationId: string
+  ): Promise<Appreciation | null> {
+    return await this.badgeRepository.deleteAppreciation(id, appreciationId);
   }
 
   public async importAppreciations(): Promise<{

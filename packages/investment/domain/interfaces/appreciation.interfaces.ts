@@ -10,10 +10,14 @@ export interface IAppreciationRepository {
   ): Promise<{ content: Appreciation[]; meta: Paginate }>;
   updateAppreciation(
     id: string,
+    appreciationId: string,
     account: Partial<CreateAppreciation>
   ): Promise<Appreciation | ErrorMessage>;
   detailAppreciation(id: string): Promise<Appreciation | null>;
-  deleteAppreciation(id: string): Promise<Appreciation | null>;
+  deleteAppreciation(
+    id: string,
+    appreciationId: string
+  ): Promise<Appreciation | null>;
   importAppreciations(): Promise<{
     appreciationCount: number;
   }>;

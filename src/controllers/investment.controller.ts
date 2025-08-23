@@ -26,7 +26,10 @@ export class InvestmentController {
     const dataInvestment = request.body as CreateInvestment;
 
     try {
-      return investmentUseCase.addInvestment(dataInvestment);
+      return investmentUseCase.addInvestment({
+        ...dataInvestment,
+        userId: request.user.id,
+      });
     } catch (error: any) {
       const detail = formatErrorMessage(error);
       return reply.status(400).send({

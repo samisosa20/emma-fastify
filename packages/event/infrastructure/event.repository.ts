@@ -66,6 +66,9 @@ export class EventPrismaRepository implements IEventRepository {
               },
             },
           },
+          orderBy: {
+            endEvent: "desc",
+          },
         })
         .withPages({
           limit: effectiveSize,
@@ -94,6 +97,9 @@ export class EventPrismaRepository implements IEventRepository {
               },
             },
           },
+        },
+        orderBy: {
+          endEvent: "desc",
         },
       })) as (Event & { movements: any[] })[];
 

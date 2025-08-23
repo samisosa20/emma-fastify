@@ -27,9 +27,14 @@ export class AppreciationController {
 
   addAppreciation = async (request: FastifyRequest, reply: FastifyReply) => {
     const dataAppreciation = request.body as CreateAppreciation;
+    const { id } = request.params as { id: string };
 
     try {
-      return appreciationUseCase.addAppreciation(dataAppreciation);
+      return appreciationUseCase.addAppreciation({
+        ...dataAppreciation,
+        investmentId: id,
+        userId: request.user.id,
+      });
     } catch (error: any) {
       const detail = formatErrorMessage(error);
       return reply.status(400).send({
@@ -42,10 +47,17 @@ export class AppreciationController {
 
   updateAppreciation = async (request: FastifyRequest, reply: FastifyReply) => {
     const dataAppreciation = request.body as Partial<CreateAppreciation>;
-    const { id } = request.params as { id: string };
+    const { id, appreciationId } = request.params as {
+      id: string;
+      appreciationId: string;
+    };
 
     try {
-      return appreciationUseCase.updateAppreciation(id, dataAppreciation);
+      return appreciationUseCase.updateAppreciation(
+        id,
+        appreciationId,
+        dataAppreciation
+      );
     } catch (error: any) {
       const detail = formatErrorMessage(error);
       return reply.status(400).send({
@@ -57,13 +69,22 @@ export class AppreciationController {
   };
 
   detailAppreciation = async (request: FastifyRequest, reply: FastifyReply) => {
-    const { id } = request.params as { id: string };
-    return appreciationUseCase.detailAppreciation(id);
+    const { id, appreciationId } = request.params as {
+      id: string;
+      appreciationId: string;
+    };
+    return appreciationUseCase.detailAppreciation(appreciationId);
   };
 
   deleteAppreciation = async (request: FastifyRequest, reply: FastifyReply) => {
-    const { id } = request.params as { id: string };
-    const result = await appreciationUseCase.deleteAppreciation(id);
+    const { id, appreciationId } = request.params as {
+      id: string;
+      appreciationId: string;
+    };
+    const result = await appreciationUseCase.deleteAppreciation(
+      id,
+      appreciationId
+    );
     if (result === null) {
       return reply.status(404).send({ message: "Appreciation not found" });
     }

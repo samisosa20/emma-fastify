@@ -30,10 +30,24 @@ export class AppreciationPrismaRepository implements IAppreciationRepository {
   ): Promise<Appreciation | ErrorMessage> {
     try {
       const newAppreciation = await prisma.investmentAppreciation.create({
-        data,
+        data: {
+          amount: data.amount,
+          dateAppreciation: data.dateAppreciation,
+          investment: {
+            connect: {
+              id: data.investmentId,
+            },
+          },
+          user: {
+            connect: {
+              id: data.userId,
+            },
+          },
+        },
       });
       return newAppreciation;
     } catch (error: any) {
+      console.log(error);
       throw Object.assign(new Error("Validation Error"), {
         statusCode: 400,
         error: "Bad Request",
@@ -65,12 +79,14 @@ export class AppreciationPrismaRepository implements IAppreciationRepository {
 
   public async updateAppreciation(
     id: string,
+    appreciationId: string,
     data: Partial<CreateAppreciation>
   ): Promise<Appreciation | ErrorMessage> {
     try {
       const updatedAppreciation = await prisma.investmentAppreciation.update({
         where: {
-          id,
+          id: appreciationId,
+          investmentId: id,
         },
         data,
       });
@@ -98,15 +114,18 @@ export class AppreciationPrismaRepository implements IAppreciationRepository {
     }
   }
 
-  public async deleteAppreciation(id: string): Promise<Appreciation | null> {
+  public async deleteAppreciation(
+    id: string,
+    appreciationId: string
+  ): Promise<Appreciation | null> {
     const appreciation = await prisma.investmentAppreciation.findUnique({
-      where: { id },
+      where: { id: appreciationId, investmentId: id },
     });
     if (!appreciation) {
       return null;
     }
     return await prisma.investmentAppreciation.delete({
-      where: { id },
+      where: { id: appreciationId, investmentId: id },
     });
   }
 
@@ -186,8 +205,9 @@ export class AppreciationPrismaRepository implements IAppreciationRepository {
         await appreciationsResponse.json();
 
       // 3. Procesar las apreciaciones y prepararlas para la inserción masiva
-      const appreciationsToCreatePromises = oldAppreciations.map(
-        async (appreciation) => {
+      const appreciationsToCreatePromises = oldAppreciations
+        .filter((appreciation) => appreciation.investment)
+        .map(async (appreciation) => {
           const investmentAppreciation = await prisma.investment.findFirst({
             where: { name: appreciation.investment.name },
           });
@@ -207,8 +227,7 @@ export class AppreciationPrismaRepository implements IAppreciationRepository {
             createdAt: new Date(appreciation.created_at),
             updatedAt: new Date(appreciation.updated_at),
           } as CreateAppreciation;
-        }
-      );
+        });
 
       const appreciationsToCreate = (
         await Promise.all(appreciationsToCreatePromises)

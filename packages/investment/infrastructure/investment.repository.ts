@@ -55,9 +55,48 @@ export class InvestmentPrismaRepository implements IInvestmentRepository {
   ): Promise<Investment | ErrorMessage> {
     try {
       const newInvestment = await prisma.investment.create({
-        data,
+        data: {
+          name: data.name,
+          initAmount: data.initAmount,
+          endAmount: data.endAmount,
+          dateInvestment: data.dateInvestment,
+          badge: {
+            connect: {
+              id: data.badgeId,
+            },
+          },
+          user: {
+            connect: {
+              id: data.userId,
+            },
+          },
+        },
+        include: {
+          movements: {
+            select: {
+              amount: true,
+              addWithdrawal: true,
+            },
+          },
+          badge: {
+            select: {
+              id: true,
+              code: true,
+              flag: true,
+              symbol: true,
+            },
+          },
+          appreciations: {
+            select: {
+              amount: true,
+            },
+            orderBy: {
+              dateAppreciation: "desc",
+            },
+          },
+        },
       });
-      return newInvestment;
+      return this.getMoreDetailInvestment(newInvestment);
     } catch (error: any) {
       throw Object.assign(new Error("Validation Error"), {
         statusCode: 400,
@@ -85,7 +124,10 @@ export class InvestmentPrismaRepository implements IInvestmentRepository {
           },
           badge: {
             select: {
+              id: true,
               code: true,
+              flag: true,
+              symbol: true,
             },
           },
           appreciations: {
@@ -193,8 +235,34 @@ export class InvestmentPrismaRepository implements IInvestmentRepository {
           deletedAt: null,
         },
         data,
+        include: {
+          movements: {
+            select: {
+              amount: true,
+              addWithdrawal: true,
+            },
+          },
+          badge: {
+            select: {
+              id: true,
+              code: true,
+              flag: true,
+              symbol: true,
+            },
+          },
+          appreciations: {
+            select: {
+              id: true,
+              amount: true,
+              dateAppreciation: true,
+            },
+            orderBy: {
+              dateAppreciation: "asc",
+            },
+          },
+        },
       });
-      return updatedInvestment;
+      return await this.getMoreDetailInvestment(updatedInvestment);
     } catch (error: any) {
       throw Object.assign(new Error("Validation Error"), {
         statusCode: 400,
@@ -215,19 +283,34 @@ export class InvestmentPrismaRepository implements IInvestmentRepository {
             select: {
               amount: true,
               addWithdrawal: true,
+              datePurchase: true,
+              description: true,
+              id: true,
+              account: {
+                include: {
+                  badge: true,
+                },
+              },
+              event: true,
+              category: true,
             },
           },
           badge: {
             select: {
+              id: true,
               code: true,
+              flag: true,
+              symbol: true,
             },
           },
           appreciations: {
             select: {
+              id: true,
               amount: true,
+              dateAppreciation: true,
             },
             orderBy: {
-              dateAppreciation: "desc",
+              dateAppreciation: "asc",
             },
           },
         },
@@ -237,76 +320,7 @@ export class InvestmentPrismaRepository implements IInvestmentRepository {
         return null;
       }
 
-      const movements = investment.movements || [];
-      const appreciations = investment.appreciations || [];
-
-      const totalReturns = movements
-        .filter((m) => !m.addWithdrawal)
-        .reduce(
-          (acc, movement) => acc.plus(new Decimal(movement.amount || 0)),
-          new Decimal(0)
-        )
-        .toNumber();
-
-      const initialAmountDecimal = new Decimal(investment.initAmount || 0);
-      const movementsWithdrawalSum = movements
-        .filter((m) => m.addWithdrawal)
-        .reduce(
-          (acc, movement) =>
-            acc.plus(new Decimal(movement.amount || 0).times(-1)),
-          new Decimal(0)
-        );
-
-      // totalWithdrawal como número (pero calculado con Decimal.js para precisión)
-      const totalWithdrawal = initialAmountDecimal
-        .plus(movementsWithdrawalSum)
-        .toNumber();
-
-      const lastAppreciation =
-        appreciations.length > 0 ? appreciations[0] : null;
-      const endAmountDecimal = new Decimal(
-        lastAppreciation?.amount ?? investment.initAmount ?? 0
-      );
-      const endAmount = endAmountDecimal.toNumber();
-
-      // --- Cálculos de Porcentajes con Dos Decimales ---
-
-      // Aquí, convertimos totalWithdrawal a Decimal para los cálculos,
-      // si es que 'totalWithdrawal' es un número
-      const totalWithdrawalForCalculations = new Decimal(totalWithdrawal);
-      const totalReturnsForCalculations = new Decimal(totalReturns);
-
-      let valorization = "0.00%";
-      if (totalWithdrawalForCalculations.isZero()) {
-        valorization = "0.00%";
-      } else {
-        const rawValorization = endAmountDecimal
-          .minus(totalWithdrawalForCalculations)
-          .dividedBy(totalWithdrawalForCalculations)
-          .times(100);
-        valorization = `${rawValorization.toFixed(2)}%`;
-      }
-
-      let totalRate = "0.00%";
-      if (totalWithdrawalForCalculations.isZero()) {
-        totalRate = "0.00%";
-      } else {
-        const rawTotalRate = endAmountDecimal
-          .plus(totalReturnsForCalculations)
-          .minus(totalWithdrawalForCalculations)
-          .dividedBy(totalWithdrawalForCalculations)
-          .times(100);
-        totalRate = `${rawTotalRate.toFixed(2)}%`;
-      }
-
-      return {
-        ...investment,
-        totalReturns,
-        totalWithdrawal,
-        valorization,
-        totalRate,
-        endAmount,
-      };
+      return await this.getMoreDetailInvestment(investment);
     } catch (error: any) {
       throw Object.assign(new Error("Validation Error"), {
         statusCode: 400,
@@ -319,14 +333,115 @@ export class InvestmentPrismaRepository implements IInvestmentRepository {
   public async deleteInvestment(id: string): Promise<Investment | null> {
     const investment = await prisma.investment.findUnique({
       where: { id },
+      include: {
+        movements: {
+          select: {
+            amount: true,
+            addWithdrawal: true,
+          },
+        },
+        badge: {
+          select: {
+            id: true,
+            code: true,
+            flag: true,
+            symbol: true,
+          },
+        },
+        appreciations: {
+          select: {
+            amount: true,
+          },
+          orderBy: {
+            dateAppreciation: "desc",
+          },
+        },
+      },
     });
     if (!investment) {
       return null;
     }
-    return await prisma.investment.update({
+
+    await prisma.investment.update({
       where: { id },
       data: { deletedAt: new Date() },
     });
+    return this.getMoreDetailInvestment(investment);
+  }
+
+  private async getMoreDetailInvestment(
+    investment: Investment & { movements: any[]; appreciations: any[] }
+  ): Promise<Investment & ExtraInfoInvestment> {
+    const movements = investment.movements || [];
+    const appreciations = investment.appreciations || [];
+
+    const totalReturns = movements
+      .filter((m) => !m.addWithdrawal)
+      .reduce(
+        (acc, movement) => acc.plus(new Decimal(movement.amount || 0)),
+        new Decimal(0)
+      )
+      .toNumber();
+
+    const initialAmountDecimal = new Decimal(investment.initAmount || 0);
+    const movementsWithdrawalSum = movements
+      .filter((m) => m.addWithdrawal)
+      .reduce(
+        (acc, movement) =>
+          acc.plus(new Decimal(movement.amount || 0).times(-1)),
+        new Decimal(0)
+      );
+
+    // totalWithdrawal como número (pero calculado con Decimal.js para precisión)
+    const totalWithdrawal = initialAmountDecimal
+      .plus(movementsWithdrawalSum)
+      .toNumber();
+
+    const lastAppreciation =
+      appreciations.length > 0 ? appreciations[appreciations.length - 1] : null;
+    const endAmountDecimal = new Decimal(
+      lastAppreciation?.amount ?? investment.initAmount ?? 0
+    );
+    const endAmount = endAmountDecimal.toNumber();
+
+    // --- Cálculos de Porcentajes con Dos Decimales ---
+
+    // Aquí, convertimos totalWithdrawal a Decimal para los cálculos,
+    // si es que 'totalWithdrawal' es un número
+    const totalWithdrawalForCalculations = new Decimal(totalWithdrawal);
+    const totalReturnsForCalculations = new Decimal(totalReturns);
+
+    let valorization = "0.00%";
+    if (totalWithdrawalForCalculations.isZero()) {
+      valorization = "0.00%";
+    } else {
+      const rawValorization = endAmountDecimal
+        .minus(totalWithdrawalForCalculations)
+        .dividedBy(totalWithdrawalForCalculations)
+        .times(100);
+      valorization = `${rawValorization.toFixed(2)}%`;
+    }
+
+    let totalRate = "0.00%";
+    if (totalWithdrawalForCalculations.isZero()) {
+      totalRate = "0.00%";
+    } else {
+      const rawTotalRate = endAmountDecimal
+        .plus(totalReturnsForCalculations)
+        .minus(totalWithdrawalForCalculations)
+        .dividedBy(totalWithdrawalForCalculations)
+        .times(100);
+      totalRate = `${rawTotalRate.toFixed(2)}%`;
+    }
+
+    return {
+      ...investment,
+      totalReturns,
+      totalWithdrawal,
+      valorization,
+      totalRate,
+      endAmount,
+    };
   }
 
   public async importInvestments(): Promise<{

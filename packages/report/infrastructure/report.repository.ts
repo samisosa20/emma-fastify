@@ -462,12 +462,21 @@ export class ReportPrismaRepository implements IReportRepository {
     const baseDate = new Date(String(params.startDate) || new Date());
     const baseEndDate = new Date(String(params.endDate) || new Date());
 
-    const startDate = new Date(baseDate.getFullYear(), baseDate.getMonth(), 1);
-    const endDate = new Date(
-      baseEndDate.getFullYear(),
-      baseEndDate.getMonth(),
-      0
+    const startDate = new Date(
+      Date.UTC(baseDate.getUTCFullYear(), baseDate.getUTCMonth(), 1, 0, 0, 0, 0)
     );
+    const endDate = new Date(
+      Date.UTC(
+        baseEndDate.getUTCFullYear(),
+        baseEndDate.getUTCMonth() + 1,
+        0,
+        23,
+        59,
+        59,
+        999
+      )
+    );
+
     const MS_PER_DAY = 1000 * 60 * 60 * 24;
 
     // Diferencia en días redondeada

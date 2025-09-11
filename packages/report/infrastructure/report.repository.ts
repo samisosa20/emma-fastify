@@ -494,10 +494,12 @@ export class ReportPrismaRepository implements IReportRepository {
     if (currentPeriodDays < 30) {
       // restar el mismo número de días
       previousPeriodStartDate = new Date(
-        startDate.getTime() - currentPeriodDays * MS_PER_DAY
+        new Date(String(params.startDate)).getTime() -
+          (currentPeriodDays + 1) * MS_PER_DAY
       );
       previousPeriodEndDate = new Date(
-        endDate.getTime() - currentPeriodDays * MS_PER_DAY
+        new Date(String(params.endDate)).getTime() -
+          (currentPeriodDays + 1) * MS_PER_DAY
       );
     } else {
       // restar meses aproximados
@@ -512,18 +514,13 @@ export class ReportPrismaRepository implements IReportRepository {
         previousPeriodEndDate.getMonth() - monthsToSubtract
       );
     }
+
     const previousPeriodReport = await this.getReportForPeriod(
       String(params.userId),
       String(params.badgeId),
       previousPeriodStartDate,
       previousPeriodEndDate
     );
-
-    const allDates = new Set([
-      ...currentPeriodReport.map((r) => r.date),
-      ...lastYearReport.map((r) => r.date),
-      ...previousPeriodReport.map((r) => r.date),
-    ]);
 
     return {
       current: currentPeriodReport,

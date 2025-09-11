@@ -465,7 +465,7 @@ export class ReportPrismaRepository implements IReportRepository {
     const startDate = new Date(baseDate.getFullYear(), baseDate.getMonth(), 1);
     const endDate = new Date(
       baseEndDate.getFullYear(),
-      baseEndDate.getMonth() + 1,
+      baseEndDate.getMonth(),
       0
     );
     const MS_PER_DAY = 1000 * 60 * 60 * 24;

@@ -509,27 +509,53 @@ export class ReportPrismaRepository implements IReportRepository {
 
     if (currentPeriodDays <= 30) {
       previousPeriodStartDate = new Date(
-        baseDate.getFullYear(),
-        baseDate.getMonth() - 1,
-        1
+        Date.UTC(
+          baseDate.getUTCFullYear(),
+          baseDate.getUTCMonth() - 1,
+          1,
+          0,
+          0,
+          0,
+          0
+        )
       );
       previousPeriodEndDate = new Date(
-        baseEndDate.getFullYear(),
-        baseEndDate.getMonth(),
-        0
+        Date.UTC(
+          baseEndDate.getUTCFullYear(),
+          baseEndDate.getUTCMonth(),
+          0,
+          23,
+          59,
+          59,
+          999
+        )
       );
     } else {
       // restar meses aproximados
       const monthsToSubtract = Math.ceil(currentPeriodDays / 30);
+
       previousPeriodStartDate = new Date(
-        baseDate.getFullYear(),
-        baseDate.getMonth() - monthsToSubtract - 1,
-        1
+        Date.UTC(
+          baseDate.getUTCFullYear(),
+          baseDate.getUTCMonth() - monthsToSubtract - 1,
+          1,
+          0,
+          0,
+          0,
+          0
+        )
       );
+
       previousPeriodEndDate = new Date(
-        baseEndDate.getFullYear(),
-        baseEndDate.getMonth() - monthsToSubtract,
-        0
+        Date.UTC(
+          baseEndDate.getUTCFullYear(),
+          baseEndDate.getUTCMonth() - monthsToSubtract,
+          0,
+          23,
+          59,
+          59,
+          999
+        )
       );
     }
 

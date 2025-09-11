@@ -459,8 +459,15 @@ export class ReportPrismaRepository implements IReportRepository {
   public async reportBalanceHistory(
     params: ReportParams
   ): Promise<ReportBalanceHistory | ErrorMessage> {
-    const startDate = new Date(String(params.startDate));
-    const endDate = new Date(String(params.endDate));
+    const baseDate = new Date(String(params.startDate) || new Date());
+    const baseEndDate = new Date(String(params.endDate) || new Date());
+
+    const startDate = new Date(baseDate.getFullYear(), baseDate.getMonth(), 1);
+    const endDate = new Date(
+      baseEndDate.getFullYear(),
+      baseEndDate.getMonth() + 1,
+      0
+    );
     const MS_PER_DAY = 1000 * 60 * 60 * 24;
 
     // Diferencia en días redondeada
@@ -491,27 +498,29 @@ export class ReportPrismaRepository implements IReportRepository {
     // Paso 3: Calcular las fechas del período anterior restando los milisegundos
     let previousPeriodStartDate, previousPeriodEndDate;
 
-    if (currentPeriodDays < 30) {
-      // restar el mismo número de días
+    if (currentPeriodDays <= 30) {
       previousPeriodStartDate = new Date(
-        new Date(String(params.startDate)).getTime() -
-          (currentPeriodDays + 1) * MS_PER_DAY
+        baseDate.getFullYear(),
+        baseDate.getMonth() - 1,
+        1
       );
       previousPeriodEndDate = new Date(
-        new Date(String(params.endDate)).getTime() -
-          (currentPeriodDays + 1) * MS_PER_DAY
+        baseEndDate.getFullYear(),
+        baseEndDate.getMonth(),
+        0
       );
     } else {
       // restar meses aproximados
       const monthsToSubtract = Math.ceil(currentPeriodDays / 30);
-      previousPeriodStartDate = new Date(String(params.startDate));
-      previousPeriodEndDate = new Date(String(params.endDate));
-
-      previousPeriodStartDate.setMonth(
-        previousPeriodStartDate.getMonth() - monthsToSubtract
+      previousPeriodStartDate = new Date(
+        baseDate.getFullYear(),
+        baseDate.getMonth() - monthsToSubtract - 1,
+        1
       );
-      previousPeriodEndDate.setMonth(
-        previousPeriodEndDate.getMonth() - monthsToSubtract
+      previousPeriodEndDate = new Date(
+        baseEndDate.getFullYear(),
+        baseEndDate.getMonth() - monthsToSubtract,
+        0
       );
     }
 

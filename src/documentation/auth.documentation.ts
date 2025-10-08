@@ -182,3 +182,14 @@ export const recoveryPasswordDocumentation: FastifySchema = {
     ...errorDocumentation,
   },
 };
+
+export const getProfileDocumentation: FastifySchema = {
+  description: "Obtener detalles del perfil del usuario autenticado",
+  tags: ["Auth"],
+  response: {
+    200: defaultSuccesResponse(
+      authSchema.filter((item) => item.name !== "transferId")
+    ),
+    ...errorDocumentation,
+  },
+};

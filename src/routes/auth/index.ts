@@ -5,6 +5,7 @@ import {
   registerDocumentation,
   resendEmailDocumentation,
   recoveryPasswordDocumentation,
+  getProfileDocumentation,
 } from "src/documentation";
 import { FastifyPluginAsync } from "fastify";
 
@@ -36,6 +37,14 @@ const authRoutes: FastifyPluginAsync = async (fastify) => {
     "/recovery-password",
     { schema: recoveryPasswordDocumentation },
     authController.recoveryPassword
+  );
+  fastify.get(
+    "/profile",
+    {
+      preHandler: [fastify.authenticate],
+      schema: getProfileDocumentation,
+    },
+    authController.getProfile
   );
 };
 

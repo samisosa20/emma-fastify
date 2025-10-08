@@ -31,7 +31,10 @@ export class PlannedPaymentController {
     const dataPlannedPayment = request.body as CreatePlannedPayment;
 
     try {
-      return plannedPaymentUseCase.addPlannedPayment(dataPlannedPayment);
+      return plannedPaymentUseCase.addPlannedPayment({
+        ...dataPlannedPayment,
+        userId: request.user.id,
+      });
     } catch (error: any) {
       const detail = formatErrorMessage(error);
       return reply.status(400).send({

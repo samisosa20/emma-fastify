@@ -192,4 +192,15 @@ export class AuthController {
       });
     }
   };
+
+  getProfile = async (request: FastifyRequest, reply: FastifyReply) => {
+    const userId = request.user.id;
+    const user = await userUseCase.detailUser(userId);
+
+    if (user && "statusCode" in user) {
+      return reply.status(Number(user.statusCode)).send(user);
+    }
+
+    return user;
+  };
 }

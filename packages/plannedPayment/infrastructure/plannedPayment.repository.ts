@@ -36,10 +36,47 @@ export class PlannedPaymentPrismaRepository
   ): Promise<PlannedPayment | ErrorMessage> {
     try {
       const newPlannedPayment = await prisma.plannedPayment.create({
-        data,
+        data: {
+          specificDay: data.specificDay,
+          startDate: data.startDate,
+          endDate: data.endDate,
+          description: data.description,
+          amount: data.amount,
+          user: {
+            connect: {
+              id: data.userId,
+            },
+          },
+          account: {
+            connect: {
+              id: data.accountId,
+            },
+          },
+          category: {
+            connect: {
+              id: data.categoryId,
+            },
+          },
+        },
+        include: {
+          account: {
+            select: {
+              name: true,
+              id: true,
+              badge: true,
+            },
+          },
+          category: {
+            select: {
+              name: true,
+              id: true,
+            },
+          },
+        },
       });
       return newPlannedPayment;
     } catch (error: any) {
+      console.log(error);
       throw Object.assign(new Error("Validation Error"), {
         statusCode: 400,
         error: "Bad Request",
@@ -51,14 +88,51 @@ export class PlannedPaymentPrismaRepository
   public async listPlannedPayment(
     params: CommonParamsPaginate
   ): Promise<{ content: PlannedPayment[]; meta: Paginate }> {
-    const { size, page } = params;
-    const [content, meta] = await prisma.plannedPayment
-      .paginate({
+    const { size, page: pageParam } = params;
+
+    const shouldPaginate = pageParam && Number(pageParam) > 0;
+
+    let rawContent: PlannedPayment[];
+    let metaResult: Paginate;
+
+    if (shouldPaginate) {
+      const currentPage = Number(pageParam);
+      const effectiveSize = size && Number(size) > 0 ? Number(size) : 10;
+
+      const [content, metaFromPrisma] = await prisma.plannedPayment
+        .paginate({
+          include: {
+            account: {
+              select: {
+                name: true,
+                id: true,
+                badge: true,
+              },
+            },
+            category: {
+              select: {
+                name: true,
+                id: true,
+              },
+            },
+          },
+        })
+        .withPages({
+          limit: effectiveSize,
+          page: currentPage,
+        });
+
+      rawContent = content;
+
+      metaResult = metaFromPrisma;
+    } else {
+      rawContent = await prisma.plannedPayment.findMany({
         include: {
           account: {
             select: {
               name: true,
               id: true,
+              badge: true,
             },
           },
           category: {
@@ -68,15 +142,25 @@ export class PlannedPaymentPrismaRepository
             },
           },
         },
-      })
-      .withPages({
-        limit: size ? Number(size) : 10,
-        page: page && page > 0 ? Number(page) : 1,
       });
 
+      const totalCount = rawContent.length;
+      const meta: Paginate = {
+        isFirstPage: totalCount > 0,
+        isLastPage: totalCount > 0,
+        currentPage: totalCount > 0 ? 1 : 0,
+        previousPage: null,
+        nextPage: null,
+        pageCount: totalCount > 0 ? 1 : 0,
+        totalCount: totalCount,
+      };
+
+      metaResult = meta;
+    }
+
     return {
-      content,
-      meta,
+      content: rawContent,
+      meta: metaResult,
     };
   }
 
@@ -88,6 +172,21 @@ export class PlannedPaymentPrismaRepository
       const updatedPlannedPayment = await prisma.plannedPayment.update({
         where: {
           id,
+        },
+        include: {
+          account: {
+            select: {
+              name: true,
+              id: true,
+              badge: true,
+            },
+          },
+          category: {
+            select: {
+              name: true,
+              id: true,
+            },
+          },
         },
         data,
       });
@@ -112,6 +211,7 @@ export class PlannedPaymentPrismaRepository
             select: {
               name: true,
               id: true,
+              badge: true,
             },
           },
           category: {
@@ -142,6 +242,21 @@ export class PlannedPaymentPrismaRepository
     }
     return await prisma.plannedPayment.delete({
       where: { id },
+      include: {
+        account: {
+          select: {
+            name: true,
+            id: true,
+            badge: true,
+          },
+        },
+        category: {
+          select: {
+            name: true,
+            id: true,
+          },
+        },
+      },
     });
   }
 

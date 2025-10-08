@@ -47,7 +47,6 @@ export class AppreciationPrismaRepository implements IAppreciationRepository {
       });
       return newAppreciation;
     } catch (error: any) {
-      console.log(error);
       throw Object.assign(new Error("Validation Error"), {
         statusCode: 400,
         error: "Bad Request",

@@ -10,6 +10,9 @@ import swaggerUi from "@fastify/swagger-ui";
 import { swaggerOptions, swaggerUiOptions } from "./settings/swagger";
 import { registerDecorators } from "./middleware";
 
+// Import Jobs
+import "./jobs/insertMovements.jobs";
+
 // Start the server
 const bootstrap = async () => {
   const fastify = Fastify({ logger: true, disableRequestLogging: true });

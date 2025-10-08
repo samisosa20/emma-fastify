@@ -2,12 +2,7 @@ import { PlannedPayment, CreatePlannedPayment } from "../domain/plannedPayment";
 import { IPlannedPaymentRepository } from "../domain/interfaces/plannedPayment.interfaces";
 
 import prisma from "packages/shared/settings/prisma.client";
-import {
-  CommonParamsPaginate,
-  Paginate,
-  ErrorMessage,
-  handleShowDeleteData,
-} from "packages/shared";
+import { CommonParamsPaginate, Paginate, ErrorMessage } from "packages/shared";
 import { APIResponse } from "packages/badge/infrastructure/badge.repository";
 
 type APIPaymentItem = {
@@ -76,7 +71,6 @@ export class PlannedPaymentPrismaRepository
       });
       return newPlannedPayment;
     } catch (error: any) {
-      console.log(error);
       throw Object.assign(new Error("Validation Error"), {
         statusCode: 400,
         error: "Bad Request",

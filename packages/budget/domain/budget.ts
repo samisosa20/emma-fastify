@@ -1,5 +1,4 @@
 import { Decimal } from "@prisma/client/runtime/library";
-import { symbol } from "zod";
 
 export type Budget = {
   id: string;
@@ -18,6 +17,7 @@ export type CreateBudget = Omit<Budget, "id" | "createdAt" | "updatedAt">;
 export type ParamsBudget = {
   year?: number;
   userId?: string;
+  badgeId?: string;
 };
 export type BudgetByYear = {
   year: number;
@@ -35,4 +35,14 @@ export type BudgetByYear = {
 export type BudgetSummaryByBadge = {
   badge: string;
   years: BudgetByYear[];
+};
+
+export type BudgetCompare = {
+  id: string;
+  category: any;
+  badge: any;
+  year: number;
+  planned: Decimal | number;
+  executed: Decimal | number;
+  difference: Decimal | number;
 };

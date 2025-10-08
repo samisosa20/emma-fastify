@@ -40,6 +40,37 @@ const budgetObjectSchema: SchemaDefault[] = [
   { name: "updatedAt", type: "string", body: false, private: false },
 ];
 
+const comparativeBudgetObjectSchema: SchemaDefault[] = [
+  { name: "year", type: "number", body: false, private: false },
+  { name: "id", type: "string", body: false, private: false },
+  { name: "planned", type: "number", body: false, private: false },
+  { name: "executed", type: "number", body: false, private: false },
+  { name: "difference", type: "number", body: false, private: false },
+  {
+    name: "badge",
+    type: "object",
+    body: false,
+    private: false,
+    properties: {
+      id: { type: "string" },
+      name: { type: "string" },
+      code: { type: "string" },
+      symbol: { type: "string" },
+      flag: { type: "string" },
+    },
+  },
+  {
+    name: "category",
+    type: "object",
+    body: false,
+    private: false,
+    properties: {
+      id: { type: "string" },
+      name: { type: "string" },
+    },
+  },
+];
+
 const yearsObjectSchema: SchemaDefault[] = [
   { name: "year", type: "number", body: false, private: false },
   { name: "incomes", type: "number", body: false, private: false },
@@ -76,6 +107,9 @@ const budgetYearObjectSchema: SchemaDefault[] = [
 
 const budgetResponseSchema = defaultSuccesResponse(budgetObjectSchema);
 const budgetYearResponseSchema = defaultSuccesResponse(budgetYearObjectSchema);
+const comparativeBudgetResponseSchema = defaultSuccesResponse(
+  comparativeBudgetObjectSchema
+);
 
 export const createBudgetDocumentation: FastifySchema = {
   description: "Crear un nuevo presupuesto",
@@ -90,14 +124,24 @@ export const createBudgetDocumentation: FastifySchema = {
 export const listBudgetsDocumentation: FastifySchema = {
   description: "Listar todos los presupuestos con paginación",
   tags: ["Budget"],
-  params: {
+  querystring: {
     type: "object",
     properties: {
-      ...paginationParamsDocumentation(),
+      year: {
+        type: "number",
+        description: "Año del presupuesto",
+      },
+      badgeId: {
+        type: "string",
+        description: "id de la moneda",
+      },
     },
   },
   response: {
-    200: paginationDocumentation(budgetObjectSchema),
+    200: {
+      type: "array",
+      items: comparativeBudgetResponseSchema,
+    },
     ...errorDocumentation,
   },
 };

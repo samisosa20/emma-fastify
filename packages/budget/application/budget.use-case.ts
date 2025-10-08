@@ -1,7 +1,8 @@
-import { CommonParamsPaginate, ErrorMessage, Paginate } from "packages/shared";
+import { CommonParamsPaginate, ErrorMessage } from "packages/shared";
 import { IBudgetRepository } from "../domain/interfaces/budget.interfaces";
 import {
   Budget,
+  BudgetCompare,
   BudgetSummaryByBadge,
   CreateBudget,
   ParamsBudget,
@@ -18,9 +19,7 @@ export class BudgetUseCase {
     return await this.badgeRepository.addBudget(data);
   }
 
-  public async listBudget(
-    params: CommonParamsPaginate
-  ): Promise<{ content: Budget[]; meta: Paginate }> {
+  public async listBudget(params: ParamsBudget): Promise<BudgetCompare[]> {
     return await this.badgeRepository.listBudget(params);
   }
 

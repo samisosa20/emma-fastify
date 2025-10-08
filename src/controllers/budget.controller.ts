@@ -18,8 +18,11 @@ const budgetUseCase = new BudgetUseCase(budgetRepository);
 
 export class BudgetController {
   getAllBudgets = async (request: FastifyRequest, reply: FastifyReply) => {
-    const params = request.query as BudgetParams;
-    return await budgetUseCase.listBudget(params);
+    const params = request.query as ParamsBudget;
+    return await budgetUseCase.listBudget({
+      ...params,
+      userId: request.user.id,
+    });
   };
 
   addBudget = async (request: FastifyRequest, reply: FastifyReply) => {

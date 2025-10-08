@@ -1,5 +1,6 @@
 import {
   Budget,
+  BudgetCompare,
   BudgetSummaryByBadge,
   CreateBudget,
   ParamsBudget,
@@ -9,6 +10,7 @@ import { IBudgetRepository } from "../domain/interfaces/budget.interfaces";
 import prisma from "packages/shared/settings/prisma.client";
 import { CommonParamsPaginate, Paginate, ErrorMessage } from "packages/shared";
 import { APIResponse } from "packages/badge/infrastructure/badge.repository";
+import { Decimal } from "@prisma/client/runtime/library";
 
 // Define el tipo para un solo objeto de presupuesto de la API externa
 type APIBudgetItem = {
@@ -46,19 +48,108 @@ export class BudgetPrismaRepository implements IBudgetRepository {
     }
   }
 
-  public async listBudget(
-    params: CommonParamsPaginate
-  ): Promise<{ content: Budget[]; meta: Paginate }> {
-    const { deleted, size, page } = params;
-    const [content, meta] = await prisma.budget.paginate().withPages({
-      limit: size ? Number(size) : 10,
-      page: page && page > 0 ? Number(page) : 1,
+  public async listBudget(params: ParamsBudget): Promise<BudgetCompare[]> {
+    const { year, userId, badgeId } = params;
+
+    const budgets = await prisma.budget.findMany({
+      where: {
+        ...(year && { year: Number(year) }),
+        ...(userId && { userId }),
+        ...(badgeId && { badgeId }),
+      },
+      select: {
+        id: true,
+        amount: true,
+        year: true,
+        userId: true,
+        badge: true,
+        period: true,
+        categoryId: true,
+        createdAt: true,
+        updatedAt: true,
+        badgeId: true,
+        periodId: true,
+        category: true,
+      },
+      orderBy: {
+        createdAt: "desc",
+      },
     });
 
-    return {
-      content,
-      meta,
-    };
+    const movements = await prisma.movement.findMany({
+      where: {
+        datePurchase: {
+          gte: new Date(`${year}-01-01`),
+          lte: new Date(`${year}-12-31`),
+        },
+        categoryId: { in: budgets.map((b) => b.categoryId) },
+        account: {
+          badgeId: { in: budgets.map((b) => b.badgeId) },
+        },
+      },
+      select: {
+        amount: true,
+        categoryId: true,
+        account: true,
+        datePurchase: true,
+      },
+    });
+
+    const summary = movements.reduce((acc, m) => {
+      const categoryId = m.categoryId;
+      const badgeId = m.account.badgeId;
+
+      const key = `${categoryId}-${badgeId}`;
+
+      if (!acc[key]) {
+        acc[key] = {
+          categoryId,
+          badgeId,
+          totalAmount: new Decimal(0),
+        };
+      }
+
+      acc[key].totalAmount = acc[key].totalAmount.add(m.amount);
+
+      return acc;
+    }, {} as Record<string, { categoryId: string; badgeId: string; totalAmount: Decimal }>);
+
+    // Convertir a array ordenada
+    const result = Object.values(summary);
+
+    const adjustedBudgets = budgets.map((b) => {
+      const yearlyAmount =
+        b.period.name === "Monthly" ? b.amount.mul(12) : b.amount;
+
+      return {
+        ...b,
+        yearlyAmount,
+      };
+    });
+
+    // 🔹 Ahora cotejamos con los movimientos (summary)
+    const compared = adjustedBudgets.map((b) => {
+      // Buscar la suma de movimientos que coincida con categoryId + badgeId
+      const match = result.find(
+        (m) => m.categoryId === b.categoryId && m.badgeId === b.badgeId
+      );
+
+      const executed = match ? match.totalAmount : new Decimal(0);
+      const planned = b.yearlyAmount;
+      const difference = planned.sub(executed.abs());
+
+      return {
+        id: b.id,
+        year: b.year,
+        badge: b.badge,
+        category: b.category,
+        planned,
+        executed,
+        difference,
+      };
+    });
+
+    return compared;
   }
 
   public async updateBudget(

@@ -6,7 +6,7 @@ import {
   paginationParamsDocumentation,
 } from "./components/pagination";
 import { errorDocumentation } from "./components/error";
-import { getBody } from "./components/realtions";
+import { getBody, getProperties } from "./components/realtions";
 
 const budgetObjectSchema: SchemaDefault[] = [
   { name: "id", type: "string", body: false, private: false },
@@ -40,7 +40,42 @@ const budgetObjectSchema: SchemaDefault[] = [
   { name: "updatedAt", type: "string", body: false, private: false },
 ];
 
+const yearsObjectSchema: SchemaDefault[] = [
+  { name: "year", type: "number", body: false, private: false },
+  { name: "incomes", type: "number", body: false, private: false },
+  { name: "expenses", type: "number", body: false, private: false },
+  { name: "utility", type: "number", body: false, private: false },
+  {
+    name: "badge",
+    type: "object",
+    body: false,
+    private: false,
+    properties: {
+      id: { type: "string" },
+      name: { type: "string" },
+      code: { type: "string" },
+      symbol: { type: "string" },
+      flag: { type: "string" },
+    },
+  },
+];
+
+const budgetYearObjectSchema: SchemaDefault[] = [
+  {
+    name: "years",
+    type: "array",
+    body: false,
+    private: false,
+    items: {
+      type: "object",
+      properties: getProperties(yearsObjectSchema),
+    },
+  },
+  { name: "badge", type: "string", body: false, private: false },
+];
+
 const budgetResponseSchema = defaultSuccesResponse(budgetObjectSchema);
+const budgetYearResponseSchema = defaultSuccesResponse(budgetYearObjectSchema);
 
 export const createBudgetDocumentation: FastifySchema = {
   description: "Crear un nuevo presupuesto",
@@ -112,6 +147,27 @@ export const deleteBudgetDocumentation: FastifySchema = {
   },
   response: {
     200: budgetResponseSchema,
+    ...errorDocumentation,
+  },
+};
+
+export const getBudgetYearDocumentation: FastifySchema = {
+  description: "Obtener el listado por años de los presupuestos",
+  tags: ["Budget"],
+  querystring: {
+    type: "object",
+    properties: {
+      year: {
+        type: "number",
+        description: "Año del presupuesto (opcional)",
+      },
+    },
+  },
+  response: {
+    200: {
+      type: "array",
+      items: budgetYearResponseSchema,
+    },
     ...errorDocumentation,
   },
 };

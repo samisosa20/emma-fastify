@@ -1,13 +1,13 @@
-import { Budget, CreateBudget } from "../domain/budget";
+import {
+  Budget,
+  BudgetSummaryByBadge,
+  CreateBudget,
+  ParamsBudget,
+} from "../domain/budget";
 import { IBudgetRepository } from "../domain/interfaces/budget.interfaces";
 
 import prisma from "packages/shared/settings/prisma.client";
-import {
-  CommonParamsPaginate,
-  Paginate,
-  ErrorMessage,
-  handleShowDeleteData,
-} from "packages/shared";
+import { CommonParamsPaginate, Paginate, ErrorMessage } from "packages/shared";
 import { APIResponse } from "packages/badge/infrastructure/badge.repository";
 
 // Define el tipo para un solo objeto de presupuesto de la API externa
@@ -50,16 +50,10 @@ export class BudgetPrismaRepository implements IBudgetRepository {
     params: CommonParamsPaginate
   ): Promise<{ content: Budget[]; meta: Paginate }> {
     const { deleted, size, page } = params;
-    const [content, meta] = await prisma.budget
-      .paginate({
-        where: {
-          OR: handleShowDeleteData(deleted === "1"),
-        },
-      })
-      .withPages({
-        limit: size ? Number(size) : 10,
-        page: page && page > 0 ? Number(page) : 1,
-      });
+    const [content, meta] = await prisma.budget.paginate().withPages({
+      limit: size ? Number(size) : 10,
+      page: page && page > 0 ? Number(page) : 1,
+    });
 
     return {
       content,
@@ -252,5 +246,69 @@ export class BudgetPrismaRepository implements IBudgetRepository {
         }
       );
     }
+  }
+
+  public async listBudgetByYear(
+    params: CommonParamsPaginate & ParamsBudget
+  ): Promise<BudgetSummaryByBadge[]> {
+    const { userId } = params;
+    const budgets = await prisma.budget.findMany({
+      where: {
+        userId,
+      },
+      select: {
+        year: true,
+        amount: true,
+        period: true,
+        badge: true,
+        category: true,
+      },
+      orderBy: {
+        year: "desc",
+      },
+    });
+
+    const summary = budgets.reduce((acc, budget) => {
+      const { year, amount, badge } = budget;
+      const badgeCode = badge.code;
+
+      // Buscar o crear el grupo de la badge
+      if (!acc[badgeCode]) {
+        acc[badgeCode] = {
+          badge: badgeCode,
+          years: [],
+        };
+      }
+
+      // Buscar el año dentro de esa badge
+      let yearGroup = acc[badgeCode].years.find((y) => y.year === year);
+      if (!yearGroup) {
+        yearGroup = { year, incomes: 0, expenses: 0, utility: 0, badge };
+        acc[badgeCode].years.push(yearGroup);
+      }
+
+      // Convertir amount a número si es Decimal
+      const numericAmount = Number(amount);
+
+      // Sumar según signo
+      if (numericAmount >= 0) {
+        yearGroup.incomes += numericAmount;
+      } else {
+        yearGroup.expenses += numericAmount;
+      }
+
+      // Calcular utilidad
+      yearGroup.utility = yearGroup.incomes + yearGroup.expenses;
+
+      return acc;
+    }, {} as Record<string, BudgetSummaryByBadge>);
+
+    // Convertir el objeto a array y ordenar
+    const result = Object.values(summary).map((b) => ({
+      ...b,
+      years: b.years.sort((a, b) => b.year - a.year),
+    }));
+
+    return result;
   }
 }

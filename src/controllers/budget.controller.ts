@@ -4,7 +4,7 @@ import { formatErrorMessage } from "@lib";
 
 import { BudgetUseCase } from "packages/budget/application/budget.use-case";
 import { BudgetPrismaRepository } from "packages/budget/infrastructure/budget.repository";
-import { CreateBudget } from "packages/budget/domain/budget";
+import { CreateBudget, ParamsBudget } from "packages/budget/domain/budget";
 
 type BudgetParams = {
   page: number;
@@ -69,5 +69,13 @@ export class BudgetController {
 
   importBudgets = async (request: FastifyRequest, reply: FastifyReply) => {
     return budgetUseCase.importBudgets();
+  };
+
+  listBudgetByYear = async (request: FastifyRequest, reply: FastifyReply) => {
+    const params = request.query as ParamsBudget;
+    return budgetUseCase.listBudgetByYear({
+      ...params,
+      userId: request.user.id,
+    });
   };
 }

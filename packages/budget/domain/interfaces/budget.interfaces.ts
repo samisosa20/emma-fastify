@@ -1,5 +1,10 @@
 import { CommonParamsPaginate, ErrorMessage, Paginate } from "packages/shared";
-import { Budget, CreateBudget } from "../budget";
+import {
+  Budget,
+  BudgetSummaryByBadge,
+  CreateBudget,
+  ParamsBudget,
+} from "../budget";
 
 export interface IBudgetRepository {
   addBudget(data: CreateBudget): Promise<Budget | ErrorMessage>;
@@ -15,4 +20,7 @@ export interface IBudgetRepository {
   importBudgets(): Promise<{
     budgetCount: number;
   }>;
+  listBudgetByYear(
+    params: CommonParamsPaginate & ParamsBudget
+  ): Promise<BudgetSummaryByBadge[]>;
 }

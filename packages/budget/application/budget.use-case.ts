@@ -1,6 +1,11 @@
 import { CommonParamsPaginate, ErrorMessage, Paginate } from "packages/shared";
 import { IBudgetRepository } from "../domain/interfaces/budget.interfaces";
-import { Budget, CreateBudget } from "../domain/budget";
+import {
+  Budget,
+  BudgetSummaryByBadge,
+  CreateBudget,
+  ParamsBudget,
+} from "../domain/budget";
 
 export class BudgetUseCase {
   private badgeRepository: IBudgetRepository;
@@ -36,5 +41,10 @@ export class BudgetUseCase {
 
   public async importBudgets(): Promise<{ budgetCount: number }> {
     return await this.badgeRepository.importBudgets();
+  }
+  public async listBudgetByYear(
+    params: CommonParamsPaginate & ParamsBudget
+  ): Promise<BudgetSummaryByBadge[]> {
+    return await this.badgeRepository.listBudgetByYear(params);
   }
 }

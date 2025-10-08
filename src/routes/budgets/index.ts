@@ -5,6 +5,7 @@ import {
   getBudgetDocumentation,
   updateBudgetDocumentation,
   listBudgetsDocumentation,
+  getBudgetYearDocumentation,
 } from "src/documentation";
 import { FastifyPluginAsync } from "fastify";
 
@@ -64,6 +65,14 @@ const budgetsRoutes: FastifyPluginAsync = async (fastify) => {
       preHandler: [fastify.authenticate],
     },
     budgetController.importBudgets
+  );
+  fastify.get(
+    "/list-year",
+    {
+      preHandler: [fastify.authenticate],
+      schema: getBudgetYearDocumentation,
+    },
+    budgetController.listBudgetByYear
   );
 };
 

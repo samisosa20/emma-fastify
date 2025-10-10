@@ -1,16 +1,17 @@
 import { FastifySchema } from "fastify/types/schema";
-import {
-  defaultSuccesResponse,
-  SchemaDefault,
-  paginationDocumentation,
-  paginationParamsDocumentation,
-} from "./components/pagination";
+import { defaultSuccesResponse, SchemaDefault } from "./components/pagination";
 import { errorDocumentation } from "./components/error";
 import { getBody, getProperties } from "./components/realtions";
 
 const budgetObjectSchema: SchemaDefault[] = [
   { name: "id", type: "string", body: false, private: false },
-  { name: "name", type: "string", body: ["create", "update"], private: false },
+  { name: "year", type: "number", body: ["create", "update"], private: false },
+  {
+    name: "badgeId",
+    type: "string",
+    body: ["create", "update"],
+    private: false,
+  },
   {
     name: "amount",
     type: "number",
@@ -18,13 +19,7 @@ const budgetObjectSchema: SchemaDefault[] = [
     private: false,
   },
   {
-    name: "startDate",
-    type: "string",
-    body: ["create", "update"],
-    private: false,
-  },
-  {
-    name: "endDate",
+    name: "periodId",
     type: "string",
     body: ["create", "update"],
     private: false,
@@ -35,7 +30,29 @@ const budgetObjectSchema: SchemaDefault[] = [
     body: ["create", "update"],
     private: false,
   },
-  { name: "userId", type: "string", body: ["create"], private: false },
+  {
+    name: "badge",
+    type: "object",
+    body: false,
+    private: false,
+    properties: {
+      id: { type: "string" },
+      name: { type: "string" },
+      code: { type: "string" },
+      symbol: { type: "string" },
+      flag: { type: "string" },
+    },
+  },
+  {
+    name: "category",
+    type: "object",
+    body: false,
+    private: false,
+    properties: {
+      id: { type: "string" },
+      name: { type: "string" },
+    },
+  },
   { name: "createdAt", type: "string", body: false, private: false },
   { name: "updatedAt", type: "string", body: false, private: false },
 ];

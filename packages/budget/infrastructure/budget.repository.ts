@@ -35,8 +35,20 @@ type APIBudgetResponse = APIBudgetItem[];
 export class BudgetPrismaRepository implements IBudgetRepository {
   public async addBudget(data: CreateBudget): Promise<Budget | ErrorMessage> {
     try {
+      const { periodId, badgeId, categoryId, userId, ...restData } = data;
       const newBudget = await prisma.budget.create({
-        data,
+        data: {
+          ...restData,
+          period: { connect: { id: periodId } },
+          badge: { connect: { id: badgeId } },
+          category: { connect: { id: categoryId } },
+          user: { connect: { id: userId } },
+        },
+        include: {
+          period: true,
+          badge: true,
+          category: true,
+        },
       });
       return newBudget;
     } catch (error: any) {
@@ -157,11 +169,23 @@ export class BudgetPrismaRepository implements IBudgetRepository {
     data: Partial<CreateBudget>
   ): Promise<Budget | ErrorMessage> {
     try {
+      const { periodId, badgeId, categoryId, userId, ...restData } = data;
       const updatedBudget = await prisma.budget.update({
         where: {
           id,
         },
-        data,
+        data: {
+          ...restData,
+          period: { connect: { id: periodId } },
+          badge: { connect: { id: badgeId } },
+          category: { connect: { id: categoryId } },
+          user: { connect: { id: userId } },
+        },
+        include: {
+          period: true,
+          badge: true,
+          category: true,
+        },
       });
       return updatedBudget;
     } catch (error: any) {
@@ -177,6 +201,11 @@ export class BudgetPrismaRepository implements IBudgetRepository {
     try {
       return await prisma.budget.findUnique({
         where: { id },
+        include: {
+          period: true,
+          badge: true,
+          category: true,
+        },
       });
     } catch (error: any) {
       throw Object.assign(new Error("Validation Error"), {
@@ -190,13 +219,20 @@ export class BudgetPrismaRepository implements IBudgetRepository {
   public async deleteBudget(id: string): Promise<Budget | null> {
     const budget = await prisma.budget.findUnique({
       where: { id },
+      include: {
+        period: true,
+        badge: true,
+        category: true,
+      },
     });
     if (!budget) {
       return null;
     }
-    return await prisma.budget.delete({
+    await prisma.budget.delete({
       where: { id },
     });
+
+    return budget;
   }
 
   public async importBudgets(): Promise<{

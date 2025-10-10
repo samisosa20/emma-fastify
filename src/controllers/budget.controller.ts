@@ -29,7 +29,10 @@ export class BudgetController {
     const dataBudget = request.body as CreateBudget;
 
     try {
-      return budgetUseCase.addBudget(dataBudget);
+      return budgetUseCase.addBudget({
+        ...dataBudget,
+        userId: request.user.id,
+      });
     } catch (error: any) {
       const detail = formatErrorMessage(error);
       return reply.status(400).send({
@@ -45,7 +48,10 @@ export class BudgetController {
     const { id } = request.params as { id: string };
 
     try {
-      return budgetUseCase.updateBudget(id, dataBudget);
+      return budgetUseCase.updateBudget(id, {
+        ...dataBudget,
+        userId: request.user.id,
+      });
     } catch (error: any) {
       const detail = formatErrorMessage(error);
       return reply.status(400).send({

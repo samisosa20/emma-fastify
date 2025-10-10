@@ -360,8 +360,9 @@ export class BudgetPrismaRepository implements IBudgetRepository {
     });
 
     const summary = budgets.reduce((acc, budget) => {
-      const { year, amount, badge } = budget;
+      const { year, amount, badge, period } = budget;
       const badgeCode = badge.code;
+      const yearlyAmount = period.name === "Monthly" ? amount.mul(12) : amount;
 
       // Buscar o crear el grupo de la badge
       if (!acc[badgeCode]) {
@@ -374,22 +375,24 @@ export class BudgetPrismaRepository implements IBudgetRepository {
       // Buscar el año dentro de esa badge
       let yearGroup = acc[badgeCode].years.find((y) => y.year === year);
       if (!yearGroup) {
-        yearGroup = { year, incomes: 0, expenses: 0, utility: 0, badge };
+        yearGroup = {
+          year,
+          incomes: new Decimal(0),
+          expenses: new Decimal(0),
+          utility: new Decimal(0),
+          badge,
+        };
         acc[badgeCode].years.push(yearGroup);
       }
-
-      // Convertir amount a número si es Decimal
-      const numericAmount = Number(amount);
-
       // Sumar según signo
-      if (numericAmount >= 0) {
-        yearGroup.incomes += numericAmount;
+      if (yearlyAmount.gte(0)) {
+        yearGroup.incomes = yearGroup.incomes.add(yearlyAmount);
       } else {
-        yearGroup.expenses += numericAmount;
+        yearGroup.expenses = yearGroup.expenses.add(yearlyAmount);
       }
 
       // Calcular utilidad
-      yearGroup.utility = yearGroup.incomes + yearGroup.expenses;
+      yearGroup.utility = yearGroup.incomes.add(yearGroup.expenses);
 
       return acc;
     }, {} as Record<string, BudgetSummaryByBadge>);

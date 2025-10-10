@@ -21,9 +21,9 @@ export type ParamsBudget = {
 };
 export type BudgetByYear = {
   year: number;
-  incomes: number;
-  expenses: number;
-  utility: number;
+  incomes: Decimal;
+  expenses: Decimal;
+  utility: Decimal;
   badge: {
     flag: string | null;
     name: string;

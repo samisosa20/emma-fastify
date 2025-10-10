@@ -40,8 +40,30 @@ export class AccountPrismaRepository implements IAccountRepository {
     data: CreateAccount
   ): Promise<Account | ErrorMessage> {
     try {
+      const { badgeId, typeId, userId, ...restData } = data;
       const newAccount = await prisma.account.create({
-        data,
+        data: {
+          ...restData,
+          badge: {
+            connect: {
+              id: data.badgeId,
+            },
+          },
+          type: {
+            connect: {
+              id: data.typeId,
+            },
+          },
+          user: {
+            connect: {
+              id: data.userId,
+            },
+          },
+        },
+        include: {
+          badge: true,
+          type: true,
+        },
       });
       return newAccount;
     } catch (error: any) {
@@ -138,15 +160,32 @@ export class AccountPrismaRepository implements IAccountRepository {
     data: Partial<CreateAccount>
   ): Promise<Account | ErrorMessage> {
     try {
+      const { badgeId, typeId, userId, ...restData } = data;
       const updatedAccount = await prisma.account.update({
         where: {
           id,
-          deletedAt: null,
         },
-        data,
+        data: {
+          ...restData,
+          badge: {
+            connect: {
+              id: data.badgeId,
+            },
+          },
+          type: {
+            connect: {
+              id: data.typeId,
+            },
+          },
+        },
+        include: {
+          badge: true,
+          type: true,
+        },
       });
       return updatedAccount;
     } catch (error: any) {
+      console.log(error);
       throw Object.assign(new Error("Validation Error"), {
         statusCode: 400,
         error: "Bad Request",
@@ -193,6 +232,23 @@ export class AccountPrismaRepository implements IAccountRepository {
   public async deleteAccount(id: string): Promise<Account | null> {
     const account = await prisma.account.findUnique({
       where: { id },
+      include: {
+        badge: true,
+        type: true,
+      },
+    });
+    if (!account) {
+      return null;
+    }
+    await prisma.account.delete({
+      where: { id },
+    });
+    return account;
+  }
+
+  public async desactivateAccount(id: string): Promise<Account | null> {
+    const account = await prisma.account.findUnique({
+      where: { id },
     });
     if (!account) {
       return null;
@@ -200,8 +256,30 @@ export class AccountPrismaRepository implements IAccountRepository {
     return await prisma.account.update({
       where: { id },
       data: { deletedAt: new Date() },
+      include: {
+        badge: true,
+        type: true,
+      },
     });
   }
+
+  public async restoreAccount(id: string): Promise<Account | null> {
+    const account = await prisma.account.findUnique({
+      where: { id },
+    });
+    if (!account) {
+      return null;
+    }
+    return await prisma.account.update({
+      where: { id },
+      data: { deletedAt: null },
+      include: {
+        badge: true,
+        type: true,
+      },
+    });
+  }
+
   public async importAccounts(): Promise<{
     accountCount: number;
   }> {

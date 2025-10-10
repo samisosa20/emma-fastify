@@ -14,6 +14,12 @@ export const accountObjectSchema: SchemaDefault[] = [
   { name: "id", type: "string", body: false, private: false },
   { name: "name", type: "string", body: ["create", "update"], private: false },
   {
+    name: "description",
+    type: "string",
+    body: ["create", "update"],
+    private: false,
+  },
+  {
     name: "accountTypeId",
     type: "string",
     body: ["create", "update"],
@@ -58,13 +64,16 @@ export const accountObjectSchema: SchemaDefault[] = [
 ];
 
 const accountResponseSchema = defaultSuccesResponse(accountObjectSchema);
+const accountWithOutBalanceResponseSchema = defaultSuccesResponse(
+  accountObjectSchema.filter((field) => field.name !== "balance")
+);
 
 export const createAccountDocumentation: FastifySchema = {
   description: "Crear una nueva cuenta",
   tags: ["Account"],
   body: getBody(accountObjectSchema, "create"),
   response: {
-    200: accountResponseSchema,
+    200: accountWithOutBalanceResponseSchema,
     ...errorDocumentation,
   },
 };
@@ -112,7 +121,7 @@ export const updateAccountDocumentation: FastifySchema = {
   },
   body: getBody(accountObjectSchema, "update"),
   response: {
-    200: accountResponseSchema,
+    200: accountWithOutBalanceResponseSchema,
     ...errorDocumentation,
   },
 };
@@ -128,7 +137,7 @@ export const deleteAccountDocumentation: FastifySchema = {
     },
   },
   response: {
-    200: accountResponseSchema,
+    200: accountWithOutBalanceResponseSchema,
     ...errorDocumentation,
   },
 };

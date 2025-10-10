@@ -33,6 +33,12 @@ export class AccountUseCase {
   public async deleteAccount(id: string): Promise<Account | null> {
     return await this.accountRepository.deleteAccount(id);
   }
+  public async desactivateAccount(id: string): Promise<Account | null> {
+    return await this.accountRepository.desactivateAccount(id);
+  }
+  public async restoreAccount(id: string): Promise<Account | null> {
+    return await this.accountRepository.restoreAccount(id);
+  }
   public async importAccounts(): Promise<{
     accountCount: number;
   }> {

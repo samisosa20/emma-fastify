@@ -58,6 +58,24 @@ const accountsRoutes: FastifyPluginAsync = async (fastify) => {
     accountController.deleteAccount
   );
 
+  fastify.patch(
+    "/:id/desactivate",
+    {
+      preHandler: [fastify.authenticate],
+      schema: deleteAccountDocumentation,
+    },
+    accountController.desactivateAccount
+  );
+
+  fastify.patch(
+    "/:id/restore",
+    {
+      preHandler: [fastify.authenticate],
+      schema: deleteAccountDocumentation,
+    },
+    accountController.restoreAccount
+  );
+
   fastify.post(
     "/import-accounts",
     {

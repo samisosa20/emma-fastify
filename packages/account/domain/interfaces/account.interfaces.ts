@@ -12,6 +12,8 @@ export interface IAccountRepository {
   ): Promise<Account | ErrorMessage>;
   detailAccount(id: string): Promise<Account | null>;
   deleteAccount(id: string): Promise<Account | null>;
+  desactivateAccount(id: string): Promise<Account | null>;
+  restoreAccount(id: string): Promise<Account | null>;
   importAccounts(): Promise<{
     accountCount: number;
   }>;

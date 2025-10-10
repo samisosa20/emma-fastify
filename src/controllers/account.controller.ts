@@ -70,6 +70,24 @@ export class AccountController {
     return result;
   };
 
+  desactivateAccount = async (request: FastifyRequest, reply: FastifyReply) => {
+    const { id } = request.params as { id: string };
+    const result = await accountUseCase.desactivateAccount(id);
+    if (result === null) {
+      return reply.status(404).send({ message: "Account not found" });
+    }
+    return result;
+  };
+
+  restoreAccount = async (request: FastifyRequest, reply: FastifyReply) => {
+    const { id } = request.params as { id: string };
+    const result = await accountUseCase.restoreAccount(id);
+    if (result === null) {
+      return reply.status(404).send({ message: "Account not found" });
+    }
+    return result;
+  };
+
   importAccounts = async (request: FastifyRequest, reply: FastifyReply) => {
     const result = await accountUseCase.importAccounts();
     if (result === null) {

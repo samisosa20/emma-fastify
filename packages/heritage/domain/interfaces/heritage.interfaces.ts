@@ -11,7 +11,12 @@ export interface IHeritageRepository {
   addHeritage(data: CreateHeritage): Promise<Heritage | ErrorMessage>;
   listHeritage(
     params: CommonParamsPaginate & ParamsHeritage
-  ): Promise<{ balances: ReportBalance; content: Heritage[]; meta: Paginate }>;
+  ): Promise<{
+    balances: ReportBalance;
+    investments: ReportBalance;
+    content: Heritage[];
+    meta: Paginate;
+  }>;
   updateHeritage(
     id: string,
     account: Partial<CreateHeritage>

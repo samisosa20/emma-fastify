@@ -86,6 +86,21 @@ const detailHeritageSchema = defaultSuccesResponse([
       },
     },
   },
+  {
+    name: "investments",
+    type: "array",
+    body: false,
+    private: false,
+    items: {
+      type: "object",
+      properties: {
+        code: { type: "string" },
+        flag: { type: "string" },
+        symbol: { type: "string" },
+        amount: { type: "number" },
+      },
+    },
+  },
 ]);
 
 export const createHeritageDocumentation: FastifySchema = {

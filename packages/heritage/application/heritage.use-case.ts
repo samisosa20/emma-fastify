@@ -23,7 +23,12 @@ export class HeritageUseCase {
 
   public async listHeritage(
     params: CommonParamsPaginate & ParamsHeritage
-  ): Promise<{ balances: ReportBalance; content: Heritage[]; meta: Paginate }> {
+  ): Promise<{
+    balances: ReportBalance;
+    investments: ReportBalance;
+    content: Heritage[];
+    meta: Paginate;
+  }> {
     return await this.heritageRepository.listHeritage(params);
   }
 

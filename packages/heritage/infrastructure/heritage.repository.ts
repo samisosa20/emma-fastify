@@ -61,8 +61,13 @@ export class HeritagePrismaRepository implements IHeritageRepository {
 
   public async listHeritage(
     params: CommonParamsPaginate & ParamsHeritage
-  ): Promise<{ balances: ReportBalance; content: Heritage[]; meta: Paginate }> {
-    const { deleted, size, page, year, userId } = params;
+  ): Promise<{
+    balances: ReportBalance;
+    investments: ReportBalance;
+    content: Heritage[];
+    meta: Paginate;
+  }> {
+    const { size, page, year, userId } = params;
     const [content, meta] = await prisma.heritage
       .paginate({
         where: {
@@ -77,20 +82,82 @@ export class HeritagePrismaRepository implements IHeritageRepository {
         page: page && page > 0 ? Number(page) : 1,
       });
 
-    const reportIcome = await prisma.vw_yearlyincome.findMany({
+    const limitDate = new Date(`${params.year}-12-31T23:59:59.999Z`);
+
+    const initAccount = await prisma.account.groupBy({
+      by: ["badgeId"],
       where: {
-        year: params.year,
-        userId: params.userId,
+        userId,
+        createdAt: {
+          lte: limitDate,
+        },
       },
-      orderBy: [{ year: "desc" }, { amount: "desc" }],
+      _sum: {
+        initAmount: true,
+      },
+      orderBy: {
+        badgeId: "asc",
+      },
     });
 
-    const reportExport = await prisma.vw_yearlyexpensive.findMany({
+    const reportIcome = await prisma.vw_yearlyincome.groupBy({
+      by: ["badgeId"],
       where: {
-        year: params.year,
-        userId: params.userId,
+        userId,
+        year: {
+          lte: params.year,
+        },
       },
-      orderBy: [{ year: "desc" }, { amount: "desc" }],
+      _sum: {
+        amount: true,
+      },
+      orderBy: {
+        badgeId: "asc",
+      },
+    });
+
+    const reportExport = await prisma.vw_yearlyexpensive.groupBy({
+      by: ["badgeId"],
+      where: {
+        userId,
+        year: {
+          lte: params.year,
+        },
+      },
+      _sum: {
+        amount: true,
+      },
+      orderBy: {
+        badgeId: "asc",
+      },
+    });
+
+    const lastDates = await prisma.investmentAppreciation.groupBy({
+      by: ["investmentId"],
+      where: {
+        userId,
+        dateAppreciation: {
+          gte: new Date(`${params.year}-01-01T00:00:00.000Z`),
+          lte: new Date(`${params.year}-12-31T23:59:59.999Z`),
+        },
+      },
+      _max: { dateAppreciation: true },
+    });
+
+    const cleaned = lastDates.filter((d) => d._max.dateAppreciation !== null);
+
+    const investments = await prisma.investmentAppreciation.findMany({
+      where: {
+        OR: cleaned.map((d) => ({
+          investmentId: d.investmentId,
+          dateAppreciation: d._max.dateAppreciation!,
+        })),
+      },
+      include: {
+        investment: {
+          select: { badgeId: true },
+        },
+      },
     });
 
     // 2. Extract all unique badge IDs from both reports
@@ -115,7 +182,7 @@ export class HeritagePrismaRepository implements IHeritageRepository {
     const incomeBalances = reportIcome.map((item) => {
       const badge = badgesMap.get(item.badgeId);
       return {
-        amount: Number(item.amount),
+        amount: Number(item._sum.amount),
         code: String(badge?.code),
         flag: String(badge?.flag),
         symbol: String(badge?.symbol),
@@ -125,6 +192,26 @@ export class HeritagePrismaRepository implements IHeritageRepository {
     const expenseBalances = reportExport.map((item) => {
       const badge = badgesMap.get(item.badgeId);
       return {
+        amount: Number(item._sum.amount),
+        code: String(badge?.code),
+        flag: String(badge?.flag),
+        symbol: String(badge?.symbol),
+      };
+    });
+
+    const initAccountBalances = initAccount.map((item) => {
+      const badge = badgesMap.get(item.badgeId);
+      return {
+        amount: Number(item._sum.initAmount),
+        code: String(badge?.code),
+        flag: String(badge?.flag),
+        symbol: String(badge?.symbol),
+      };
+    });
+
+    const investmentBalances = investments.map((item) => {
+      const badge = badgesMap.get(item.investment.badgeId);
+      return {
         amount: Number(item.amount),
         code: String(badge?.code),
         flag: String(badge?.flag),
@@ -133,9 +220,14 @@ export class HeritagePrismaRepository implements IHeritageRepository {
     });
 
     // 6. Combine all balances into a single array
-    const generalBalances = [...incomeBalances, ...expenseBalances];
+    const generalBalances = [
+      ...incomeBalances,
+      ...expenseBalances,
+      ...initAccountBalances,
+    ];
 
     const aggregatedBalancesMap = new Map();
+    const investmentMap = new Map();
 
     for (const balance of generalBalances) {
       const { code, amount, flag, symbol } = balance;
@@ -153,11 +245,31 @@ export class HeritagePrismaRepository implements IHeritageRepository {
       }
     }
 
+    for (const row of investmentBalances) {
+      const { code, amount, flag, symbol } = row;
+
+      if (code) {
+        const existingBalance = investmentMap.get(code) || {
+          code,
+          flag,
+          symbol,
+          amount: 0,
+        };
+
+        existingBalance.amount += amount;
+        investmentMap.set(code, existingBalance);
+      }
+    }
+
+    // Resultado final
+    const finalInvestments = Array.from(investmentMap.values());
+
     // 4. Convertir el Map a un arreglo final
     const finalBalances = Array.from(aggregatedBalancesMap.values());
 
     return {
       balances: finalBalances,
+      investments: finalInvestments,
       content,
       meta,
     };

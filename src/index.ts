@@ -50,11 +50,11 @@ const bootstrap = async () => {
       secret: process.env.JWT_SECRET || "supersecretkey",
     });
     await fastify.listen({
-      port: Number(process.env.PORT) || 3000,
+      port: Number(process.env.PORT) || 8010,
       host: "0.0.0.0",
     });
     console.log(
-      `Server is running on http://localhost::${process.env.PORT || 3000}`
+      `Server is running on http://localhost::${process.env.PORT || 8010}`
     );
     fastify.swagger();
   } catch (error) {

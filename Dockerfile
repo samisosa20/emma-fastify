@@ -1,51 +1,51 @@
-# Use an official Node.js runtime based on Debian "bookworm" as a parent image.
-FROM node:23-slim-bookworm
-
-# Add user that will be used in the container.
-RUN useradd node
-
-# Port used by this container to serve HTTP.
-EXPOSE 8010
-
-# Set environment variables.
-# 1. Set NODE_ENV to production for optimized Node.js performance.
-# 2. Set PORT variable. This should match "EXPOSE" command.
-ENV NODE_ENV=production \
-    PORT=8010
-
-# No longer need Python-specific system packages or Gunicorn.
-# If your Fastify app has native dependencies, you might need build-essential
-# or other libraries here. For a typical Fastify app, these are often not needed.
-# RUN apt-get update --yes --quiet && apt-get install --yes --quiet --no-install-recommends \
-#     build-essential \
-#  && rm -rf /var/lib/apt/lists/*
-#  && rm -rf /var/lib/apt/lists/*
-
-# Use /app folder as a directory where the source code is stored.
+# --- Etapa 1: Dependencias y Build ---
+FROM node:23-alpine AS builder
 WORKDIR /app
 
-# Copy package.json and package-lock.json (or yarn.lock) first to leverage Docker cache.
-# This allows Docker to reuse the npm install layer if package.json doesn't change.
-COPY package*.json ./
+# Copiamos archivos de dependencias
+COPY package.json package-lock.json* ./
+# Copiamos el esquema de Prisma (necesario para generar el cliente)
+COPY prisma ./prisma/
 
-# Install Node.js dependencies.
-RUN npm install --production
+# Instalamos TODAS las deps (incluyendo devDependencies para compilar TS)
+RUN npm ci
 
-# Set this directory to be owned by the "node" user.
-RUN chown node:node /app
+# Generamos el cliente de Prisma
+RUN npx prisma generate
 
-# Copy the source code of the project into the container.
-# Ensure your Fastify application's source code is copied.
-COPY --chown=node:node . .
+# Copiamos el código fuente
+COPY tsconfig.json ./
+COPY src ./src
+# Si tienes otros archivos necesarios para el build, agrégalos aquí
 
-# Use user "wagtail" to run the build commands below and the server itself.
-# Use user "node" to run the application.
-USER node
-
-# If your Fastify application is written in TypeScript or requires a build step,
-# uncomment the following line. Make sure your package.json has a "build" script.
+# Compilamos TypeScript a JS (genera carpeta /dist)
 RUN npm run build
 
-# Runtime command that executes when "docker run" is called.
-# This assumes your package.json has a "start" script (e.g., "node dist/server.js").
-CMD ["npm", "start"]
+# --- Etapa 2: Limpieza de Dependencias ---
+FROM node:23-alpine AS deps-prod
+WORKDIR /app
+COPY package.json package-lock.json* ./
+COPY prisma ./prisma/
+
+# Instalamos SOLO dependencias de producción (ahorra mucho espacio)
+RUN npm ci --omit=dev && npx prisma generate
+
+# --- Etapa 3: Runner Final (Ligera) ---
+FROM node:23-alpine AS runner
+WORKDIR /app
+
+ENV NODE_ENV=production
+ENV PORT=8010
+
+# Copiamos node_modules limpios
+COPY --from=deps-prod /app/node_modules ./node_modules
+# Copiamos el código compilado
+COPY --from=builder /app/dist ./dist
+# Copiamos package.json por si algún script lo requiere
+COPY package.json ./
+
+# Exponemos puerto
+EXPOSE 8010
+
+# Comando de inicio directo (Sin ts-node ni tsconfig-paths, ya es JS puro)
+CMD ["node", "dist/src/index.js"]

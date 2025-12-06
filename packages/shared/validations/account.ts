@@ -7,10 +7,10 @@ export const AccountCreateInput = z.object({
     .string({ message: "description is required" })
     .nullable()
     .optional(),
-  badgeId: z.string({ message: "badgeId is required" }).uuid(),
+  badgeId: z.uuid({ message: "badgeId is required" }),
   initAmount: z.number({ message: "initAmount is required" }),
   limit: z.number({ message: "limit is required" }),
-  typeId: z.string({ message: "typeId is required" }).uuid(),
+  typeId: z.uuid({ message: "typeId is required" }),
   // userId: z.string({ message: "userId is required" }),
 }) satisfies z.Schema<Omit<Prisma.AccountUncheckedCreateInput, "userId">>;
 

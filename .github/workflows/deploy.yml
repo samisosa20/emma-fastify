@@ -47,15 +47,14 @@ jobs:
             HOST_PORT="${{ secrets.SERVER_PORT || '8010' }}"
 
             # 1. Crear archivo .env en el servidor desde el secreto
-            echo "${{ secrets.ENV_FILE }}" > .env.emma
+            cat <<EOF > .env.emma
+            ${{ secrets.ENV_FILE_CONTENT }}
+            EOF
 
             echo "=== Actualizando ==="
             docker pull $IMAGE
             docker stop $CONTAINER || true
             docker rm $CONTAINER || true
-
-            # (Opcional) Migraciones
-            # docker run --rm --env-file .env.emma $IMAGE npm run migrate
 
             echo "=== Iniciando ==="
             docker run -d \
@@ -64,8 +63,7 @@ jobs:
               -p ${HOST_PORT}:8010 \
               --env-file .env.emma \
               $IMAGE
-              
-            # Borrar el archivo .env del disco por seguridad tras el arranque
+
             rm .env.emma
 
             echo "=== Limpieza ==="

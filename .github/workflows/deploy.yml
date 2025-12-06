@@ -48,7 +48,7 @@ jobs:
 
             # 1. Crear archivo .env en el servidor desde el secreto
             cat <<EOF > .env.emma
-            ${{ secrets.ENV_FILE_CONTENT }}
+            ${{ secrets.ENV_FILE }}
             EOF
 
             echo "=== Actualizando ==="

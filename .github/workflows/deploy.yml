@@ -2,7 +2,7 @@ name: CI/CD Emma Backend Fastify
 
 on:
   push:
-    branches: ["main"]
+    branches: ["master"]
 
 jobs:
   # Build y Push

@@ -20,7 +20,7 @@ COPY src ./src
 # Si tienes otros archivos necesarios para el build, agrégalos aquí
 
 # Compilamos TypeScript a JS (genera carpeta /dist)
-RUN npm run npm
+RUN npm run build
 
 # --- Etapa 2: Limpieza de Dependencias ---
 FROM node:23-alpine AS deps-prod

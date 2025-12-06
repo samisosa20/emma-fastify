@@ -28,7 +28,7 @@ cron.schedule("0 5 * * *", async () => {
     );
 
     // 2️⃣ Mapearlos a nuevos movimientos
-    const newMovements = plannedPayments.map((pp) => ({
+    const newMovements = plannedPayments.map((pp: any) => ({
       accountId: pp.accountId,
       categoryId: pp.categoryId,
       description: pp.description,

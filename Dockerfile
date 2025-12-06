@@ -15,11 +15,12 @@ RUN npx prisma generate
 
 # Copiamos el código fuente
 COPY tsconfig.json ./
+COPY packages ./packages
 COPY src ./src
 # Si tienes otros archivos necesarios para el build, agrégalos aquí
 
 # Compilamos TypeScript a JS (genera carpeta /dist)
-RUN npm run build
+RUN npm run npm
 
 # --- Etapa 2: Limpieza de Dependencias ---
 FROM node:23-alpine AS deps-prod

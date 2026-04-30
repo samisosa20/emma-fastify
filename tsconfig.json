@@ -13,6 +13,7 @@
       "@routes": ["src/routes"],
       "@controllers": ["src/controllers"],
       "@lib": ["src/lib"],
+      "@lib/*": ["src/lib/*"],
       "@packages": ["packages"],
     }
   },

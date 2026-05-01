@@ -52,12 +52,13 @@ export const auth = betterAuth({
       const groupCategories = await prisma.groupCategory.findMany();
       const userFromDb = await prisma.user.findUnique({
         where: { id: user.id },
-        select: { confirmedEmailAt: true },
+        select: { confirmedEmailAt: true, badgeId: true },
       });
       return {
         user: {
           ...user,
           isConfirmed: !!userFromDb?.confirmedEmailAt,
+          badgeId: userFromDb?.badgeId,
         },
         session: {
           ...session,

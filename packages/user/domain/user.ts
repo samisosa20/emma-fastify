@@ -2,8 +2,8 @@ export type User = {
   id: string;
   email: string;
   name: string;
-  password: string;
-  badgeId: string;
+  password: string | null;
+  badgeId: string | null;
   phone: string | null;
   phoneCode: string | null;
   tokenRecoveryPassword: string | null;

@@ -8,6 +8,10 @@ export const auth = betterAuth({
   }),
   basePath: "/api/v2/auth",
   secret: process.env.BETTER_AUTH_SECRET,
+  trustedOrigins: [
+    process.env.APP_URL || "http://localhost:3000",
+    "http://localhost:8010",
+  ],
   account: {
     modelName: "oauthAccount",
     fields: {

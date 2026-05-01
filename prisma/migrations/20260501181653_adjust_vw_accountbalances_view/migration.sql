@@ -1,4 +1,4 @@
-CREATE OR REPLACE  VIEW `fiona`.`vw_accountbalances` AS
+CREATE OR REPLACE  VIEW `vw_accountbalances` AS
 with `totalbalance` as (
 select
     `m`.`accountId` AS `accountId`,
@@ -10,14 +10,14 @@ select
     `a`.`initAmount` AS `initAmount`,
     `a`.`userId` AS `userId`
 from
-    ((((`fiona`.`movement` `m`
-join `fiona`.`category` `c` on
+    ((((`movement` `m`
+join `category` `c` on
     ((`m`.`categoryId` = `c`.`id`)))
-join `fiona`.`groupcategory` `gc` on
+join `groupcategory` `gc` on
     ((`c`.`groupId` = `gc`.`id`)))
-join `fiona`.`account` `a` on
+join `account` `a` on
     ((`m`.`accountId` = `a`.`id`)))
-join `fiona`.`badge` `b` on
+join `badge` `b` on
     ((`a`.`badgeId` = `b`.`id`)))
 group by
     `m`.`accountId`,
@@ -33,14 +33,14 @@ select
     if((year(`a`.`createdAt`) = year(curdate())), `a`.`initAmount`, 0) AS `initAmount`,
     `a`.`userId` AS `userId`
 from
-    ((((`fiona`.`movement` `m`
-join `fiona`.`category` `c` on
+    ((((`movement` `m`
+join `category` `c` on
     ((`m`.`categoryId` = `c`.`id`)))
-join `fiona`.`groupcategory` `gc` on
+join `groupcategory` `gc` on
     ((`c`.`groupId` = `gc`.`id`)))
-join `fiona`.`account` `a` on
+join `account` `a` on
     ((`m`.`accountId` = `a`.`id`)))
-join `fiona`.`badge` `b` on
+join `badge` `b` on
     ((`a`.`badgeId` = `b`.`id`)))
 where
     ((year(`m`.`datePurchase`) = year(curdate())))
@@ -58,14 +58,14 @@ select
     if(((year(`a`.`createdAt`) = year(curdate())) and (month(`a`.`createdAt`) = month(curdate()))), `a`.`initAmount`, 0) AS `initAmount`,
     `a`.`userId` AS `userId`
 from
-    ((((`fiona`.`movement` `m`
-join `fiona`.`category` `c` on
+    ((((`movement` `m`
+join `category` `c` on
     ((`m`.`categoryId` = `c`.`id`)))
-join `fiona`.`groupcategory` `gc` on
+join `groupcategory` `gc` on
     ((`c`.`groupId` = `gc`.`id`)))
-join `fiona`.`account` `a` on
+join `account` `a` on
     ((`m`.`accountId` = `a`.`id`)))
-join `fiona`.`badge` `b` on
+join `badge` `b` on
     ((`a`.`badgeId` = `b`.`id`)))
 where
     ((month(`m`.`datePurchase`) = month(curdate()))

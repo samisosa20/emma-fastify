@@ -1,5 +1,5 @@
 # --- Etapa 1: Dependencias y Build ---
-FROM node:23-alpine AS builder
+FROM node:24-alpine AS builder
 WORKDIR /app
 
 # Copiamos archivos de dependencias
@@ -23,7 +23,7 @@ COPY src ./src
 RUN npm run build
 
 # --- Etapa 2: Limpieza de Dependencias ---
-FROM node:23-alpine AS deps-prod
+FROM node:24-alpine AS deps-prod
 WORKDIR /app
 COPY package.json package-lock.json* ./
 COPY prisma ./prisma/
@@ -32,7 +32,7 @@ COPY prisma ./prisma/
 RUN npm ci --omit=dev && npx prisma generate
 
 # --- Etapa 3: Runner Final (Ligera) ---
-FROM node:23-alpine AS runner
+FROM node:24-alpine AS runner
 WORKDIR /app
 
 ENV NODE_ENV=production

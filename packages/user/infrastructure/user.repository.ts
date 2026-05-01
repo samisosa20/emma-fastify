@@ -294,9 +294,7 @@ export class UserRepositoryPrismaPostgres implements IUserRepository {
 
     return {
       statusCode: 200,
-      message:
-        "Confirmation email sent." +
-        `${process.env.APP_URL}/confirm-email?token=${token}&email=${email}`,
+      message: "Confirmation email sent.",
       error: `Email sent to ${email} `,
     };
   }
@@ -331,9 +329,7 @@ export class UserRepositoryPrismaPostgres implements IUserRepository {
 
     return {
       statusCode: 200,
-      message:
-        "Email sent." +
-        `${process.env.APP_URL}/recovery-password?token=${token}&email=${email}`,
+      message: "Email sent.",
       error: `Email sent `,
     };
   }

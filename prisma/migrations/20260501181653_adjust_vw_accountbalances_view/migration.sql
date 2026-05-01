@@ -10,14 +10,14 @@ select
     `a`.`initAmount` AS `initAmount`,
     `a`.`userId` AS `userId`
 from
-    ((((`movement` `m`
-join `category` `c` on
+    ((((`Movement` `m`
+join `Category` `c` on
     ((`m`.`categoryId` = `c`.`id`)))
-join `groupcategory` `gc` on
+join `GroupCategory` `gc` on
     ((`c`.`groupId` = `gc`.`id`)))
-join `account` `a` on
+join `Account` `a` on
     ((`m`.`accountId` = `a`.`id`)))
-join `badge` `b` on
+join `Badge` `b` on
     ((`a`.`badgeId` = `b`.`id`)))
 group by
     `m`.`accountId`,
@@ -33,14 +33,14 @@ select
     if((year(`a`.`createdAt`) = year(curdate())), `a`.`initAmount`, 0) AS `initAmount`,
     `a`.`userId` AS `userId`
 from
-    ((((`movement` `m`
-join `category` `c` on
+    ((((`Movement` `m`
+join `Category` `c` on
     ((`m`.`categoryId` = `c`.`id`)))
-join `groupcategory` `gc` on
+join `GroupCategory` `gc` on
     ((`c`.`groupId` = `gc`.`id`)))
-join `account` `a` on
+join `Account` `a` on
     ((`m`.`accountId` = `a`.`id`)))
-join `badge` `b` on
+join `Badge` `b` on
     ((`a`.`badgeId` = `b`.`id`)))
 where
     ((year(`m`.`datePurchase`) = year(curdate())))
@@ -58,14 +58,14 @@ select
     if(((year(`a`.`createdAt`) = year(curdate())) and (month(`a`.`createdAt`) = month(curdate()))), `a`.`initAmount`, 0) AS `initAmount`,
     `a`.`userId` AS `userId`
 from
-    ((((`movement` `m`
-join `category` `c` on
+    ((((`Movement` `m`
+join `Category` `c` on
     ((`m`.`categoryId` = `c`.`id`)))
-join `groupcategory` `gc` on
+join `GroupCategory` `gc` on
     ((`c`.`groupId` = `gc`.`id`)))
-join `account` `a` on
+join `Account` `a` on
     ((`m`.`accountId` = `a`.`id`)))
-join `badge` `b` on
+join `Badge` `b` on
     ((`a`.`badgeId` = `b`.`id`)))
 where
     ((month(`m`.`datePurchase`) = month(curdate()))

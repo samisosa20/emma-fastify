@@ -19,21 +19,23 @@ export class ReportPrismaRepository implements IReportRepository {
   public async weeklyExpensive(
     params: ReportParams
   ): Promise<Report | ErrorMessage> {
-    const report = await prisma.vw_weeklyexpensive.findMany({
-      where: {
-        weekNumber: params.weekNumber,
-        year: params.year,
-        badgeId: params.badgeId,
-        userId: params.userId,
-      },
-      orderBy: [{ year: "desc" }, { weekNumber: "desc" }, { amount: "asc" }],
-    });
-
-    const badge = await prisma.badge.findFirst({
-      where: {
-        id: params.badgeId,
-      },
-    });
+    // ⚡ Bolt: Fetch report data and badge info in parallel
+    const [report, badge] = await Promise.all([
+      prisma.vw_weeklyexpensive.findMany({
+        where: {
+          weekNumber: params.weekNumber,
+          year: params.year,
+          badgeId: params.badgeId,
+          userId: params.userId,
+        },
+        orderBy: [{ year: "desc" }, { weekNumber: "desc" }, { amount: "asc" }],
+      }),
+      prisma.badge.findFirst({
+        where: {
+          id: params.badgeId,
+        },
+      }),
+    ]);
 
     // 1. Total de gastos (usando el valor absoluto para la participación)
     // Se inicializa con un objeto Decimal para mantener la precisión
@@ -69,21 +71,23 @@ export class ReportPrismaRepository implements IReportRepository {
   public async weeklyIncome(
     params: ReportParams
   ): Promise<Report | ErrorMessage> {
-    const report = await prisma.vw_weeklyincome.findMany({
-      where: {
-        weekNumber: params.weekNumber,
-        year: params.year,
-        badgeId: params.badgeId,
-        userId: params.userId,
-      },
-      orderBy: [{ year: "desc" }, { weekNumber: "desc" }, { amount: "desc" }],
-    });
-
-    const badge = await prisma.badge.findFirst({
-      where: {
-        id: params.badgeId,
-      },
-    });
+    // ⚡ Bolt: Fetch report data and badge info in parallel
+    const [report, badge] = await Promise.all([
+      prisma.vw_weeklyincome.findMany({
+        where: {
+          weekNumber: params.weekNumber,
+          year: params.year,
+          badgeId: params.badgeId,
+          userId: params.userId,
+        },
+        orderBy: [{ year: "desc" }, { weekNumber: "desc" }, { amount: "desc" }],
+      }),
+      prisma.badge.findFirst({
+        where: {
+          id: params.badgeId,
+        },
+      }),
+    ]);
 
     // 1. Total de gastos (usando el valor absoluto para la participación)
     // Se inicializa con un objeto Decimal para mantener la precisión
@@ -119,21 +123,23 @@ export class ReportPrismaRepository implements IReportRepository {
   public async monthlyExpensive(
     params: ReportParams
   ): Promise<Report | ErrorMessage> {
-    const report = await prisma.vw_monthlyexpensive.findMany({
-      where: {
-        month: params.month,
-        year: params.year,
-        badgeId: params.badgeId,
-        userId: params.userId,
-      },
-      orderBy: [{ year: "desc" }, { month: "desc" }, { amount: "asc" }],
-    });
-
-    const badge = await prisma.badge.findFirst({
-      where: {
-        id: params.badgeId,
-      },
-    });
+    // ⚡ Bolt: Fetch report data and badge info in parallel
+    const [report, badge] = await Promise.all([
+      prisma.vw_monthlyexpensive.findMany({
+        where: {
+          month: params.month,
+          year: params.year,
+          badgeId: params.badgeId,
+          userId: params.userId,
+        },
+        orderBy: [{ year: "desc" }, { month: "desc" }, { amount: "asc" }],
+      }),
+      prisma.badge.findFirst({
+        where: {
+          id: params.badgeId,
+        },
+      }),
+    ]);
 
     // 1. Total de gastos (usando el valor absoluto para la participación)
     // Se inicializa con un objeto Decimal para mantener la precisión
@@ -169,21 +175,23 @@ export class ReportPrismaRepository implements IReportRepository {
   public async monthlyIncome(
     params: ReportParams
   ): Promise<Report | ErrorMessage> {
-    const report = await prisma.vw_monthlyincome.findMany({
-      where: {
-        month: params.month,
-        year: params.year,
-        badgeId: params.badgeId,
-        userId: params.userId,
-      },
-      orderBy: [{ year: "desc" }, { month: "desc" }, { amount: "desc" }],
-    });
-
-    const badge = await prisma.badge.findFirst({
-      where: {
-        id: params.badgeId,
-      },
-    });
+    // ⚡ Bolt: Fetch report data and badge info in parallel
+    const [report, badge] = await Promise.all([
+      prisma.vw_monthlyincome.findMany({
+        where: {
+          month: params.month,
+          year: params.year,
+          badgeId: params.badgeId,
+          userId: params.userId,
+        },
+        orderBy: [{ year: "desc" }, { month: "desc" }, { amount: "desc" }],
+      }),
+      prisma.badge.findFirst({
+        where: {
+          id: params.badgeId,
+        },
+      }),
+    ]);
 
     // 1. Total de gastos (usando el valor absoluto para la participación)
     // Se inicializa con un objeto Decimal para mantener la precisión
@@ -219,20 +227,22 @@ export class ReportPrismaRepository implements IReportRepository {
   public async yearlyExpensive(
     params: ReportParams
   ): Promise<Report | ErrorMessage> {
-    const report = await prisma.vw_yearlyexpensive.findMany({
-      where: {
-        year: params.year,
-        badgeId: params.badgeId,
-        userId: params.userId,
-      },
-      orderBy: [{ year: "desc" }, { amount: "asc" }],
-    });
-
-    const badge = await prisma.badge.findFirst({
-      where: {
-        id: params.badgeId,
-      },
-    });
+    // ⚡ Bolt: Fetch report data and badge info in parallel
+    const [report, badge] = await Promise.all([
+      prisma.vw_yearlyexpensive.findMany({
+        where: {
+          year: params.year,
+          badgeId: params.badgeId,
+          userId: params.userId,
+        },
+        orderBy: [{ year: "desc" }, { amount: "asc" }],
+      }),
+      prisma.badge.findFirst({
+        where: {
+          id: params.badgeId,
+        },
+      }),
+    ]);
 
     // 1. Total de gastos (usando el valor absoluto para la participación)
     // Se inicializa con un objeto Decimal para mantener la precisión
@@ -268,20 +278,22 @@ export class ReportPrismaRepository implements IReportRepository {
   public async yearlyIncome(
     params: ReportParams
   ): Promise<Report | ErrorMessage> {
-    const report = await prisma.vw_yearlyincome.findMany({
-      where: {
-        year: params.year,
-        badgeId: params.badgeId,
-        userId: params.userId,
-      },
-      orderBy: [{ year: "desc" }, { amount: "desc" }],
-    });
-
-    const badge = await prisma.badge.findFirst({
-      where: {
-        id: params.badgeId,
-      },
-    });
+    // ⚡ Bolt: Fetch report data and badge info in parallel
+    const [report, badge] = await Promise.all([
+      prisma.vw_yearlyincome.findMany({
+        where: {
+          year: params.year,
+          badgeId: params.badgeId,
+          userId: params.userId,
+        },
+        orderBy: [{ year: "desc" }, { amount: "desc" }],
+      }),
+      prisma.badge.findFirst({
+        where: {
+          id: params.badgeId,
+        },
+      }),
+    ]);
 
     // 1. Total de gastos (usando el valor absoluto para la participación)
     // Se inicializa con un objeto Decimal para mantener la precisión
@@ -317,20 +329,22 @@ export class ReportPrismaRepository implements IReportRepository {
   public async dailyExpensive(
     params: ReportParams
   ): Promise<Report | ErrorMessage> {
-    const report = await prisma.vw_dailyexpensive.findMany({
-      where: {
-        datePurchase: params.date,
-        badgeId: params.badgeId,
-        userId: params.userId,
-      },
-      orderBy: [{ amount: "asc" }],
-    });
-
-    const badge = await prisma.badge.findFirst({
-      where: {
-        id: params.badgeId,
-      },
-    });
+    // ⚡ Bolt: Fetch report data and badge info in parallel
+    const [report, badge] = await Promise.all([
+      prisma.vw_dailyexpensive.findMany({
+        where: {
+          datePurchase: params.date,
+          badgeId: params.badgeId,
+          userId: params.userId,
+        },
+        orderBy: [{ amount: "asc" }],
+      }),
+      prisma.badge.findFirst({
+        where: {
+          id: params.badgeId,
+        },
+      }),
+    ]);
 
     // 1. Total de gastos (usando el valor absoluto para la participación)
     // Se inicializa con un objeto Decimal para mantener la precisión
@@ -366,20 +380,22 @@ export class ReportPrismaRepository implements IReportRepository {
   public async dailyIncome(
     params: ReportParams
   ): Promise<Report | ErrorMessage> {
-    const report = await prisma.vw_dailyincome.findMany({
-      where: {
-        datePurchase: params.date,
-        badgeId: params.badgeId,
-        userId: params.userId,
-      },
-      orderBy: [{ amount: "desc" }],
-    });
-
-    const badge = await prisma.badge.findFirst({
-      where: {
-        id: params.badgeId,
-      },
-    });
+    // ⚡ Bolt: Fetch report data and badge info in parallel
+    const [report, badge] = await Promise.all([
+      prisma.vw_dailyincome.findMany({
+        where: {
+          datePurchase: params.date,
+          badgeId: params.badgeId,
+          userId: params.userId,
+        },
+        orderBy: [{ amount: "desc" }],
+      }),
+      prisma.badge.findFirst({
+        where: {
+          id: params.badgeId,
+        },
+      }),
+    ]);
 
     // 1. Total de gastos (usando el valor absoluto para la participación)
     // Se inicializa con un objeto Decimal para mantener la precisión
@@ -484,27 +500,12 @@ export class ReportPrismaRepository implements IReportRepository {
       (endDate.getTime() - startDate.getTime()) / MS_PER_DAY
     );
 
-    // 1. Obtener el reporte del período actual
-    const currentPeriodReport = await this.getReportForPeriod(
-      String(params.userId),
-      String(params.badgeId),
-      startDate,
-      endDate
-    );
-
-    // 2. Obtener el reporte del año anterior
+    // ⚡ Bolt: Pre-calculate all dates to enable parallel data fetching
     const lastYearStartDate = new Date(String(params.startDate));
     lastYearStartDate.setFullYear(startDate.getFullYear() - 1);
     const lastYearEndDate = new Date(String(params.endDate));
     lastYearEndDate.setFullYear(endDate.getFullYear() - 1);
-    const lastYearReport = await this.getReportForPeriod(
-      String(params.userId),
-      String(params.badgeId),
-      lastYearStartDate,
-      lastYearEndDate
-    );
 
-    // Paso 3: Calcular las fechas del período anterior restando los milisegundos
     let previousPeriodStartDate, previousPeriodEndDate;
 
     if (currentPeriodDays <= 30) {
@@ -559,12 +560,28 @@ export class ReportPrismaRepository implements IReportRepository {
       );
     }
 
-    const previousPeriodReport = await this.getReportForPeriod(
-      String(params.userId),
-      String(params.badgeId),
-      previousPeriodStartDate,
-      previousPeriodEndDate
-    );
+    // ⚡ Bolt: Parallelize independent report lookups using Promise.all
+    const [currentPeriodReport, lastYearReport, previousPeriodReport] =
+      await Promise.all([
+        this.getReportForPeriod(
+          String(params.userId),
+          String(params.badgeId),
+          startDate,
+          endDate
+        ),
+        this.getReportForPeriod(
+          String(params.userId),
+          String(params.badgeId),
+          lastYearStartDate,
+          lastYearEndDate
+        ),
+        this.getReportForPeriod(
+          String(params.userId),
+          String(params.badgeId),
+          previousPeriodStartDate,
+          previousPeriodEndDate
+        ),
+      ]);
 
     return {
       current: currentPeriodReport,

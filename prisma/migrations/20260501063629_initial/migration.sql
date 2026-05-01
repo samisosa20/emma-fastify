@@ -11,9 +11,59 @@ CREATE TABLE `User` (
     `phone` VARCHAR(191) NULL,
     `phoneCode` VARCHAR(191) NULL,
     `badgeId` VARCHAR(191) NOT NULL,
+    `emailVerified` BOOLEAN NOT NULL DEFAULT false,
+    `image` VARCHAR(191) NULL,
 
     UNIQUE INDEX `User_email_key`(`email`),
     INDEX `User_badgeId_fkey`(`badgeId`),
+    PRIMARY KEY (`id`)
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+-- CreateTable
+CREATE TABLE `Session` (
+    `id` VARCHAR(191) NOT NULL,
+    `expiresAt` DATETIME(3) NOT NULL,
+    `token` VARCHAR(191) NOT NULL,
+    `createdAt` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+    `updatedAt` DATETIME(3) NOT NULL,
+    `ipAddress` VARCHAR(191) NULL,
+    `userAgent` VARCHAR(191) NULL,
+    `userId` VARCHAR(191) NOT NULL,
+
+    UNIQUE INDEX `Session_token_key`(`token`),
+    INDEX `Session_userId_fkey`(`userId`),
+    PRIMARY KEY (`id`)
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+-- CreateTable
+CREATE TABLE `OauthAccount` (
+    `id` VARCHAR(191) NOT NULL,
+    `accountId` VARCHAR(191) NOT NULL,
+    `providerId` VARCHAR(191) NOT NULL,
+    `userId` VARCHAR(191) NOT NULL,
+    `accessToken` VARCHAR(191) NULL,
+    `refreshToken` VARCHAR(191) NULL,
+    `idToken` VARCHAR(191) NULL,
+    `accessTokenExpiresAt` DATETIME(3) NULL,
+    `refreshTokenExpiresAt` DATETIME(3) NULL,
+    `scope` VARCHAR(191) NULL,
+    `password` VARCHAR(191) NULL,
+    `createdAt` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+    `updatedAt` DATETIME(3) NOT NULL,
+
+    INDEX `OauthAccount_userId_fkey`(`userId`),
+    PRIMARY KEY (`id`)
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+-- CreateTable
+CREATE TABLE `Verification` (
+    `id` VARCHAR(191) NOT NULL,
+    `identifier` VARCHAR(191) NOT NULL,
+    `value` VARCHAR(191) NOT NULL,
+    `expiresAt` DATETIME(3) NOT NULL,
+    `createdAt` DATETIME(3) NULL DEFAULT CURRENT_TIMESTAMP(3),
+    `updatedAt` DATETIME(3) NULL,
+
     PRIMARY KEY (`id`)
 ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
@@ -62,6 +112,8 @@ CREATE TABLE `Category` (
     `updatedAt` DATETIME(3) NOT NULL,
     `deletedAt` DATETIME(3) NULL,
 
+    INDEX `Category_GroupCategory_FK`(`groupId`),
+    INDEX `Category_User_FK`(`userId`),
     PRIMARY KEY (`id`)
 ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
@@ -92,6 +144,8 @@ CREATE TABLE `Badge` (
     `createdAt` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
     `updatedAt` DATETIME(3) NOT NULL,
     `code` VARCHAR(191) NOT NULL,
+    `symbol` VARCHAR(5) NULL DEFAULT '$',
+    `flag` VARCHAR(50) NULL,
 
     PRIMARY KEY (`id`)
 ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
@@ -238,6 +292,12 @@ CREATE TABLE `Budget` (
 ALTER TABLE `User` ADD CONSTRAINT `User_badgeId_fkey` FOREIGN KEY (`badgeId`) REFERENCES `Badge`(`id`) ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
+ALTER TABLE `Session` ADD CONSTRAINT `Session_userId_fkey` FOREIGN KEY (`userId`) REFERENCES `User`(`id`) ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE `OauthAccount` ADD CONSTRAINT `OauthAccount_userId_fkey` FOREIGN KEY (`userId`) REFERENCES `User`(`id`) ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
 ALTER TABLE `Account` ADD CONSTRAINT `Account_badgeId_fkey` FOREIGN KEY (`badgeId`) REFERENCES `Badge`(`id`) ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
@@ -245,6 +305,12 @@ ALTER TABLE `Account` ADD CONSTRAINT `Account_typeId_fkey` FOREIGN KEY (`typeId`
 
 -- AddForeignKey
 ALTER TABLE `Account` ADD CONSTRAINT `Account_userId_fkey` FOREIGN KEY (`userId`) REFERENCES `User`(`id`) ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE `Category` ADD CONSTRAINT `Category_GroupCategory_FK` FOREIGN KEY (`groupId`) REFERENCES `GroupCategory`(`id`) ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE `Category` ADD CONSTRAINT `Category_User_FK` FOREIGN KEY (`userId`) REFERENCES `User`(`id`) ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE `Event` ADD CONSTRAINT `Event_userId_fkey` FOREIGN KEY (`userId`) REFERENCES `User`(`id`) ON DELETE RESTRICT ON UPDATE CASCADE;

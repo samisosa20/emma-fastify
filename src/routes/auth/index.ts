@@ -14,7 +14,7 @@ import { fromNodeHeaders } from "better-auth/node";
 const authRoutes: FastifyPluginAsync = async (fastify) => {
   const authController = new AuthController(fastify);
 
-  fastify.all("/*", async (request, reply) => {
+  fastify.all("/auth/*", async (request, reply) => {
     const url = new URL(request.url, `http://${request.headers.host}`);
     const headers = fromNodeHeaders(request.headers);
 

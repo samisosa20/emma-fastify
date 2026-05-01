@@ -14,14 +14,14 @@ WITH `totalbalance` AS (
       (
         (
           (
-            `movement` `m`
-            JOIN `category` `c` ON((`m`.`categoryId` = `c`.`id`))
+            `Movement` `m`
+            JOIN `Category` `c` ON((`m`.`categoryId` = `c`.`id`))
           )
-          JOIN `groupcategory` `gc` ON((`c`.`groupId` = `gc`.`id`))
+          JOIN `GroupCategory` `gc` ON((`c`.`groupId` = `gc`.`id`))
         )
-        JOIN `account` `a` ON((`m`.`accountId` = `a`.`id`))
+        JOIN `Account` `a` ON((`m`.`accountId` = `a`.`id`))
       )
-      JOIN `badge` `b` ON((`a`.`badgeId` = `b`.`id`))
+      JOIN `Badge` `b` ON((`a`.`badgeId` = `b`.`id`))
     )
   WHERE
     (
@@ -57,14 +57,14 @@ WITH `totalbalance` AS (
       (
         (
           (
-            `movement` `m`
-            JOIN `category` `c` ON((`m`.`categoryId` = `c`.`id`))
+            `Movement` `m`
+            JOIN `Category` `c` ON((`m`.`categoryId` = `c`.`id`))
           )
-          JOIN `groupcategory` `gc` ON((`c`.`groupId` = `gc`.`id`))
+          JOIN `GroupCategory` `gc` ON((`c`.`groupId` = `gc`.`id`))
         )
-        JOIN `account` `a` ON((`m`.`accountId` = `a`.`id`))
+        JOIN `Account` `a` ON((`m`.`accountId` = `a`.`id`))
       )
-      JOIN `badge` `b` ON((`a`.`badgeId` = `b`.`id`))
+      JOIN `Badge` `b` ON((`a`.`badgeId` = `b`.`id`))
     )
   WHERE
     (
@@ -106,14 +106,14 @@ WITH `totalbalance` AS (
       (
         (
           (
-            `movement` `m`
-            JOIN `category` `c` ON((`m`.`categoryId` = `c`.`id`))
+            `Movement` `m`
+            JOIN `Category` `c` ON((`m`.`categoryId` = `c`.`id`))
           )
-          JOIN `groupcategory` `gc` ON((`c`.`groupId` = `gc`.`id`))
+          JOIN `GroupCategory` `gc` ON((`c`.`groupId` = `gc`.`id`))
         )
-        JOIN `account` `a` ON((`m`.`accountId` = `a`.`id`))
+        JOIN `Account` `a` ON((`m`.`accountId` = `a`.`id`))
       )
-      JOIN `badge` `b` ON((`a`.`badgeId` = `b`.`id`))
+      JOIN `Badge` `b` ON((`a`.`badgeId` = `b`.`id`))
     )
   WHERE
     (
@@ -180,10 +180,10 @@ SELECT
 FROM
   (
     (
-      `movement` `m`
-      JOIN `category` `c` ON((`m`.`categoryId` = `c`.`id`))
+      `Movement` `m`
+      JOIN `Category` `c` ON((`m`.`categoryId` = `c`.`id`))
     )
-    JOIN `account` `a` ON((`m`.`accountId` = `a`.`id`))
+    JOIN `Account` `a` ON((`m`.`accountId` = `a`.`id`))
   )
 WHERE
   (`m`.`amount` < 0)
@@ -210,10 +210,10 @@ SELECT
 FROM
   (
     (
-      `movement` `m`
-      JOIN `category` `c` ON((`m`.`categoryId` = `c`.`id`))
+      `Movement` `m`
+      JOIN `Category` `c` ON((`m`.`categoryId` = `c`.`id`))
     )
-    JOIN `account` `a` ON((`m`.`accountId` = `a`.`id`))
+    JOIN `Account` `a` ON((`m`.`accountId` = `a`.`id`))
   )
 WHERE
   (`m`.`amount` > 0)
@@ -242,14 +242,14 @@ WITH `totalbalance` AS (
       (
         (
           (
-            `movement` `m`
-            JOIN `category` `c` ON((`m`.`categoryId` = `c`.`id`))
+            `Movement` `m`
+            JOIN `Category` `c` ON((`m`.`categoryId` = `c`.`id`))
           )
-          JOIN `groupcategory` `gc` ON((`c`.`groupId` = `gc`.`id`))
+          JOIN `GroupCategory` `gc` ON((`c`.`groupId` = `gc`.`id`))
         )
-        JOIN `account` `a` ON((`m`.`accountId` = `a`.`id`))
+        JOIN `Account` `a` ON((`m`.`accountId` = `a`.`id`))
       )
-      JOIN `badge` `b` ON((`a`.`badgeId` = `b`.`id`))
+      JOIN `Badge` `b` ON((`a`.`badgeId` = `b`.`id`))
     )
   GROUP BY
     `a`.`badgeId`,
@@ -265,8 +265,8 @@ WITH `totalbalance` AS (
     `a`.`userId` AS `userId`
   FROM
     (
-      `account` `a`
-      JOIN `badge` `b` ON((`a`.`badgeId` = `b`.`id`))
+      `Account` `a`
+      JOIN `Badge` `b` ON((`a`.`badgeId` = `b`.`id`))
     )
   GROUP BY
     `a`.`badgeId`,
@@ -302,7 +302,7 @@ FROM
   `unionbalance`;
 
 CREATE OR REPLACE VIEW vw_heritagebyyear AS
-WITH `summovements` AS (
+WITH `sumMovements` AS (
   SELECT
     year(`m`.`datePurchase`) AS `year`,
     `a`.`badgeId` AS `badgeId`,
@@ -310,8 +310,8 @@ WITH `summovements` AS (
     `m`.`userId` AS `userId`
   FROM
     (
-      `movement` `m`
-      JOIN `account` `a` ON((`m`.`accountId` = `a`.`id`))
+      `Movement` `m`
+      JOIN `Account` `a` ON((`m`.`accountId` = `a`.`id`))
     )
   GROUP BY
     year(`m`.`datePurchase`),
@@ -327,7 +327,7 @@ WITH `summovements` AS (
     sum(`a`.`initAmount`) AS `amount`,
     `a`.`userId` AS `userId`
   FROM
-    `account` `a`
+    `Account` `a`
   GROUP BY
     year(`a`.`createdAt`),
     `a`.`badgeId`,
@@ -342,7 +342,7 @@ WITH `summovements` AS (
   FROM
     (
       `initamount` `ia`
-      LEFT JOIN `summovements` `tb` ON(
+      LEFT JOIN `sumMovements` `tb` ON(
         (
           (`tb`.`badgeId` = `ia`.`badgeId`)
           AND (`tb`.`userId` = `ia`.`userId`)
@@ -353,16 +353,16 @@ WITH `summovements` AS (
 ),
 `sumheritage` AS (
   SELECT
-    `heritage`.`year` AS `year`,
-    `heritage`.`badgeId` AS `badgeId`,
-    sum(`heritage`.`comercialAmount`) AS `amount`,
-    `heritage`.`userId` AS `userId`
+    `h`.`year` AS `year`,
+    `h`.`badgeId` AS `badgeId`,
+    sum(`h`.`comercialAmount`) AS `amount`,
+    `h`.`userId` AS `userId`
   FROM
-    `heritage`
+    `Heritage` `h`
   GROUP BY
-    `heritage`.`year`,
-    `heritage`.`badgeId`,
-    `heritage`.`userId`
+    `h`.`year`,
+    `h`.`badgeId`,
+    `h`.`userId`
 ),
 `suminvestment` AS (
   SELECT
@@ -372,8 +372,8 @@ WITH `summovements` AS (
     `i`.`userId` AS `userId`
   FROM
     (
-      `investmentappreciation` `ia`
-      JOIN `investment` `i` ON((`i`.`id` = `ia`.`investmentId`))
+      `InvestmentAppreciation` `ia`
+      JOIN `Investment` `i` ON((`i`.`id` = `ia`.`investmentId`))
     )
   GROUP BY
     year(`ia`.`dateAppreciation`),
@@ -433,7 +433,7 @@ WITH `summovements` AS (
           )
         )
       )
-      JOIN `badge` `b` ON((`su`.`badgeId` = `b`.`id`))
+      JOIN `Badge` `b` ON((`su`.`badgeId` = `b`.`id`))
     )
   ORDER BY
     `su`.`year` DESC,
@@ -463,8 +463,8 @@ WITH `initialbalance` AS (
     `a`.`userId` AS `userId`
   FROM
     (
-      `account` `a`
-      JOIN `badge` `b` ON((`a`.`badgeId` = `b`.`id`))
+      `Account` `a`
+      JOIN `Badge` `b` ON((`a`.`badgeId` = `b`.`id`))
     )
 ),
 `dailytransactions` AS (
@@ -479,10 +479,10 @@ WITH `initialbalance` AS (
   FROM
     (
       (
-        `movement` `m`
-        JOIN `account` `a` ON((`m`.`accountId` = `a`.`id`))
+        `Movement` `m`
+        JOIN `Account` `a` ON((`m`.`accountId` = `a`.`id`))
       )
-      JOIN `badge` `b` ON((`a`.`badgeId` = `b`.`id`))
+      JOIN `Badge` `b` ON((`a`.`badgeId` = `b`.`id`))
     )
   GROUP BY
     `a`.`badgeId`,
@@ -566,12 +566,12 @@ WITH `monthlystats` AS (
     (
       (
         (
-          `movement` `m`
-          JOIN `category` `c` ON((`m`.`categoryId` = `c`.`id`))
+          `Movement` `m`
+          JOIN `Category` `c` ON((`m`.`categoryId` = `c`.`id`))
         )
-        JOIN `account` `a` ON((`m`.`accountId` = `a`.`id`))
+        JOIN `Account` `a` ON((`m`.`accountId` = `a`.`id`))
       )
-      JOIN `badge` `b` ON((`a`.`badgeId` = `b`.`id`))
+      JOIN `Badge` `b` ON((`a`.`badgeId` = `b`.`id`))
     )
   GROUP BY
     `m`.`userId`,
@@ -626,10 +626,10 @@ SELECT
 FROM
   (
     (
-      `movement` `m`
-      JOIN `category` `c` ON((`m`.`categoryId` = `c`.`id`))
+      `Movement` `m`
+      JOIN `Category` `c` ON((`m`.`categoryId` = `c`.`id`))
     )
-    JOIN `account` `a` ON((`m`.`accountId` = `a`.`id`))
+    JOIN `Account` `a` ON((`m`.`accountId` = `a`.`id`))
   )
 WHERE
   (`m`.`amount` < 0)
@@ -659,10 +659,10 @@ SELECT
 FROM
   (
     (
-      `movement` `m`
-      JOIN `category` `c` ON((`m`.`categoryId` = `c`.`id`))
+      `Movement` `m`
+      JOIN `Category` `c` ON((`m`.`categoryId` = `c`.`id`))
     )
-    JOIN `account` `a` ON((`m`.`accountId` = `a`.`id`))
+    JOIN `Account` `a` ON((`m`.`accountId` = `a`.`id`))
   )
 WHERE
   (`m`.`amount` > 0)
@@ -692,10 +692,10 @@ SELECT
 FROM
   (
     (
-      `movement` `m`
-      JOIN `category` `c` ON((`m`.`categoryId` = `c`.`id`))
+      `Movement` `m`
+      JOIN `Category` `c` ON((`m`.`categoryId` = `c`.`id`))
     )
-    JOIN `account` `a` ON((`m`.`accountId` = `a`.`id`))
+    JOIN `Account` `a` ON((`m`.`accountId` = `a`.`id`))
   )
 WHERE
   (`m`.`amount` < 0)
@@ -725,10 +725,10 @@ SELECT
 FROM
   (
     (
-      `movement` `m`
-      JOIN `category` `c` ON((`m`.`categoryId` = `c`.`id`))
+      `Movement` `m`
+      JOIN `Category` `c` ON((`m`.`categoryId` = `c`.`id`))
     )
-    JOIN `account` `a` ON((`m`.`accountId` = `a`.`id`))
+    JOIN `Account` `a` ON((`m`.`accountId` = `a`.`id`))
   )
 WHERE
   (`m`.`amount` > 0)
@@ -757,10 +757,10 @@ SELECT
 FROM
   (
     (
-      `movement` `m`
-      JOIN `category` `c` ON((`m`.`categoryId` = `c`.`id`))
+      `Movement` `m`
+      JOIN `Category` `c` ON((`m`.`categoryId` = `c`.`id`))
     )
-    JOIN `account` `a` ON((`m`.`accountId` = `a`.`id`))
+    JOIN `Account` `a` ON((`m`.`accountId` = `a`.`id`))
   )
 WHERE
   (`m`.`amount` < 0)
@@ -787,10 +787,10 @@ SELECT
 FROM
   (
     (
-      `movement` `m`
-      JOIN `category` `c` ON((`m`.`categoryId` = `c`.`id`))
+      `Movement` `m`
+      JOIN `Category` `c` ON((`m`.`categoryId` = `c`.`id`))
     )
-    JOIN `account` `a` ON((`m`.`accountId` = `a`.`id`))
+    JOIN `Account` `a` ON((`m`.`accountId` = `a`.`id`))
   )
 WHERE
   (`m`.`amount` > 0)

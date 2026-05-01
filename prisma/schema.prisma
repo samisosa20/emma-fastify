@@ -41,11 +41,11 @@ model User {
 model Session {
   id        String   @id @default(uuid())
   expiresAt DateTime
-  token     String   @unique
+  token     String   @unique @db.VarChar(512) 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   ipAddress String?
-  userAgent String?
+  userAgent String?  @db.Text
   userId    String
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -58,12 +58,12 @@ model OauthAccount {
   providerId            String
   userId                String
   user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  accessToken           String?   @db.Text
-  refreshToken          String?   @db.Text
-  idToken               String?   @db.Text
+  accessToken           String?   @db.LongText
+  refreshToken          String?   @db.LongText
+  idToken               String?   @db.LongText 
   accessTokenExpiresAt  DateTime?
   refreshTokenExpiresAt DateTime?
-  scope                 String?
+  scope                 String?   @db.Text
   password              String?   @db.Text
   createdAt             DateTime  @default(now())
   updatedAt             DateTime  @updatedAt
@@ -73,11 +73,13 @@ model OauthAccount {
 
 model Verification {
   id         String    @id @default(uuid())
-  identifier String    @db.Text
-  value      String    @db.Text
+  identifier String    @db.VarChar(255) 
+  value      String    @db.LongText 
   expiresAt  DateTime
   createdAt  DateTime? @default(now())
   updatedAt  DateTime? @updatedAt
+
+  @@map("verification")
 }
 
 model EmailConfirmationToken {

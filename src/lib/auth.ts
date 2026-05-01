@@ -6,6 +6,7 @@ export const auth = betterAuth({
   database: prismaAdapter(prisma, {
     provider: "mysql",
   }),
+  baseURL: process.env.APP_URL,
   basePath: "/api/v2/auth",
   secret: process.env.BETTER_AUTH_SECRET,
   trustedOrigins: [

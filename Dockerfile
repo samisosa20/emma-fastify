@@ -48,5 +48,9 @@ COPY package.json ./
 # Exponemos puerto
 EXPOSE 8010
 
-# Comando de inicio directo (Sin ts-node ni tsconfig-paths, ya es JS puro)
-CMD ["node", "dist/src/index.js"]
+# Copiamos la carpeta prisma (necesaria para que el runner tenga los archivos de migración)
+COPY --from=builder /app/prisma ./prisma
+
+# Comando de inicio: Primero migra, luego arranca
+# Usamos "sh -c" para poder encadenar comandos con &&
+CMD sh -c "npx prisma migrate deploy && node dist/src/index.js"

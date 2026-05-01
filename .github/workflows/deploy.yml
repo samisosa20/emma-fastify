@@ -66,6 +66,9 @@ jobs:
               -e APP_URL="${{ secrets.APP_URL }}" \
               -e DATABASE_PROVIDER="${{ secrets.DATABASE_PROVIDER }}" \
               -e DATABASE_URL="${{ secrets.DATABASE_URL }}" \
+              -e BETTER_AUTH_SECRET="${{ secrets.BETTER_AUTH_SECRET }}" \
+              -e GOOGLE_CLIENT_ID="${{ secrets.GOOGLE_CLIENT_ID }}" \
+              -e GOOGLE_CLIENT_SECRET="${{ secrets.GOOGLE_CLIENT_SECRET }}" \
               $IMAGE
 
             echo "=== Limpieza ==="

@@ -46,8 +46,13 @@ const bootstrap = async () => {
       timeWindow: "1 minute",
     });
     await fastify.after();
+
+    if (!process.env.JWT_SECRET) {
+      throw new Error("JWT_SECRET is not defined");
+    }
+
     fastify.register(fastifyJwt, {
-      secret: process.env.JWT_SECRET || "supersecretkey",
+      secret: process.env.JWT_SECRET,
     });
     await fastify.listen({
       port: Number(process.env.PORT) || 8010,

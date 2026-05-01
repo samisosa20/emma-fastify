@@ -13,13 +13,13 @@ model User {
   name                    String
   email                   String                   @unique
   confirmedEmailAt        DateTime?
-  password                String
+  password                String?
   createdAt               DateTime                 @default(now())
   updatedAt               DateTime                 @updatedAt
   tokenRecoveryPassword   String?
   phone                   String?
   phoneCode               String?
-  badgeId                 String
+  badgeId                 String?
   accounts                Account[]
   budgets                 Budget[]
   Category                Category[]
@@ -29,9 +29,57 @@ model User {
   investmentAppreciations InvestmentAppreciation[]
   movements               Movement[]
   plannedPayments         PlannedPayment[]
-  badge                   Badge                    @relation(fields: [badgeId], references: [id])
+  badge                   Badge?                   @relation(fields: [badgeId], references: [id])
+  emailVerified           Boolean                  @default(false)
+  image                   String?
+  sessions                Session[]
+  oauthAccounts           OauthAccount[]
 
   @@index([badgeId], map: "User_badgeId_fkey")
+}
+
+model Session {
+  id        String   @id @default(uuid())
+  expiresAt DateTime
+  token     String   @unique @db.VarChar(512)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  ipAddress String?
+  userAgent String?  @db.Text
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId], map: "Session_userId_fkey")
+}
+
+model OauthAccount {
+  id                    String    @id @default(uuid())
+  accountId             String
+  providerId            String
+  userId                String
+  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  accessToken           String?   @db.LongText
+  refreshToken          String?   @db.LongText
+  idToken               String?   @db.LongText
+  accessTokenExpiresAt  DateTime?
+  refreshTokenExpiresAt DateTime?
+  scope                 String?   @db.Text
+  password              String?   @db.Text
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  @@index([userId], map: "OauthAccount_userId_fkey")
+}
+
+model Verification {
+  id         String    @id @default(uuid())
+  identifier String    @db.VarChar(255)
+  value      String    @db.LongText
+  expiresAt  DateTime
+  createdAt  DateTime? @default(now())
+  updatedAt  DateTime? @updatedAt
+
+  @@map("verification")
 }
 
 model EmailConfirmationToken {

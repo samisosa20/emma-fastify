@@ -34,7 +34,7 @@ export class UserRepositoryPrismaPostgres implements IUserRepository {
     return await prisma.user.create({
       data: {
         ...user,
-        password: await hashPassword(user.password),
+        password: user.password ? await hashPassword(user.password) : null,
       },
     });
   }
@@ -70,6 +70,7 @@ export class UserRepositoryPrismaPostgres implements IUserRepository {
         });
         if (userExist && user.currentPassword) {
           if (
+            !userExist.password ||
             !(await verifyPassword(user.currentPassword, userExist.password))
           ) {
             return {
@@ -168,6 +169,7 @@ export class UserRepositoryPrismaPostgres implements IUserRepository {
     if (
       !transferId ||
       !user ||
+      !user.password ||
       !(await verifyPassword(password, user.password))
     ) {
       return {
@@ -292,9 +294,7 @@ export class UserRepositoryPrismaPostgres implements IUserRepository {
 
     return {
       statusCode: 200,
-      message:
-        "Confirmation email sent." +
-        `${process.env.APP_URL}/confirm-email?token=${token}&email=${email}`,
+      message: "Confirmation email sent.",
       error: `Email sent to ${email} `,
     };
   }
@@ -329,9 +329,7 @@ export class UserRepositoryPrismaPostgres implements IUserRepository {
 
     return {
       statusCode: 200,
-      message:
-        "Email sent." +
-        `${process.env.APP_URL}/recovery-password?token=${token}&email=${email}`,
+      message: "Email sent.",
       error: `Email sent `,
     };
   }

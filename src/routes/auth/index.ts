@@ -10,6 +10,7 @@ import {
 import { FastifyPluginAsync } from "fastify";
 import { auth } from "@lib/auth";
 import { fromNodeHeaders } from "better-auth/node";
+import { validateUserLogin, validateUserRegister } from "packages/shared";
 
 const authRoutes: FastifyPluginAsync = async (fastify) => {
   const authController = new AuthController(fastify);
@@ -35,13 +36,13 @@ const authRoutes: FastifyPluginAsync = async (fastify) => {
 
   fastify.post(
     "/login",
-    { schema: loginDocumentation },
+    { preHandler: [validateUserLogin], schema: loginDocumentation },
     authController.loginUser
   );
 
   fastify.post(
     "/register",
-    { schema: registerDocumentation },
+    { preHandler: [validateUserRegister], schema: registerDocumentation },
     authController.registerReguralUser
   );
 

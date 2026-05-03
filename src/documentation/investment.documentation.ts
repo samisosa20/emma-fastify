@@ -152,7 +152,7 @@ export const createAppreciationDocumentation: FastifySchema = {
 export const listInvestmentsDocumentation: FastifySchema = {
   description: "Listar todas las inversiones con paginación",
   tags: ["Investment"],
-  params: {
+  querystring: {
     type: "object",
     properties: {
       ...paginationParamsDocumentation(),

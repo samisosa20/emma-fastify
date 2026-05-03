@@ -3,6 +3,7 @@ export type Event = {
   name: string;
   endEvent: Date;
   userId: string;
+  type: string | null;
   createdAt: Date;
   updatedAt: Date;
 };

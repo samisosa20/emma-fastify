@@ -40,7 +40,7 @@ export const createBadgeDocumentation: FastifySchema = {
 export const listBadgesDocumentation: FastifySchema = {
   description: "Listar todos los badges con paginación",
   tags: ["Badge"],
-  params: {
+  querystring: {
     type: "object",
     properties: {
       ...paginationParamsDocumentation(),

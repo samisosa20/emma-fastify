@@ -81,7 +81,7 @@ export const createAccountDocumentation: FastifySchema = {
 export const listAccountsDocumentation: FastifySchema = {
   description: "Listar todas las cuentas con paginación",
   tags: ["Account"],
-  params: {
+  querystring: {
     type: "object",
     properties: {
       ...paginationParamsDocumentation(),

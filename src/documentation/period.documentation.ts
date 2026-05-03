@@ -52,7 +52,7 @@ export const createPeriodDocumentation: FastifySchema = {
 export const listPeriodsDocumentation: FastifySchema = {
   description: "Listar todos los períodos con paginación",
   tags: ["Period"],
-  params: {
+  querystring: {
     type: "object",
     properties: {
       ...paginationParamsDocumentation(),

@@ -42,7 +42,7 @@ export const createAccountTypeDocumentation: FastifySchema = {
 export const listAccountTypesDocumentation: FastifySchema = {
   description: "Listar todos los tipos de cuenta con paginación",
   tags: ["AccountType"],
-  params: {
+  querystring: {
     type: "object",
     properties: {
       ...paginationParamsDocumentation(),

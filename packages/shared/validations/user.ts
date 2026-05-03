@@ -24,7 +24,12 @@ export const UserCreateInput = z.object({
     .optional()
     .nullable(),
   phoneCode: z.string().optional().nullable(),
-  password: z.string({ message: "password is required" }),
+  password: strongPasswordSchema,
   badgeId: z.string({ message: "badgeId is required" }).uuid(),
   deletedAt: z.date().nullable().optional(),
 }) satisfies z.Schema<Prisma.UserUncheckedCreateInput>;
+
+export const UserLoginInput = z.object({
+  email: z.string({ message: "email is required" }).email("Invalid email"),
+  password: z.string({ message: "password is required" }),
+});

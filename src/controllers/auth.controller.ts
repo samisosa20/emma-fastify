@@ -48,16 +48,6 @@ export class AuthController {
     const body = request.body as UserBody;
 
     try {
-      /* const parseResult = strongPasswordSchema.safeParse(password);
-
-      if (!parseResult.success) {
-        return reply.status(400).send({
-          statusCode: 400,
-          error: "User creation failed",
-          message: parseResult.error.errors[0].message,
-        });
-      } */
-
       const newUser = await userUseCase.addUser(body);
 
       if ("statusCode" in newUser) {

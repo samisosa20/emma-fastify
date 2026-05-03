@@ -1,5 +1,6 @@
 import {
   Budget,
+  BudgetByYear,
   BudgetCompare,
   BudgetSummaryByBadge,
   CreateBudget,
@@ -61,89 +62,81 @@ export class BudgetPrismaRepository implements IBudgetRepository {
   }
 
   public async listBudget(params: ParamsBudget): Promise<BudgetCompare[]> {
-    const { year, userId, badgeId } = params;
+    const { year, userId, badgeId: paramBadgeId } = params;
 
-    const budgets = await prisma.budget.findMany({
-      where: {
-        ...(year && { year: Number(year) }),
-        ...(userId && { userId }),
-        ...(badgeId && { badgeId }),
-      },
-      select: {
-        id: true,
-        amount: true,
-        year: true,
-        userId: true,
-        badge: true,
-        period: true,
-        categoryId: true,
-        createdAt: true,
-        updatedAt: true,
-        badgeId: true,
-        periodId: true,
-        category: true,
-      },
-      orderBy: {
-        createdAt: "desc",
-      },
-    });
+    // Use current year if not provided to avoid "Invalid Date"
+    const targetYear = year || new Date().getFullYear();
+    const startDate = new Date(`${targetYear}-01-01`);
+    const endDate = new Date(`${targetYear}-12-31`);
 
-    const movements = await prisma.movement.findMany({
-      where: {
-        datePurchase: {
-          gte: new Date(`${year}-01-01`),
-          lte: new Date(`${year}-12-31`),
+    // ⚡ Bolt: Parallelize independent data fetching to reduce total latency.
+    // We fetch budgets, aggregated movement stats, and accounts concurrently.
+    const [budgets, movementStats, accounts] = await Promise.all([
+      prisma.budget.findMany({
+        where: {
+          ...(year && { year: Number(year) }),
+          ...(userId && { userId }),
+          ...(paramBadgeId && { badgeId: paramBadgeId }),
         },
-        categoryId: { in: budgets.map((b) => b.categoryId) },
-        account: {
-          badgeId: { in: budgets.map((b) => b.badgeId) },
+        include: {
+          badge: true,
+          period: true,
+          category: true,
         },
-      },
-      select: {
-        amount: true,
-        categoryId: true,
-        account: true,
-        datePurchase: true,
-      },
-    });
+        orderBy: {
+          createdAt: "desc",
+        },
+      }),
+      // ⚡ Bolt: Use database aggregation (groupBy) to sum movement amounts.
+      // This drastically reduces data transfer by not fetching every single movement record.
+      prisma.movement.groupBy({
+        by: ["categoryId", "accountId"],
+        where: {
+          userId,
+          datePurchase: {
+            gte: startDate,
+            lte: endDate,
+          },
+          ...(paramBadgeId && {
+            account: {
+              badgeId: paramBadgeId,
+            },
+          }),
+        },
+        _sum: {
+          amount: true,
+        },
+      }),
+      // Fetch user accounts to map accountId to badgeId
+      prisma.account.findMany({
+        where: { userId },
+        select: { id: true, badgeId: true },
+      }),
+    ]);
 
-    const summary = movements.reduce((acc, m) => {
-      const categoryId = m.categoryId;
-      const badgeId = m.account.badgeId;
+    // Create a fast lookup map for account -> badge mapping
+    const accountBadgeMap = new Map(accounts.map((a) => [a.id, a.badgeId]));
 
-      const key = `${categoryId}-${badgeId}`;
+    // ⚡ Bolt: Aggregate stats by category and badge using a Map for O(N) complexity.
+    const executedMap = new Map<string, Decimal>();
+    for (const stat of movementStats) {
+      const bId = accountBadgeMap.get(stat.accountId);
+      if (!bId) continue;
 
-      if (!acc[key]) {
-        acc[key] = {
-          categoryId,
-          badgeId,
-          totalAmount: new Decimal(0),
-        };
-      }
+      const key = `${stat.categoryId}-${bId}`;
+      const sum = stat._sum.amount || new Decimal(0);
 
-      acc[key].totalAmount = acc[key].totalAmount.add(m.amount);
+      executedMap.set(key, (executedMap.get(key) || new Decimal(0)).add(sum));
+    }
 
-      return acc;
-    }, {} as Record<string, { categoryId: string; badgeId: string; totalAmount: Decimal }>);
-
-    const adjustedBudgets = budgets.map((b) => {
-      const yearlyAmount =
-        b.period.name === "Monthly" ? b.amount.mul(12) : b.amount;
-
-      return {
-        ...b,
-        yearlyAmount,
-      };
-    });
-
-    // 🔹 Ahora cotejamos con los movimientos (summary)
-    const compared = adjustedBudgets.map((b) => {
-      // ⚡ Bolt: O(1) hash map lookup instead of O(N) array search to improve performance from O(N*M) to O(N)
+    // ⚡ Bolt: Map budgets to executed amounts using O(1) Map lookups instead of O(N*M) .find().
+    const compared = budgets.map((b) => {
       const key = `${b.categoryId}-${b.badgeId}`;
-      const match = summary[key];
+      const executed = executedMap.get(key) || new Decimal(0);
 
-      const executed = match ? match.totalAmount : new Decimal(0);
-      const planned = b.yearlyAmount;
+      const amountDecimal = new Decimal(b.amount as any);
+      const planned =
+        b.period.name === "Monthly" ? amountDecimal.mul(12) : amountDecimal;
       const difference = planned.sub(executed.abs());
 
       return {
@@ -391,21 +384,29 @@ export class BudgetPrismaRepository implements IBudgetRepository {
       },
     });
 
-    const summary = budgets.reduce((acc, budget) => {
+    // ⚡ Bolt: Use a nested Map for O(N) aggregation complexity, avoiding O(N*M) lookups with .find().
+    const summaryMap = new Map<
+      string,
+      { badge: string; yearsMap: Map<number, BudgetByYear> }
+    >();
+
+    for (const budget of budgets) {
       const { year, amount, badge, period } = budget;
       const badgeCode = badge.code;
-      const yearlyAmount = period.name === "Monthly" ? amount.mul(12) : amount;
+      const amountDecimal = new Decimal(amount as any);
+      const yearlyAmount =
+        period.name === "Monthly" ? amountDecimal.mul(12) : amountDecimal;
 
-      // Buscar o crear el grupo de la badge
-      if (!acc[badgeCode]) {
-        acc[badgeCode] = {
+      if (!summaryMap.has(badgeCode)) {
+        summaryMap.set(badgeCode, {
           badge: badgeCode,
-          years: [],
-        };
+          yearsMap: new Map<number, BudgetByYear>(),
+        });
       }
 
-      // Buscar el año dentro de esa badge
-      let yearGroup = acc[badgeCode].years.find((y) => y.year === year);
+      const badgeGroup = summaryMap.get(badgeCode)!;
+      let yearGroup = badgeGroup.yearsMap.get(year);
+
       if (!yearGroup) {
         yearGroup = {
           year,
@@ -414,8 +415,9 @@ export class BudgetPrismaRepository implements IBudgetRepository {
           utility: new Decimal(0),
           badge,
         };
-        acc[badgeCode].years.push(yearGroup);
+        badgeGroup.yearsMap.set(year, yearGroup);
       }
+
       // Sumar según signo
       if (yearlyAmount.gte(0)) {
         yearGroup.incomes = yearGroup.incomes.add(yearlyAmount);
@@ -425,15 +427,15 @@ export class BudgetPrismaRepository implements IBudgetRepository {
 
       // Calcular utilidad
       yearGroup.utility = yearGroup.incomes.add(yearGroup.expenses);
+    }
 
-      return acc;
-    }, {} as Record<string, BudgetSummaryByBadge>);
-
-    // Convertir el objeto a array y ordenar
-    const result = Object.values(summary).map((b) => ({
-      ...b,
-      years: b.years.sort((a, b) => b.year - a.year),
-    }));
+    // Convert the Map to the desired response format and sort years
+    const result: BudgetSummaryByBadge[] = Array.from(summaryMap.values()).map(
+      (b) => ({
+        badge: b.badge,
+        years: Array.from(b.yearsMap.values()).sort((a, b) => b.year - a.year),
+      })
+    );
 
     return result;
   }

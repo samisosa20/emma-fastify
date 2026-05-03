@@ -126,9 +126,6 @@ export class BudgetPrismaRepository implements IBudgetRepository {
       return acc;
     }, {} as Record<string, { categoryId: string; badgeId: string; totalAmount: Decimal }>);
 
-    // Convertir a array ordenada
-    const result = Object.values(summary);
-
     const adjustedBudgets = budgets.map((b) => {
       const yearlyAmount =
         b.period.name === "Monthly" ? b.amount.mul(12) : b.amount;
@@ -141,10 +138,9 @@ export class BudgetPrismaRepository implements IBudgetRepository {
 
     // 🔹 Ahora cotejamos con los movimientos (summary)
     const compared = adjustedBudgets.map((b) => {
-      // Buscar la suma de movimientos que coincida con categoryId + badgeId
-      const match = result.find(
-        (m) => m.categoryId === b.categoryId && m.badgeId === b.badgeId
-      );
+      // ⚡ Bolt: O(1) hash map lookup instead of O(N) array search to improve performance from O(N*M) to O(N)
+      const key = `${b.categoryId}-${b.badgeId}`;
+      const match = summary[key];
 
       const executed = match ? match.totalAmount : new Decimal(0);
       const planned = b.yearlyAmount;

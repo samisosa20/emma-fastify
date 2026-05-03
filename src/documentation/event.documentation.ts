@@ -17,6 +17,7 @@ export const eventObjectSchema: SchemaDefault[] = [
     body: ["create", "update"],
     private: false,
   },
+  { name: "type", type: "string", body: ["create", "update"], private: false },
   { name: "userId", type: "string", body: ["create"], private: true },
   { name: "createdAt", type: "string", body: false, private: false },
   { name: "updatedAt", type: "string", body: false, private: false },
@@ -118,7 +119,7 @@ export const createEventDocumentation: FastifySchema = {
 export const listEventsDocumentation: FastifySchema = {
   description: "Listar todos los eventos con paginación",
   tags: ["Event"],
-  params: {
+  querystring: {
     type: "object",
     properties: {
       ...paginationParamsDocumentation(),

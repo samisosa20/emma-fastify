@@ -399,6 +399,7 @@ export class EventPrismaRepository implements IEventRepository {
       const eventsToCreate = oldEvents.map((event) => {
         return {
           name: event.name,
+          type: null,
           endEvent: new Date(event.end_event),
           userId: userId,
           createdAt: new Date(event.created_at),

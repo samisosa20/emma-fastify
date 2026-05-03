@@ -91,7 +91,7 @@ export const createPlannedPaymentDocumentation: FastifySchema = {
 export const listPlannedPaymentsDocumentation: FastifySchema = {
   description: "Listar todos los pagos planificados con paginación",
   tags: ["PlannedPayment"],
-  params: {
+  querystring: {
     type: "object",
     properties: {
       ...paginationParamsDocumentation(),

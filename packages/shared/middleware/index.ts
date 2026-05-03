@@ -10,3 +10,4 @@ export * from "./movement.middleware";
 export * from "./period.middleware";
 export * from "./accountType.middleware";
 export * from "./groupCategory.middleware";
+export * from "./user.middleware";

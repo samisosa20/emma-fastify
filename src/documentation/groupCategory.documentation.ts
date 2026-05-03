@@ -42,7 +42,7 @@ export const createGroupCategoryDocumentation: FastifySchema = {
 export const listGroupCategoriesDocumentation: FastifySchema = {
   description: "Listar todos los grupos de categorías con paginación",
   tags: ["GroupCategory"],
-  params: {
+  querystring: {
     type: "object",
     properties: {
       ...paginationParamsDocumentation(),

@@ -55,7 +55,7 @@ jobs:
             docker run -d \
               --name $CONTAINER \
               --restart unless-stopped \
-              --network host \
+              --network fiona_network \
               --cpus="1.0" \
               --memory="512m" \
               --pids-limit=100 \

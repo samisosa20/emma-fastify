@@ -11,6 +11,7 @@ import {
   handleShowDeleteData,
 } from "packages/shared";
 import { APIResponse } from "packages/badge/infrastructure/badge.repository";
+import { Prisma } from "@prisma/client";
 
 // Definimos un tipo que extiende Account para incluir la suma de los movimientos
 export type AccountWithTotalMovements = Account & {
@@ -82,7 +83,9 @@ export class AccountPrismaRepository implements IAccountRepository {
 
     const shouldPaginate = pageParam && Number(pageParam) > 0;
 
-    let rawContent: (Account & { movements: { amount: Decimal | number }[] })[];
+    let rawContent: Prisma.AccountGetPayload<{
+      include: { badge: true; type: true };
+    }>[];
     let metaResult: Paginate;
 
     if (shouldPaginate) {
@@ -97,11 +100,6 @@ export class AccountPrismaRepository implements IAccountRepository {
           include: {
             badge: true,
             type: true,
-            movements: {
-              select: {
-                amount: true,
-              },
-            },
           },
         })
         .withPages({
@@ -109,23 +107,18 @@ export class AccountPrismaRepository implements IAccountRepository {
           page: currentPage,
         });
 
-      rawContent = content as (Account & {
-        movements: { amount: Decimal | number }[];
-      })[];
+      rawContent = content as Prisma.AccountGetPayload<{
+        include: { badge: true; type: true };
+      }>[];
 
       metaResult = metaFromPrisma;
     } else {
-      rawContent = (await prisma.account.findMany({
+      rawContent = await prisma.account.findMany({
         include: {
           badge: true,
           type: true,
-          movements: {
-            select: {
-              amount: true,
-            },
-          },
         },
-      })) as (Account & { movements: { amount: Decimal | number }[] })[];
+      });
 
       const totalCount = rawContent.length;
       const meta: Paginate = {
@@ -141,13 +134,31 @@ export class AccountPrismaRepository implements IAccountRepository {
       metaResult = meta;
     }
 
+    // ⚡ Bolt: Use database aggregation (groupBy) to sum movement amounts for the fetched accounts.
+    // This avoids fetching potentially thousands of movement records and processing them in-memory.
+    const accountIds = rawContent.map((a) => a.id);
+    const movementStats = await prisma.movement.groupBy({
+      by: ["accountId"],
+      where: {
+        accountId: { in: accountIds },
+      },
+      _sum: {
+        amount: true,
+      },
+    });
+
+    const statsMap = new Map(
+      movementStats.map((s) => [s.accountId, s._sum.amount || new Decimal(0)])
+    );
+
     // Calcular la sumatoria de los movements para cada account
     const processedContent: AccountWithTotalMovements[] = rawContent.map(
       (account) => {
-        const balance = account.movements.reduce(
-          (sum, movement) => sum + Number(movement.amount || 0),
-          Number(account.initAmount || 0)
-        );
+        const movementSum = statsMap.get(account.id) || new Decimal(0);
+        const balance = movementSum
+          .add(new Decimal((account.initAmount ?? 0).toString()))
+          .toNumber();
+
         return { ...account, balance };
       }
     );
@@ -198,25 +209,36 @@ export class AccountPrismaRepository implements IAccountRepository {
     id: string
   ): Promise<AccountWithTotalMovements | null> {
     try {
-      const accountData = await prisma.account.findFirst({
-        where: { id },
-        include: {
-          badge: true,
-          type: true,
-          movements: true,
-        },
-      });
+      // ⚡ Bolt: Fetch account data (including movements for UI history) and aggregated movement sum in parallel.
+      const [accountData, movementAggregation] = await Promise.all([
+        prisma.account.findFirst({
+          where: { id },
+          include: {
+            badge: true,
+            type: true,
+            movements: true,
+          },
+        }),
+        prisma.movement.aggregate({
+          where: { accountId: id },
+          _sum: {
+            amount: true,
+          },
+        }),
+      ]);
 
       if (!accountData) {
         return null;
       }
 
+      const movementSum = movementAggregation._sum.amount || new Decimal(0);
+      const balance = movementSum
+        .add(new Decimal((accountData.initAmount ?? 0).toString()))
+        .toNumber();
+
       const accountWithBalance: AccountWithTotalMovements = {
         ...accountData,
-        balance: (accountData.movements || []).reduce(
-          (sum, movement) => sum + Number(movement.amount || 0),
-          Number(accountData.initAmount || 0)
-        ),
+        balance,
       };
 
       return accountWithBalance;

@@ -59,7 +59,6 @@ jobs:
               --cpus="1.0" \
               --memory="512m" \
               --pids-limit=100 \
-              -p ${HOST_PORT}:8010 \
               -e NODE_ENV=production \
               -e PORT=8010 \
               -e JWT_SECRET="${{ secrets.JWT_SECRET }}" \

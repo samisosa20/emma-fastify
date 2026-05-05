@@ -10,6 +10,7 @@ type AccountParams = {
   page: number;
   deleted?: "1" | "0";
   size?: number;
+  userId?: string;
   // Agrega aquí otros parámetros de consulta específicos para Account si son necesarios
 };
 
@@ -19,7 +20,10 @@ const accountUseCase = new AccountUseCase(accountRepository);
 export class AccountController {
   getAllAccounts = async (request: FastifyRequest, reply: FastifyReply) => {
     const params = request.query as AccountParams;
-    return await accountUseCase.listAccount(params);
+    return await accountUseCase.listAccount({
+      ...params,
+      userId: request.user.id,
+    });
   };
 
   addAccount = async (request: FastifyRequest, reply: FastifyReply) => {

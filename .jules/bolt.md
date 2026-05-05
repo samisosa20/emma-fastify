@@ -8,3 +8,7 @@
 ## 2026-05-02 - [O(N) Budget Comparison Lookup]
 **Learning:** Performing `Array.find()` inside a `.map()` loop for budget-movement comparison created an O(N*M) bottleneck.
 **Action:** Use a Hash Map/Record with composite keys (`${categoryId}-${badgeId}`) for O(1) lookups instead of converting to arrays.
+
+## 2026-05-05 - [Database-Level Account Balance Aggregation]
+**Learning:** Fetching all movement records to calculate account balances in-memory causes significant N+1-like performance degradation as transaction history grows.
+**Action:** Use Prisma `groupBy` or `aggregate` to compute sums at the database level, and combine them with `initAmount` using `Decimal` for precision. Always filter by `userId` to maintain isolation during aggregation.

@@ -12,5 +12,6 @@ export interface Paginate {
     page?: number;
     deleted?: "1" | "0";
     size?: number;
+    userId?: string;
   }
   

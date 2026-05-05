@@ -10,6 +10,7 @@ type MovementParams = {
   page: number;
   deleted?: "1" | "0";
   size?: number;
+  userId?: string;
   // Agrega aquí otros parámetros de consulta específicos para Movement si son necesarios
 };
 
@@ -19,7 +20,10 @@ const movementUseCase = new MovementUseCase(movementRepository);
 export class MovementController {
   getAllMovements = async (request: FastifyRequest, reply: FastifyReply) => {
     const params = request.query as MovementParams;
-    return await movementUseCase.listMovement(params);
+    return await movementUseCase.listMovement({
+      ...params,
+      userId: request.user.id,
+    });
   };
 
   addMovement = async (request: FastifyRequest, reply: FastifyReply) => {
@@ -45,7 +49,7 @@ export class MovementController {
     const { id } = request.params as { id: string };
 
     try {
-      return movementUseCase.updateMovement(id, dataMovement);
+      return movementUseCase.updateMovement(id, request.user.id, dataMovement);
     } catch (error: any) {
       const detail = formatErrorMessage(error);
       return reply.status(400).send({
@@ -58,12 +62,12 @@ export class MovementController {
 
   detailMovement = async (request: FastifyRequest, reply: FastifyReply) => {
     const { id } = request.params as { id: string };
-    return movementUseCase.detailMovement(id);
+    return movementUseCase.detailMovement(id, request.user.id);
   };
 
   deleteMovement = async (request: FastifyRequest, reply: FastifyReply) => {
     const { id } = request.params as { id: string };
-    const result = await movementUseCase.deleteMovement(id);
+    const result = await movementUseCase.deleteMovement(id, request.user.id);
     if (result === null) {
       return reply.status(404).send({ message: "Movement not found" });
     }

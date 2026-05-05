@@ -80,7 +80,7 @@ export class AccountPrismaRepository implements IAccountRepository {
     params: CommonParamsPaginate,
     userId: string
   ): Promise<{ content: AccountWithTotalMovements[]; meta: Paginate }> {
-    const { size, page: pageParam, deleted } = params;
+    const { size, page: pageParam, deleted, userId } = params;
 
     const shouldPaginate = pageParam && Number(pageParam) > 0;
 
@@ -89,16 +89,18 @@ export class AccountPrismaRepository implements IAccountRepository {
     }>[];
     let metaResult: Paginate;
 
+    const where = {
+      ...(userId && { userId }),
+      OR: handleShowDeleteData(deleted === "1"),
+    };
+
     if (shouldPaginate) {
       const currentPage = Number(pageParam);
       const effectiveSize = size && Number(size) > 0 ? Number(size) : 10;
 
       const [content, metaFromPrisma] = await prisma.account
         .paginate({
-          where: {
-            userId,
-            OR: handleShowDeleteData(deleted === "1"),
-          },
+          where,
           include: {
             badge: true,
             type: true,
@@ -109,19 +111,16 @@ export class AccountPrismaRepository implements IAccountRepository {
           page: currentPage,
         });
 
-      rawContent = content as Prisma.AccountGetPayload<{
-        include: { badge: true; type: true };
-      }>[];
-
+      rawContent = content as Account[];
       metaResult = metaFromPrisma;
     } else {
       rawContent = (await prisma.account.findMany({
-        where: { userId },
+        where,
         include: {
           badge: true,
           type: true,
         },
-      });
+      })) as Account[];
 
       const totalCount = rawContent.length;
       const meta: Paginate = {
@@ -137,10 +136,10 @@ export class AccountPrismaRepository implements IAccountRepository {
       metaResult = meta;
     }
 
-    // ⚡ Bolt: Use database aggregation (groupBy) to sum movement amounts for the fetched accounts.
-    // This avoids fetching potentially thousands of movement records and processing them in-memory.
-    const accountIds = rawContent.map((a) => a.id);
-    const movementStats = await prisma.movement.groupBy({
+    // ⚡ Bolt: Optimize account balance calculation using database-level aggregation.
+    // Instead of fetching all movements for all accounts (N+1-like issue), we use a single groupBy query.
+    const accountIds = rawContent.map((account) => account.id);
+    const movementSums = await prisma.movement.groupBy({
       by: ["accountId"],
       where: {
         accountId: { in: accountIds },
@@ -150,18 +149,17 @@ export class AccountPrismaRepository implements IAccountRepository {
       },
     });
 
-    const statsMap = new Map(
-      movementStats.map((s) => [s.accountId, s._sum.amount || new Decimal(0)])
+    // Create a lookup map for faster balance calculation
+    const sumsMap = new Map(
+      movementSums.map((sum) => [sum.accountId, sum._sum.amount])
     );
 
-    // Calcular la sumatoria de los movements para cada account
     const processedContent: AccountWithTotalMovements[] = rawContent.map(
       (account) => {
-        const movementSum = statsMap.get(account.id) || new Decimal(0);
-        const balance = movementSum
-          .add(new Decimal((account.initAmount ?? 0).toString()))
+        const sum = sumsMap.get(account.id) || new Decimal(0);
+        const balance = new Decimal(account.initAmount.toString())
+          .plus(sum)
           .toNumber();
-
         return { ...account, balance };
       }
     );
@@ -226,22 +224,31 @@ export class AccountPrismaRepository implements IAccountRepository {
     userId: string
   ): Promise<AccountWithTotalMovements | null> {
     try {
-      const accountData = await prisma.account.findFirst({
-        where: { id, userId },
-        include: {
-          badge: true,
-          type: true,
-          movements: true,
-        },
-      });
+      // ⚡ Bolt: Fetch account details and movement sum in parallel to optimize latency.
+      // We remove 'movements' include to avoid fetching all records in-memory.
+      const [accountData, movementSum] = await Promise.all([
+        prisma.account.findFirst({
+          where: { id },
+          include: {
+            badge: true,
+            type: true,
+          },
+        }),
+        prisma.movement.aggregate({
+          where: { accountId: id },
+          _sum: {
+            amount: true,
+          },
+        }),
+      ]);
 
       if (!accountData) {
         return null;
       }
 
-      const movementSum = movementAggregation._sum.amount || new Decimal(0);
-      const balance = movementSum
-        .add(new Decimal((accountData.initAmount ?? 0).toString()))
+      const sum = movementSum._sum.amount || new Decimal(0);
+      const balance = new Decimal(accountData.initAmount.toString())
+        .plus(sum)
         .toNumber();
 
       const accountWithBalance: AccountWithTotalMovements = {

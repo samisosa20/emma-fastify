@@ -8,6 +8,10 @@
 **Learning:** Security controls existing in the codebase (like `strongPasswordSchema`) do not provide protection unless explicitly integrated into the data ingestion paths. Relying on manual validation in controllers leads to inconsistencies.
 **Prevention:** Always apply validation schemas at the entry point using `preHandler` middlewares and ensure that shared validation models strictly enforce security requirements like password complexity.
 
+## 2025-05-25 - [Broken Object Level Authorization in Account Operations]
+**Vulnerability:** Account operations (list, detail, update, delete) lacked ownership verification, allowing any authenticated user to access or modify accounts belonging to others by guessing the UUID.
+**Learning:** Prisma's `update` and `delete` methods require unique identifiers in the `where` clause. Adding a non-unique `userId` to these methods' filters is a type-level error. Security enforcement for these operations requires a two-step "lookup then act" pattern if the schema doesn't support composite unique keys on `(id, userId)`.
+**Prevention:** Always include `userId` in the `where` clause for `find` operations and verify ownership before performing `update` or `delete` on a resource.
 ## 2025-05-25 - [Pervasive IDOR in Resource Management]
 **Vulnerability:** Insecure Direct Object Reference (IDOR) vulnerabilities allowed users to access, update, or delete movements belonging to other users by guessing their IDs.
 **Learning:** Authentication is not sufficient for resource protection; ownership must be explicitly verified at the repository level. Furthermore, creation/update operations involving related entities (accounts, categories) must verify that the user owns those related resources to prevent cross-user data association.

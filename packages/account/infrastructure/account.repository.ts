@@ -77,7 +77,8 @@ export class AccountPrismaRepository implements IAccountRepository {
   }
 
   public async listAccount(
-    params: CommonParamsPaginate
+    params: CommonParamsPaginate,
+    userId: string
   ): Promise<{ content: AccountWithTotalMovements[]; meta: Paginate }> {
     const { size, page: pageParam, deleted } = params;
 
@@ -95,6 +96,7 @@ export class AccountPrismaRepository implements IAccountRepository {
       const [content, metaFromPrisma] = await prisma.account
         .paginate({
           where: {
+            userId,
             OR: handleShowDeleteData(deleted === "1"),
           },
           include: {
@@ -113,7 +115,8 @@ export class AccountPrismaRepository implements IAccountRepository {
 
       metaResult = metaFromPrisma;
     } else {
-      rawContent = await prisma.account.findMany({
+      rawContent = (await prisma.account.findMany({
+        where: { userId },
         include: {
           badge: true,
           type: true,
@@ -168,10 +171,23 @@ export class AccountPrismaRepository implements IAccountRepository {
 
   public async updateAccount(
     id: string,
-    data: Partial<CreateAccount>
+    data: Partial<CreateAccount>,
+    userId: string
   ): Promise<Account | ErrorMessage> {
     try {
-      const { badgeId, typeId, userId, ...restData } = data;
+      const account = await prisma.account.findFirst({
+        where: { id, userId },
+      });
+
+      if (!account) {
+        throw Object.assign(new Error("Account not found or access denied"), {
+          statusCode: 404,
+          error: "Not Found",
+          message: "Account not found or access denied",
+        });
+      }
+
+      const { badgeId, typeId, userId: _, ...restData } = data;
       const updatedAccount = await prisma.account.update({
         where: {
           id,
@@ -206,26 +222,18 @@ export class AccountPrismaRepository implements IAccountRepository {
   }
 
   public async detailAccount(
-    id: string
+    id: string,
+    userId: string
   ): Promise<AccountWithTotalMovements | null> {
     try {
-      // ⚡ Bolt: Fetch account data (including movements for UI history) and aggregated movement sum in parallel.
-      const [accountData, movementAggregation] = await Promise.all([
-        prisma.account.findFirst({
-          where: { id },
-          include: {
-            badge: true,
-            type: true,
-            movements: true,
-          },
-        }),
-        prisma.movement.aggregate({
-          where: { accountId: id },
-          _sum: {
-            amount: true,
-          },
-        }),
-      ]);
+      const accountData = await prisma.account.findFirst({
+        where: { id, userId },
+        include: {
+          badge: true,
+          type: true,
+          movements: true,
+        },
+      });
 
       if (!accountData) {
         return null;
@@ -251,9 +259,9 @@ export class AccountPrismaRepository implements IAccountRepository {
     }
   }
 
-  public async deleteAccount(id: string): Promise<Account | null> {
-    const account = await prisma.account.findUnique({
-      where: { id },
+  public async deleteAccount(id: string, userId: string): Promise<Account | null> {
+    const account = await prisma.account.findFirst({
+      where: { id, userId },
       include: {
         badge: true,
         type: true,
@@ -268,9 +276,9 @@ export class AccountPrismaRepository implements IAccountRepository {
     return account;
   }
 
-  public async desactivateAccount(id: string): Promise<Account | null> {
-    const account = await prisma.account.findUnique({
-      where: { id },
+  public async desactivateAccount(id: string, userId: string): Promise<Account | null> {
+    const account = await prisma.account.findFirst({
+      where: { id, userId },
     });
     if (!account) {
       return null;
@@ -285,9 +293,9 @@ export class AccountPrismaRepository implements IAccountRepository {
     });
   }
 
-  public async restoreAccount(id: string): Promise<Account | null> {
-    const account = await prisma.account.findUnique({
-      where: { id },
+  public async restoreAccount(id: string, userId: string): Promise<Account | null> {
+    const account = await prisma.account.findFirst({
+      where: { id, userId },
     });
     if (!account) {
       return null;
@@ -302,7 +310,7 @@ export class AccountPrismaRepository implements IAccountRepository {
     });
   }
 
-  public async importAccounts(): Promise<{
+  public async importAccounts(userId: string): Promise<{
     accountCount: number;
   }> {
     try {
@@ -310,9 +318,8 @@ export class AccountPrismaRepository implements IAccountRepository {
       const apiProd = process.env.API_PROD;
       const apiEmail = process.env.API_EMAIL;
       const apiPassword = process.env.API_PASSWORD;
-      const userId = process.env.USER_ID;
 
-      if (!apiProd || !apiEmail || !apiPassword || !userId) {
+      if (!apiProd || !apiEmail || !apiPassword) {
         throw Object.assign(new Error("Missing API environment variables"), {
           statusCode: 500,
           error: "Configuration Error",

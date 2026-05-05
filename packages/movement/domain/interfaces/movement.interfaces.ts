@@ -8,9 +8,10 @@ export interface IMovementRepository {
   ): Promise<{ content: Movement[]; meta: Paginate }>;
   updateMovement(
     id: string,
+    userId: string,
     account: Partial<CreateMovement>
   ): Promise<Movement | ErrorMessage>;
-  detailMovement(id: string): Promise<Movement | null>;
-  deleteMovement(id: string): Promise<Movement | null>;
+  detailMovement(id: string, userId: string): Promise<Movement | null>;
+  deleteMovement(id: string, userId: string): Promise<Movement | null>;
   importMovements(): Promise<{ movementCount: number }>;
 }

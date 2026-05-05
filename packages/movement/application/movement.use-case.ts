@@ -3,40 +3,47 @@ import { IMovementRepository } from "../domain/interfaces/movement.interfaces";
 import { Movement, CreateMovement, MovementsParams } from "../domain/movement";
 
 export class MovementUseCase {
-  private badgeRepository: IMovementRepository;
+  private movementRepository: IMovementRepository;
 
-  constructor(_badgeAdapter: IMovementRepository) {
-    this.badgeRepository = _badgeAdapter;
+  constructor(_movementAdapter: IMovementRepository) {
+    this.movementRepository = _movementAdapter;
   }
 
   public async addMovement(
     data: CreateMovement
   ): Promise<Movement | ErrorMessage> {
-    return await this.badgeRepository.addMovement(data);
+    return await this.movementRepository.addMovement(data);
   }
 
   public async listMovement(
     params: CommonParamsPaginate & MovementsParams
   ): Promise<{ content: Movement[]; meta: Paginate }> {
-    return await this.badgeRepository.listMovement(params);
+    return await this.movementRepository.listMovement(params);
   }
 
   public async updateMovement(
     id: string,
-    badge: Partial<CreateMovement>
+    userId: string,
+    data: Partial<CreateMovement>
   ): Promise<Movement | ErrorMessage> {
-    return await this.badgeRepository.updateMovement(id, badge);
+    return await this.movementRepository.updateMovement(id, userId, data);
   }
 
-  public async detailMovement(id: string): Promise<Movement | null> {
-    return await this.badgeRepository.detailMovement(id);
+  public async detailMovement(
+    id: string,
+    userId: string
+  ): Promise<Movement | null> {
+    return await this.movementRepository.detailMovement(id, userId);
   }
 
-  public async deleteMovement(id: string): Promise<Movement | null> {
-    return await this.badgeRepository.deleteMovement(id);
+  public async deleteMovement(
+    id: string,
+    userId: string
+  ): Promise<Movement | null> {
+    return await this.movementRepository.deleteMovement(id, userId);
   }
 
   public async importMovements(): Promise<{ movementCount: number }> {
-    return await this.badgeRepository.importMovements();
+    return await this.movementRepository.importMovements();
   }
 }

@@ -20,10 +20,7 @@ const accountUseCase = new AccountUseCase(accountRepository);
 export class AccountController {
   getAllAccounts = async (request: FastifyRequest, reply: FastifyReply) => {
     const params = request.query as AccountParams;
-    return await accountUseCase.listAccount({
-      ...params,
-      userId: request.user.id,
-    });
+    return await accountUseCase.listAccount(params, request.user.id);
   };
 
   addAccount = async (request: FastifyRequest, reply: FastifyReply) => {

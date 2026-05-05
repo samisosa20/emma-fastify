@@ -80,7 +80,7 @@ export class AccountPrismaRepository implements IAccountRepository {
     params: CommonParamsPaginate,
     userId: string
   ): Promise<{ content: AccountWithTotalMovements[]; meta: Paginate }> {
-    const { size, page: pageParam, deleted, userId } = params;
+    const { size, page: pageParam, deleted, userId: _userIdFromParams } = params;
 
     const shouldPaginate = pageParam && Number(pageParam) > 0;
 
@@ -111,7 +111,7 @@ export class AccountPrismaRepository implements IAccountRepository {
           page: currentPage,
         });
 
-      rawContent = content as Account[];
+      rawContent = content as any[];
       metaResult = metaFromPrisma;
     } else {
       rawContent = (await prisma.account.findMany({
@@ -120,7 +120,7 @@ export class AccountPrismaRepository implements IAccountRepository {
           badge: true,
           type: true,
         },
-      })) as Account[];
+      })) as any[];
 
       const totalCount = rawContent.length;
       const meta: Paginate = {

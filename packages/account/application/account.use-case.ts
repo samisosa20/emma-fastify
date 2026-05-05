@@ -16,32 +16,46 @@ export class AccountUseCase {
   }
 
   public async listAccount(
-    params: CommonParamsPaginate
+    params: CommonParamsPaginate,
+    userId: string
   ): Promise<{ content: Account[]; meta: Paginate }> {
-    return await this.accountRepository.listAccount(params);
+    return await this.accountRepository.listAccount(params, userId);
   }
 
   public async updateAccount(
     id: string,
-    account: Partial<CreateAccount>
+    account: Partial<CreateAccount>,
+    userId: string
   ): Promise<Account | ErrorMessage> {
-    return await this.accountRepository.updateAccount(id, account);
+    return await this.accountRepository.updateAccount(id, account, userId);
   }
-  public async detailAccount(id: string): Promise<Account | null> {
-    return await this.accountRepository.detailAccount(id);
+  public async detailAccount(
+    id: string,
+    userId: string
+  ): Promise<Account | null> {
+    return await this.accountRepository.detailAccount(id, userId);
   }
-  public async deleteAccount(id: string): Promise<Account | null> {
-    return await this.accountRepository.deleteAccount(id);
+  public async deleteAccount(
+    id: string,
+    userId: string
+  ): Promise<Account | null> {
+    return await this.accountRepository.deleteAccount(id, userId);
   }
-  public async desactivateAccount(id: string): Promise<Account | null> {
-    return await this.accountRepository.desactivateAccount(id);
+  public async desactivateAccount(
+    id: string,
+    userId: string
+  ): Promise<Account | null> {
+    return await this.accountRepository.desactivateAccount(id, userId);
   }
-  public async restoreAccount(id: string): Promise<Account | null> {
-    return await this.accountRepository.restoreAccount(id);
+  public async restoreAccount(
+    id: string,
+    userId: string
+  ): Promise<Account | null> {
+    return await this.accountRepository.restoreAccount(id, userId);
   }
-  public async importAccounts(): Promise<{
+  public async importAccounts(userId: string): Promise<{
     accountCount: number;
   }> {
-    return await this.accountRepository.importAccounts();
+    return await this.accountRepository.importAccounts(userId);
   }
 }

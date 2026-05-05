@@ -19,17 +19,20 @@ const accountUseCase = new AccountUseCase(accountRepository);
 export class AccountController {
   getAllAccounts = async (request: FastifyRequest, reply: FastifyReply) => {
     const params = request.query as AccountParams;
-    return await accountUseCase.listAccount(params);
+    return await accountUseCase.listAccount(params, request.user.id);
   };
 
   addAccount = async (request: FastifyRequest, reply: FastifyReply) => {
     const dataAccount = request.body as CreateAccount;
 
     try {
-      return accountUseCase.addAccount({
+      // Ensure the account is created for the authenticated user
+      const accountToCreate: CreateAccount = {
         ...dataAccount,
         userId: request.user.id,
-      });
+      };
+
+      return accountUseCase.addAccount(accountToCreate);
     } catch (error: any) {
       const detail = formatErrorMessage(error);
       return reply.status(400).send({
@@ -45,7 +48,7 @@ export class AccountController {
     const { id } = request.params as { id: string };
 
     try {
-      return accountUseCase.updateAccount(id, dataAccount);
+      return accountUseCase.updateAccount(id, dataAccount, request.user.id);
     } catch (error: any) {
       const detail = formatErrorMessage(error);
       return reply.status(400).send({
@@ -58,12 +61,12 @@ export class AccountController {
 
   detailAccount = async (request: FastifyRequest, reply: FastifyReply) => {
     const { id } = request.params as { id: string };
-    return accountUseCase.detailAccount(id);
+    return accountUseCase.detailAccount(id, request.user.id);
   };
 
   deleteAccount = async (request: FastifyRequest, reply: FastifyReply) => {
     const { id } = request.params as { id: string };
-    const result = await accountUseCase.deleteAccount(id);
+    const result = await accountUseCase.deleteAccount(id, request.user.id);
     if (result === null) {
       return reply.status(404).send({ message: "Account not found" });
     }
@@ -72,7 +75,7 @@ export class AccountController {
 
   desactivateAccount = async (request: FastifyRequest, reply: FastifyReply) => {
     const { id } = request.params as { id: string };
-    const result = await accountUseCase.desactivateAccount(id);
+    const result = await accountUseCase.desactivateAccount(id, request.user.id);
     if (result === null) {
       return reply.status(404).send({ message: "Account not found" });
     }
@@ -81,7 +84,7 @@ export class AccountController {
 
   restoreAccount = async (request: FastifyRequest, reply: FastifyReply) => {
     const { id } = request.params as { id: string };
-    const result = await accountUseCase.restoreAccount(id);
+    const result = await accountUseCase.restoreAccount(id, request.user.id);
     if (result === null) {
       return reply.status(404).send({ message: "Account not found" });
     }
@@ -89,7 +92,7 @@ export class AccountController {
   };
 
   importAccounts = async (request: FastifyRequest, reply: FastifyReply) => {
-    const result = await accountUseCase.importAccounts();
+    const result = await accountUseCase.importAccounts(request.user.id);
     if (result === null) {
       return reply.status(404).send({ message: "Account not found" });
     }

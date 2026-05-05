@@ -59,4 +59,5 @@ export type MovementsParams = {
   category?: string;
   investmentId?: string;
   datePurchase?: string;
+  userId?: string;
 };

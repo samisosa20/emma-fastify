@@ -66,6 +66,35 @@ export class MovementPrismaRepository implements IMovementRepository {
     data: CreateMovement
   ): Promise<Movement | ErrorMessage> {
     try {
+      // Security: Verify ownership of related resources
+      const [account, category, event, investment] = await Promise.all([
+        prisma.account.findFirst({ where: { id: data.accountId, userId: data.userId } }),
+        prisma.category.findFirst({ where: { id: data.categoryId, userId: data.userId } }),
+        data.eventId ? prisma.event.findFirst({ where: { id: data.eventId, userId: data.userId } }) : Promise.resolve(true),
+        data.investmentId ? prisma.investment.findFirst({ where: { id: data.investmentId, userId: data.userId } }) : Promise.resolve(true),
+      ]);
+
+      if (!account || !category || !event || !investment) {
+        return {
+          statusCode: 403,
+          error: "Forbidden",
+          message: "Unauthorized resource access",
+        };
+      }
+
+      if (data.type === "transfer" && data.accountEndId) {
+        const accountEnd = await prisma.account.findFirst({
+          where: { id: data.accountEndId, userId: data.userId },
+        });
+        if (!accountEnd) {
+          return {
+            statusCode: 403,
+            error: "Forbidden",
+            message: "Unauthorized resource access",
+          };
+        }
+      }
+
       let categoryId = data.categoryId;
       let trm = 1;
       if (data.type === "transfer") {
@@ -178,11 +207,12 @@ export class MovementPrismaRepository implements IMovementRepository {
   public async listMovement(
     params: CommonParamsPaginate & MovementsParams
   ): Promise<{ content: Movement[]; meta: Paginate }> {
-    const { deleted, size, page, category, ...restParams } = params;
+    const { deleted, size, page, category, userId, ...restParams } = params;
     const [content, meta] = await prisma.movement
       .paginate({
         where: {
           ...restParams,
+          userId,
         },
         include: {
           event: true,
@@ -211,6 +241,7 @@ export class MovementPrismaRepository implements IMovementRepository {
 
   public async updateMovement(
     id: string,
+    userId: string,
     data: Partial<CreateMovement>
   ): Promise<Movement | ErrorMessage> {
     try {
@@ -218,7 +249,7 @@ export class MovementPrismaRepository implements IMovementRepository {
       let trm = 1;
 
       const movement = await prisma.movement.findFirst({
-        where: { id },
+        where: { id, userId },
         include: {
           originalOrPairedMovement: true,
           relatedTransferMovements: true,
@@ -231,6 +262,35 @@ export class MovementPrismaRepository implements IMovementRepository {
           error: "Not Found",
           message: "Movement not found",
         });
+      }
+
+      // Security: Verify ownership of updated related resources
+      const [accountCheck, categoryCheck, eventCheck, investmentCheck] = await Promise.all([
+        data.accountId ? prisma.account.findFirst({ where: { id: data.accountId, userId } }) : Promise.resolve(true),
+        data.categoryId ? prisma.category.findFirst({ where: { id: data.categoryId, userId } }) : Promise.resolve(true),
+        data.eventId ? prisma.event.findFirst({ where: { id: data.eventId, userId } }) : Promise.resolve(true),
+        data.investmentId ? prisma.investment.findFirst({ where: { id: data.investmentId, userId } }) : Promise.resolve(true),
+      ]);
+
+      if (!accountCheck || !categoryCheck || !eventCheck || !investmentCheck) {
+        throw Object.assign(new Error("Unauthorized resource access"), {
+          statusCode: 403,
+          error: "Forbidden",
+          message: "Unauthorized resource access",
+        });
+      }
+
+      if (data.type === "transfer" && data.accountEndId) {
+        const accountEnd = await prisma.account.findFirst({
+          where: { id: data.accountEndId, userId },
+        });
+        if (!accountEnd) {
+          throw Object.assign(new Error("Unauthorized resource access"), {
+            statusCode: 403,
+            error: "Forbidden",
+            message: "Unauthorized resource access",
+          });
+        }
       }
 
       const isTransferOut = movement.transferId === null;
@@ -333,12 +393,13 @@ export class MovementPrismaRepository implements IMovementRepository {
   }
 
   public async detailMovement(
-    id: string
+    id: string,
+    userId: string
   ): Promise<(Movement & TranferMovement) | null> {
     try {
       let movementAdjust: (Movement & TranferMovement) | null = null;
       const movement = await prisma.movement.findFirst({
-        where: { id },
+        where: { id, userId },
         include: {
           account: true,
           category: true,
@@ -391,9 +452,12 @@ export class MovementPrismaRepository implements IMovementRepository {
     }
   }
 
-  public async deleteMovement(id: string): Promise<Movement | null> {
-    const movement = await prisma.movement.findUnique({
-      where: { id },
+  public async deleteMovement(
+    id: string,
+    userId: string
+  ): Promise<Movement | null> {
+    const movement = await prisma.movement.findFirst({
+      where: { id, userId },
       include: {
         account: true,
         category: true,
@@ -415,7 +479,10 @@ export class MovementPrismaRepository implements IMovementRepository {
       whereClause = { id: String(movement.relatedTransferMovements[0]?.id) };
     }
     await prisma.movement.deleteMany({
-      where: { OR: [whereClause, { id }] },
+      where: {
+        userId,
+        OR: [whereClause, { id }],
+      },
     });
 
     return movement;

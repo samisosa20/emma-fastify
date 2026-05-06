@@ -68,118 +68,120 @@ export class HeritagePrismaRepository implements IHeritageRepository {
     meta: Paginate;
   }> {
     const { size, page, year, userId } = params;
-    const [content, meta] = await prisma.heritage
-      .paginate({
+
+    const limitDate = new Date(`${year}-12-31T23:59:59.999Z`);
+    const yearStart = new Date(`${year}-01-01T00:00:00.000Z`);
+
+    // ⚡ Bolt: Parallelize independent database queries to significantly reduce latency.
+    // We concurrently fetch heritage items, aggregate account balances, income, expenses, and max investment dates.
+    // We also fetch all badges to avoid multiple sequential lookups later.
+    const [
+      heritageResult,
+      initAccount,
+      reportIncome,
+      reportExport,
+      lastDates,
+      allBadges,
+    ] = await Promise.all([
+      prisma.heritage
+        .paginate({
+          where: {
+            year,
+            userId, // Security: Ensure multi-tenancy by filtering by userId
+          },
+          include: {
+            badge: true,
+          },
+        })
+        .withPages({
+          limit: size ? Number(size) : 10,
+          page: page && page > 0 ? Number(page) : 1,
+        }),
+      prisma.account.groupBy({
+        by: ["badgeId"],
         where: {
-          year,
+          userId,
+          createdAt: {
+            lte: limitDate,
+          },
         },
-        include: {
-          badge: true,
+        _sum: {
+          initAmount: true,
         },
-      })
-      .withPages({
-        limit: size ? Number(size) : 10,
-        page: page && page > 0 ? Number(page) : 1,
-      });
+        orderBy: {
+          badgeId: "asc",
+        },
+      }),
+      prisma.vw_yearlyincome.groupBy({
+        by: ["badgeId"],
+        where: {
+          userId,
+          year: {
+            lte: year,
+          },
+        },
+        _sum: {
+          amount: true,
+        },
+        orderBy: {
+          badgeId: "asc",
+        },
+      }),
+      prisma.vw_yearlyexpensive.groupBy({
+        by: ["badgeId"],
+        where: {
+          userId,
+          year: {
+            lte: year,
+          },
+        },
+        _sum: {
+          amount: true,
+        },
+        orderBy: {
+          badgeId: "asc",
+        },
+      }),
+      prisma.investmentAppreciation.groupBy({
+        by: ["investmentId"],
+        where: {
+          userId,
+          dateAppreciation: {
+            gte: yearStart,
+            lte: limitDate,
+          },
+        },
+        _max: { dateAppreciation: true },
+      }),
+      prisma.badge.findMany(),
+    ]);
 
-    const limitDate = new Date(`${params.year}-12-31T23:59:59.999Z`);
-
-    const initAccount = await prisma.account.groupBy({
-      by: ["badgeId"],
-      where: {
-        userId,
-        createdAt: {
-          lte: limitDate,
-        },
-      },
-      _sum: {
-        initAmount: true,
-      },
-      orderBy: {
-        badgeId: "asc",
-      },
-    });
-
-    const reportIcome = await prisma.vw_yearlyincome.groupBy({
-      by: ["badgeId"],
-      where: {
-        userId,
-        year: {
-          lte: params.year,
-        },
-      },
-      _sum: {
-        amount: true,
-      },
-      orderBy: {
-        badgeId: "asc",
-      },
-    });
-
-    const reportExport = await prisma.vw_yearlyexpensive.groupBy({
-      by: ["badgeId"],
-      where: {
-        userId,
-        year: {
-          lte: params.year,
-        },
-      },
-      _sum: {
-        amount: true,
-      },
-      orderBy: {
-        badgeId: "asc",
-      },
-    });
-
-    const lastDates = await prisma.investmentAppreciation.groupBy({
-      by: ["investmentId"],
-      where: {
-        userId,
-        dateAppreciation: {
-          gte: new Date(`${params.year}-01-01T00:00:00.000Z`),
-          lte: new Date(`${params.year}-12-31T23:59:59.999Z`),
-        },
-      },
-      _max: { dateAppreciation: true },
-    });
+    const [content, meta] = heritageResult;
 
     const cleaned = lastDates.filter((d) => d._max.dateAppreciation !== null);
 
-    const investments = await prisma.investmentAppreciation.findMany({
-      where: {
-        OR: cleaned.map((d) => ({
-          investmentId: d.investmentId,
-          dateAppreciation: d._max.dateAppreciation!,
-        })),
-      },
-      include: {
-        investment: {
-          select: { badgeId: true },
-        },
-      },
-    });
+    const investments =
+      cleaned.length > 0
+        ? await prisma.investmentAppreciation.findMany({
+            where: {
+              OR: cleaned.map((d) => ({
+                investmentId: d.investmentId,
+                dateAppreciation: d._max.dateAppreciation!,
+              })),
+            },
+            include: {
+              investment: {
+                select: { badgeId: true },
+              },
+            },
+          })
+        : [];
 
-    // 2. Extract all unique badge IDs from both reports
-    const allBadgeIds = [
-      ...new Set([
-        ...reportIcome.map((item) => item.badgeId),
-        ...reportExport.map((item) => item.badgeId),
-      ]),
-    ];
+    // ⚡ Bolt: Create a lookup map for faster badge data access (O(1) instead of O(N)).
+    const badgesMap = new Map(allBadges.map((badge) => [badge.id, badge]));
 
-    // 3. Fetch all required badge information in a single query
-    const badges = await prisma.badge.findMany({
-      where: {
-        id: { in: allBadgeIds },
-      },
-    });
-
-    // 4. Create a map for quick badge lookup
-    const badgesMap = new Map(badges.map((badge) => [badge.id, badge]));
-
-    // 5. Process reports and combine data in-memory
-    const incomeBalances = reportIcome.map((item) => {
+    // ⚡ Bolt: Map data using the O(1) badge lookup map.
+    const incomeBalances = reportIncome.map((item) => {
       const badge = badgesMap.get(item.badgeId);
       return {
         amount: Number(item._sum.amount),
@@ -219,7 +221,7 @@ export class HeritagePrismaRepository implements IHeritageRepository {
       };
     });
 
-    // 6. Combine all balances into a single array
+    // Combine all balances into a single array
     const generalBalances = [
       ...incomeBalances,
       ...expenseBalances,

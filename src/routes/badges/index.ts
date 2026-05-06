@@ -17,7 +17,7 @@ const badgesRoutes: FastifyPluginAsync = async (fastify) => {
   fastify.get(
     "/",
     {
-      preHandler: [],
+      preHandler: [fastify.authenticate],
       schema: listBadgesDocumentation,
     },
     badgeController.getAllBadges
@@ -67,7 +67,7 @@ const badgesRoutes: FastifyPluginAsync = async (fastify) => {
   fastify.post(
     "/import",
     {
-      preHandler: [],
+      preHandler: [fastify.authenticate],
     },
     badgeController.importBadge
   );

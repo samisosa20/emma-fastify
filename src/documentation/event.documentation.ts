@@ -56,6 +56,7 @@ const eventDetailObjectSchema: SchemaDefault[] = [
         category: {
           type: "object",
           properties: {
+            id: { type: "string" },
             name: { type: "string" },
             color: { type: "string" },
             icon: { type: "string" },
@@ -69,6 +70,8 @@ const eventDetailObjectSchema: SchemaDefault[] = [
               type: "object",
               properties: {
                 code: { type: "string" },
+                flag: { type: "string" },
+                symbol: { type: "string" },
               },
             },
           },

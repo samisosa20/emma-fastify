@@ -65,6 +65,8 @@ export class PlannedPaymentPrismaRepository
             select: {
               name: true,
               id: true,
+              color: true,
+              icon: true,
             },
           },
         },
@@ -107,6 +109,8 @@ export class PlannedPaymentPrismaRepository
               select: {
                 name: true,
                 id: true,
+                icon: true,
+                color: true,
               },
             },
           },
@@ -133,6 +137,8 @@ export class PlannedPaymentPrismaRepository
             select: {
               name: true,
               id: true,
+              color: true,
+              icon: true,
             },
           },
         },
@@ -179,6 +185,8 @@ export class PlannedPaymentPrismaRepository
             select: {
               name: true,
               id: true,
+              color: true,
+              icon: true,
             },
           },
         },
@@ -212,6 +220,8 @@ export class PlannedPaymentPrismaRepository
             select: {
               name: true,
               id: true,
+              color: true,
+              icon: true,
             },
           },
         },
@@ -248,6 +258,8 @@ export class PlannedPaymentPrismaRepository
           select: {
             name: true,
             id: true,
+            color: true,
+            icon: true,
           },
         },
       },

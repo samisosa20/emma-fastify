@@ -213,6 +213,7 @@ export class EventPrismaRepository implements IEventRepository {
               },
               category: {
                 select: {
+                  id: true,
                   name: true,
                   color: true,
                   icon: true,
@@ -238,7 +239,16 @@ export class EventPrismaRepository implements IEventRepository {
           symbol: string;
           flag: string;
           total_amount: Decimal;
-          categories: Map<string, Decimal>;
+          categories: Map<
+            string,
+            {
+              id: string;
+              name: string;
+              color: string | null;
+              icon: string | null;
+              amount: Decimal;
+            }
+          >;
         }
       >();
 
@@ -253,7 +263,16 @@ export class EventPrismaRepository implements IEventRepository {
               symbol: String(movement.account?.badge?.symbol),
               flag: String(movement.account?.badge?.flag),
               total_amount: new Decimal(0),
-              categories: new Map<string, Decimal>(),
+              categories: new Map<
+                string,
+                {
+                  id: string;
+                  name: string;
+                  color: string | null;
+                  icon: string | null;
+                  amount: Decimal;
+                }
+              >(),
             });
           }
 
@@ -263,24 +282,33 @@ export class EventPrismaRepository implements IEventRepository {
           badgeGroup.total_amount = badgeGroup.total_amount.add(amount);
 
           // Sumar a la categoría específica dentro de la moneda
-          const currentCategoryTotal =
-            badgeGroup.categories.get(categoryName) || new Decimal(0);
-          badgeGroup.categories.set(
-            categoryName,
-            currentCategoryTotal.add(amount)
-          );
+          const categoryId = movement.category?.id;
+          if (categoryId) {
+            const existing = badgeGroup.categories.get(categoryId) || {
+              id: categoryId,
+              name: movement.category.name,
+              color: movement.category.color,
+              icon: movement.category.icon,
+              amount: new Decimal(0),
+            };
+            existing.amount = existing.amount.add(amount);
+            badgeGroup.categories.set(categoryId, existing);
+          }
         }
       }
 
       const categories = Array.from(groupedByBadge.entries()).map(
         ([badgeCode, data]) => {
-          const categoriesList = Array.from(data.categories.entries()).map(
-            ([categoryName, categoryTotal]) => ({
-              name: categoryName,
-              amount: categoryTotal.toNumber(),
+          const categoriesList = Array.from(data.categories.values()).map(
+            (cat) => ({
+              id: cat.id,
+              name: cat.name,
+              color: cat.color,
+              icon: cat.icon,
+              amount: cat.amount.toNumber(),
               percentage: data.total_amount.isZero()
                 ? 0
-                : categoryTotal
+                : cat.amount
                     .div(data.total_amount)
                     .mul(100)
                     .toDecimalPlaces(2)

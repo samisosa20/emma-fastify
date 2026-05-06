@@ -15,3 +15,7 @@
 ## 2026-05-04 - [Database-Level Account Balance Aggregation]
 **Learning:** Fetching all movements to calculate account balances in-memory (especially in paginated lists) causes significant O(N*M) performance degradation as data grows.
 **Action:** Use `prisma.movement.groupBy` for batch aggregation in list views and `prisma.movement.aggregate` for detail views to offload calculations to the database. Use `new Decimal((val ?? 0).toString())` for robust `Decimal` initialization.
+
+## 2026-05-10 - [Aggressive Parallelization for Reporting]
+**Learning:** Fetching lookup tables (like Badges) concurrently with primary data and aggregations, even if some fetched data isn't used, reduces overall latency by removing sequential dependencies.
+**Action:** Use `Promise.all` to fetch lookups and primary data together to flatten the execution timeline.

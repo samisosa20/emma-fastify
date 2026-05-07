@@ -25,21 +25,22 @@ export class BudgetUseCase {
 
   public async updateBudget(
     id: string,
-    badge: Partial<CreateBudget>
+    badge: Partial<CreateBudget>,
+    userId: string
   ): Promise<Budget | ErrorMessage> {
-    return await this.badgeRepository.updateBudget(id, badge);
+    return await this.badgeRepository.updateBudget(id, badge, userId);
   }
 
-  public async detailBudget(id: string): Promise<Budget | null> {
-    return await this.badgeRepository.detailBudget(id);
+  public async detailBudget(id: string, userId: string): Promise<Budget | null> {
+    return await this.badgeRepository.detailBudget(id, userId);
   }
 
-  public async deleteBudget(id: string): Promise<Budget | null> {
-    return await this.badgeRepository.deleteBudget(id);
+  public async deleteBudget(id: string, userId: string): Promise<Budget | null> {
+    return await this.badgeRepository.deleteBudget(id, userId);
   }
 
-  public async importBudgets(): Promise<{ budgetCount: number }> {
-    return await this.badgeRepository.importBudgets();
+  public async importBudgets(userId: string): Promise<{ budgetCount: number }> {
+    return await this.badgeRepository.importBudgets(userId);
   }
   public async listBudgetByYear(
     params: CommonParamsPaginate & ParamsBudget

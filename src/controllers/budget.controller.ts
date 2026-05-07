@@ -48,10 +48,14 @@ export class BudgetController {
     const { id } = request.params as { id: string };
 
     try {
-      return budgetUseCase.updateBudget(id, {
-        ...dataBudget,
-        userId: request.user.id,
-      });
+      return budgetUseCase.updateBudget(
+        id,
+        {
+          ...dataBudget,
+          userId: request.user.id,
+        },
+        request.user.id
+      );
     } catch (error: any) {
       const detail = formatErrorMessage(error);
       return reply.status(400).send({
@@ -64,12 +68,12 @@ export class BudgetController {
 
   detailBudget = async (request: FastifyRequest, reply: FastifyReply) => {
     const { id } = request.params as { id: string };
-    return budgetUseCase.detailBudget(id);
+    return budgetUseCase.detailBudget(id, request.user.id);
   };
 
   deleteBudget = async (request: FastifyRequest, reply: FastifyReply) => {
     const { id } = request.params as { id: string };
-    const result = await budgetUseCase.deleteBudget(id);
+    const result = await budgetUseCase.deleteBudget(id, request.user.id);
     if (result === null) {
       return reply.status(404).send({ message: "Budget not found" });
     }
@@ -77,7 +81,7 @@ export class BudgetController {
   };
 
   importBudgets = async (request: FastifyRequest, reply: FastifyReply) => {
-    return budgetUseCase.importBudgets();
+    return budgetUseCase.importBudgets(request.user.id);
   };
 
   listBudgetByYear = async (request: FastifyRequest, reply: FastifyReply) => {

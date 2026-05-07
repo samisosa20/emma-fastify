@@ -16,3 +16,8 @@
 **Vulnerability:** Insecure Direct Object Reference (IDOR) vulnerabilities allowed users to access, update, or delete movements belonging to other users by guessing their IDs.
 **Learning:** Authentication is not sufficient for resource protection; ownership must be explicitly verified at the repository level. Furthermore, creation/update operations involving related entities (accounts, categories) must verify that the user owns those related resources to prevent cross-user data association.
 **Prevention:** Enforce `userId` scoping in all Prisma queries for read/write operations and implement cross-resource ownership checks before creating or updating records with foreign keys.
+
+## 2025-05-30 - [Resource Ownership Verification for Budgets]
+**Vulnerability:** Budget operations (detail, update, delete) relied solely on budget IDs, enabling IDOR attacks where any authenticated user could access or modify others' budgets.
+**Learning:** For models without composite unique keys on `(id, userId)`, multi-tenancy must be enforced by using `findFirst({ where: { id, userId } })` instead of `findUnique({ where: { id } })`. Additionally, critical processes like `importBudgets` must use the authenticated user's ID rather than falling back to global environment variables.
+**Prevention:** Standardize repository methods to always include `userId` in filters for all single-resource operations and ensure that creation/import logic strictly derives ownership from the request context.

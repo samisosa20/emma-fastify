@@ -19,3 +19,7 @@
 ## 2026-05-10 - [Aggressive Parallelization for Reporting]
 **Learning:** Fetching lookup tables (like Badges) concurrently with primary data and aggregations, even if some fetched data isn't used, reduces overall latency by removing sequential dependencies.
 **Action:** Use `Promise.all` to fetch lookups and primary data together to flatten the execution timeline.
+
+## 2026-05-15 - [Batch Aggregation for Investment Lists]
+**Learning:** Including large relational datasets (movements, appreciations) in paginated lists causes severe N+1 performance degradation and high memory usage.
+**Action:** Replace relational `include` with database-level `groupBy` aggregations for the entire batch of IDs. Use `Promise.all` to parallelize these aggregations and merge results in-memory using `Map` for O(1) lookups.

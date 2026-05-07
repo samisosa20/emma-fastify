@@ -109,33 +109,23 @@ export class InvestmentPrismaRepository implements IInvestmentRepository {
   public async listInvestment(
     params: CommonParamsPaginate
   ): Promise<{ content: Investment[]; meta: Paginate }> {
-    const { deleted, size, page } = params;
+    const { deleted, size, page, userId } = params;
+
+    // ⚡ Bolt: Fetch paginated investments without expensive includes for movements/appreciations.
+    // This avoids N+1 query problems and high memory pressure.
     const [content, meta] = await prisma.investment
       .paginate({
         where: {
+          ...(userId && { userId }),
           OR: handleShowDeleteData(deleted === "1"),
         },
         include: {
-          movements: {
-            select: {
-              amount: true,
-              addWithdrawal: true,
-            },
-          },
           badge: {
             select: {
               id: true,
               code: true,
               flag: true,
               symbol: true,
-            },
-          },
-          appreciations: {
-            select: {
-              amount: true,
-            },
-            orderBy: {
-              dateAppreciation: "desc",
             },
           },
         },
@@ -145,65 +135,102 @@ export class InvestmentPrismaRepository implements IInvestmentRepository {
         page: page && page > 0 ? Number(page) : 1,
       });
 
+    if (content.length === 0) {
+      return { content: content as any[], meta };
+    }
+
+    const investmentIds = content.map((i) => i.id);
+
+    // ⚡ Bolt: Use database-level aggregation to compute sums for the entire batch.
+    // Parallelize independent queries to reduce total latency.
+    const [movementSums, appreciationMaxDates] = await Promise.all([
+      prisma.movement.groupBy({
+        by: ["investmentId", "addWithdrawal"],
+        where: { investmentId: { in: investmentIds } },
+        _sum: { amount: true },
+      }),
+      prisma.investmentAppreciation.groupBy({
+        by: ["investmentId"],
+        where: { investmentId: { in: investmentIds } },
+        _max: { dateAppreciation: true },
+      }),
+    ]);
+
+    // Fetch the actual latest appreciation amounts based on the max dates found.
+    const latestAppreciations =
+      appreciationMaxDates.length > 0
+        ? await prisma.investmentAppreciation.findMany({
+            where: {
+              OR: appreciationMaxDates.map((d) => ({
+                investmentId: d.investmentId,
+                dateAppreciation: d._max.dateAppreciation!,
+              })),
+            },
+            select: {
+              investmentId: true,
+              amount: true,
+            },
+          })
+        : [];
+
+    // Create lookup maps for O(1) in-memory data merging.
+    const returnsMap = new Map<string, Decimal>();
+    const withdrawalSumMap = new Map<string, Decimal>();
+    movementSums.forEach((s) => {
+      if (s.investmentId) {
+        const sum = s._sum.amount || new Decimal(0);
+        if (s.addWithdrawal) {
+          withdrawalSumMap.set(s.investmentId, sum);
+        } else {
+          returnsMap.set(s.investmentId, sum);
+        }
+      }
+    });
+
+    const latestAppreciationMap = new Map(
+      latestAppreciations.map((a) => [a.investmentId, a.amount])
+    );
+
     const indicatorsInvestment = content.map((investment) => {
-      const movements = investment.movements || [];
-      const appreciations = investment.appreciations || [];
+      const totalReturns = (
+        returnsMap.get(investment.id) || new Decimal(0)
+      ).toNumber();
 
-      const totalReturns = movements
-        .filter((m) => !m.addWithdrawal)
-        .reduce(
-          (acc, movement) => acc.plus(new Decimal(movement.amount || 0)),
-          new Decimal(0)
-        )
-        .toNumber();
+      const initialAmountDecimal = new Decimal(
+        (investment.initAmount || 0).toString()
+      );
+      const movementsWithdrawalSum =
+        withdrawalSumMap.get(investment.id) || new Decimal(0);
 
-      const initialAmountDecimal = new Decimal(investment.initAmount || 0);
-      const movementsWithdrawalSum = movements
-        .filter((m) => m.addWithdrawal)
-        .reduce(
-          (acc, movement) =>
-            acc.plus(new Decimal(movement.amount || 0).times(-1)),
-          new Decimal(0)
-        );
+      // totalWithdrawal = initAmount - sumOfWithdrawalAmounts
+      const totalWithdrawalDecimal = initialAmountDecimal.minus(
+        movementsWithdrawalSum
+      );
+      const totalWithdrawal = totalWithdrawalDecimal.toNumber();
 
-      // totalWithdrawal como número (pero calculado con Decimal.js para precisión)
-      const totalWithdrawal = initialAmountDecimal
-        .plus(movementsWithdrawalSum)
-        .toNumber();
-
-      const lastAppreciation =
-        appreciations.length > 0 ? appreciations[0] : null;
+      const lastAppreciationAmount = latestAppreciationMap.get(investment.id);
       const endAmountDecimal = new Decimal(
-        lastAppreciation?.amount ?? investment.initAmount ?? 0
+        (lastAppreciationAmount ?? investment.initAmount ?? 0).toString()
       );
       const endAmount = endAmountDecimal.toNumber();
 
-      // --- Cálculos de Porcentajes con Dos Decimales ---
-
-      // Aquí, convertimos totalWithdrawal a Decimal para los cálculos,
-      // si es que 'totalWithdrawal' es un número
-      const totalWithdrawalForCalculations = new Decimal(totalWithdrawal);
       const totalReturnsForCalculations = new Decimal(totalReturns);
 
       let valorization = "0.00%";
-      if (totalWithdrawalForCalculations.isZero()) {
-        valorization = "0.00%";
-      } else {
+      if (!totalWithdrawalDecimal.isZero()) {
         const rawValorization = endAmountDecimal
-          .minus(totalWithdrawalForCalculations)
-          .dividedBy(totalWithdrawalForCalculations)
+          .minus(totalWithdrawalDecimal)
+          .dividedBy(totalWithdrawalDecimal)
           .times(100);
         valorization = `${rawValorization.toFixed(2)}%`;
       }
 
       let totalRate = "0.00%";
-      if (totalWithdrawalForCalculations.isZero()) {
-        totalRate = "0.00%";
-      } else {
+      if (!totalWithdrawalDecimal.isZero()) {
         const rawTotalRate = endAmountDecimal
           .plus(totalReturnsForCalculations)
-          .minus(totalWithdrawalForCalculations)
-          .dividedBy(totalWithdrawalForCalculations)
+          .minus(totalWithdrawalDecimal)
+          .dividedBy(totalWithdrawalDecimal)
           .times(100);
         totalRate = `${rawTotalRate.toFixed(2)}%`;
       }
@@ -219,7 +246,7 @@ export class InvestmentPrismaRepository implements IInvestmentRepository {
     });
 
     return {
-      content: indicatorsInvestment,
+      content: indicatorsInvestment as any[],
       meta,
     };
   }
@@ -375,61 +402,49 @@ export class InvestmentPrismaRepository implements IInvestmentRepository {
     const movements = investment.movements || [];
     const appreciations = investment.appreciations || [];
 
-    const totalReturns = movements
+    const totalReturnsDecimal = movements
       .filter((m) => !m.addWithdrawal)
       .reduce(
-        (acc, movement) => acc.plus(new Decimal(movement.amount || 0)),
+        (acc, movement) => acc.plus(new Decimal((movement.amount || 0).toString())),
         new Decimal(0)
-      )
-      .toNumber();
+      );
+    const totalReturns = totalReturnsDecimal.toNumber();
 
-    const initialAmountDecimal = new Decimal(investment.initAmount || 0);
+    const initialAmountDecimal = new Decimal((investment.initAmount || 0).toString());
     const movementsWithdrawalSum = movements
       .filter((m) => m.addWithdrawal)
       .reduce(
         (acc, movement) =>
-          acc.plus(new Decimal(movement.amount || 0).times(-1)),
+          acc.plus(new Decimal((movement.amount || 0).toString())),
         new Decimal(0)
       );
 
-    // totalWithdrawal como número (pero calculado con Decimal.js para precisión)
-    const totalWithdrawal = initialAmountDecimal
-      .plus(movementsWithdrawalSum)
-      .toNumber();
+    // totalWithdrawal = initAmount - sumOfWithdrawalAmounts
+    const totalWithdrawalDecimal = initialAmountDecimal.minus(movementsWithdrawalSum);
+    const totalWithdrawal = totalWithdrawalDecimal.toNumber();
 
     const lastAppreciation =
       appreciations.length > 0 ? appreciations[appreciations.length - 1] : null;
     const endAmountDecimal = new Decimal(
-      lastAppreciation?.amount ?? investment.initAmount ?? 0
+      (lastAppreciation?.amount ?? investment.initAmount ?? 0).toString()
     );
     const endAmount = endAmountDecimal.toNumber();
 
-    // --- Cálculos de Porcentajes con Dos Decimales ---
-
-    // Aquí, convertimos totalWithdrawal a Decimal para los cálculos,
-    // si es que 'totalWithdrawal' es un número
-    const totalWithdrawalForCalculations = new Decimal(totalWithdrawal);
-    const totalReturnsForCalculations = new Decimal(totalReturns);
-
     let valorization = "0.00%";
-    if (totalWithdrawalForCalculations.isZero()) {
-      valorization = "0.00%";
-    } else {
+    if (!totalWithdrawalDecimal.isZero()) {
       const rawValorization = endAmountDecimal
-        .minus(totalWithdrawalForCalculations)
-        .dividedBy(totalWithdrawalForCalculations)
+        .minus(totalWithdrawalDecimal)
+        .dividedBy(totalWithdrawalDecimal)
         .times(100);
       valorization = `${rawValorization.toFixed(2)}%`;
     }
 
     let totalRate = "0.00%";
-    if (totalWithdrawalForCalculations.isZero()) {
-      totalRate = "0.00%";
-    } else {
+    if (!totalWithdrawalDecimal.isZero()) {
       const rawTotalRate = endAmountDecimal
-        .plus(totalReturnsForCalculations)
-        .minus(totalWithdrawalForCalculations)
-        .dividedBy(totalWithdrawalForCalculations)
+        .plus(totalReturnsDecimal)
+        .minus(totalWithdrawalDecimal)
+        .dividedBy(totalWithdrawalDecimal)
         .times(100);
       totalRate = `${rawTotalRate.toFixed(2)}%`;
     }

@@ -44,7 +44,7 @@ jobs:
             set -e
             CONTAINER="emma_fastify"
             IMAGE="${{ secrets.DOCKER_USERNAME }}/emma-fastify:latest"
-            HOST_PORT="${{ secrets.SERVER_PORT || '8010' }}"
+            HOST_PORT="${{ secrets.SERVER_PORT || '8020' }}"
 
             echo "=== Actualizando ==="
             docker pull $IMAGE

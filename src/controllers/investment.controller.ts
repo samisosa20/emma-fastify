@@ -19,7 +19,10 @@ const investmentUseCase = new InvestmentUseCase(investmentRepository);
 export class InvestmentController {
   getAllInvestments = async (request: FastifyRequest, reply: FastifyReply) => {
     const params = request.query as InvestmentParams;
-    return await investmentUseCase.listInvestment(params);
+    return await investmentUseCase.listInvestment({
+      ...params,
+      userId: request.user.id,
+    });
   };
 
   addInvestment = async (request: FastifyRequest, reply: FastifyReply) => {

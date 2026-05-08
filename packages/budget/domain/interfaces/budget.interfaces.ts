@@ -12,11 +12,12 @@ export interface IBudgetRepository {
   listBudget(params: ParamsBudget): Promise<BudgetCompare[]>;
   updateBudget(
     id: string,
-    account: Partial<CreateBudget>
+    account: Partial<CreateBudget>,
+    userId: string
   ): Promise<Budget | ErrorMessage>;
-  detailBudget(id: string): Promise<Budget | null>;
-  deleteBudget(id: string): Promise<Budget | null>;
-  importBudgets(): Promise<{
+  detailBudget(id: string, userId: string): Promise<Budget | null>;
+  deleteBudget(id: string, userId: string): Promise<Budget | null>;
+  importBudgets(userId: string): Promise<{
     budgetCount: number;
   }>;
   listBudgetByYear(

@@ -19,3 +19,7 @@
 ## 2026-05-10 - [Aggressive Parallelization for Reporting]
 **Learning:** Fetching lookup tables (like Badges) concurrently with primary data and aggregations, even if some fetched data isn't used, reduces overall latency by removing sequential dependencies.
 **Action:** Use `Promise.all` to fetch lookups and primary data together to flatten the execution timeline.
+
+## 2026-05-15 - [Database Aggregation for Investment Listings]
+**Learning:** Using Prisma `include` to fetch all movements and appreciations for an investment list causes severe N+1 data bloat and O(N*M) processing in Node.js.
+**Action:** Use `groupBy` for database-level sums and a two-step `groupBy` + `findMany` pattern to efficiently retrieve the "latest" associated records. Use `Map` for O(1) assembly of indicators and ensure `Decimal` safety for nullable fields.

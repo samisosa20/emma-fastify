@@ -16,3 +16,8 @@
 **Vulnerability:** Insecure Direct Object Reference (IDOR) vulnerabilities allowed users to access, update, or delete movements belonging to other users by guessing their IDs.
 **Learning:** Authentication is not sufficient for resource protection; ownership must be explicitly verified at the repository level. Furthermore, creation/update operations involving related entities (accounts, categories) must verify that the user owns those related resources to prevent cross-user data association.
 **Prevention:** Enforce `userId` scoping in all Prisma queries for read/write operations and implement cross-resource ownership checks before creating or updating records with foreign keys.
+
+## 2025-05-26 - [Bypassing IDOR Protection via Payload Manipulation]
+**Vulnerability:** Update operations were using a `userId` extracted from the request body to verify ownership, allowing an attacker to potentially bypass IDOR checks or reassign resources if the check was improperly scoped.
+**Learning:** Security checks must rely on trusted data from the authentication context (e.g., `request.user.id`) rather than user-provided payload data. In partial updates, relying on payload fields for ownership verification is inherently flawed if those fields are optional or manipulatable.
+**Prevention:** Always pass the authenticated `userId` as a separate, mandatory parameter to repository methods for all sensitive operations (update, delete, detail) and enforce strict scoping in the database query using trusted session data.

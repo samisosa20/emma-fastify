@@ -155,20 +155,39 @@ export class BudgetPrismaRepository implements IBudgetRepository {
 
   public async updateBudget(
     id: string,
-    data: Partial<CreateBudget>
+    data: Partial<CreateBudget>,
+    userId: string
   ): Promise<Budget | ErrorMessage> {
     try {
-      const { periodId, badgeId, categoryId, userId, ...restData } = data;
+      const {
+        periodId,
+        badgeId,
+        categoryId,
+        userId: _userIdFromData,
+        ...restData
+      } = data;
+
+      const budget = await prisma.budget.findFirst({
+        where: { id, userId },
+      });
+
+      if (!budget) {
+        throw Object.assign(new Error("Budget not found or access denied"), {
+          statusCode: 404,
+          error: "Not Found",
+          message: "Budget not found or access denied",
+        });
+      }
+
       const updatedBudget = await prisma.budget.update({
         where: {
           id,
         },
         data: {
           ...restData,
-          period: { connect: { id: periodId } },
-          badge: { connect: { id: badgeId } },
-          category: { connect: { id: categoryId } },
-          user: { connect: { id: userId } },
+          ...(periodId && { period: { connect: { id: periodId } } }),
+          ...(badgeId && { badge: { connect: { id: badgeId } } }),
+          ...(categoryId && { category: { connect: { id: categoryId } } }),
         },
         include: {
           period: true,
@@ -186,10 +205,10 @@ export class BudgetPrismaRepository implements IBudgetRepository {
     }
   }
 
-  public async detailBudget(id: string): Promise<Budget | null> {
+  public async detailBudget(id: string, userId: string): Promise<Budget | null> {
     try {
-      return await prisma.budget.findUnique({
-        where: { id },
+      return await prisma.budget.findFirst({
+        where: { id, userId },
         include: {
           period: true,
           badge: true,
@@ -205,9 +224,9 @@ export class BudgetPrismaRepository implements IBudgetRepository {
     }
   }
 
-  public async deleteBudget(id: string): Promise<Budget | null> {
-    const budget = await prisma.budget.findUnique({
-      where: { id },
+  public async deleteBudget(id: string, userId: string): Promise<Budget | null> {
+    const budget = await prisma.budget.findFirst({
+      where: { id, userId },
       include: {
         period: true,
         badge: true,
@@ -224,7 +243,7 @@ export class BudgetPrismaRepository implements IBudgetRepository {
     return budget;
   }
 
-  public async importBudgets(): Promise<{
+  public async importBudgets(userId: string): Promise<{
     budgetCount: number;
   }> {
     try {
@@ -232,13 +251,12 @@ export class BudgetPrismaRepository implements IBudgetRepository {
       const apiProd = process.env.API_PROD;
       const apiEmail = process.env.API_EMAIL;
       const apiPassword = process.env.API_PASSWORD;
-      const userId = process.env.USER_ID;
 
       if (!apiProd || !apiEmail || !apiPassword || !userId) {
         throw Object.assign(new Error("Missing API environment variables"), {
           statusCode: 500,
           error: "Configuration Error",
-          message: "API_PROD, API_EMAIL, API_PASSWORD, or USER_ID are not set.",
+          message: "API_PROD, API_EMAIL, or API_PASSWORD are not set.",
         });
       }
 

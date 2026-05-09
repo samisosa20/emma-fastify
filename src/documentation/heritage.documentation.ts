@@ -182,7 +182,7 @@ export const deleteHeritageDocumentation: FastifySchema = {
 };
 
 export const yearHeritageDocumentation: FastifySchema = {
-  description: "Eliminar un activo patrimonial por ID",
+  description: "Obtener reporte de patrimonio por año",
   tags: ["Heritage"],
   querystring: {
     type: "object",

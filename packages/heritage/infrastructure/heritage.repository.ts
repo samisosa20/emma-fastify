@@ -477,85 +477,127 @@ export class HeritagePrismaRepository implements IHeritageRepository {
     params: ParamsHeritage
   ): Promise<HeritageReport[] | null> {
     const { year, userId } = params;
-    const yearNum = year ? Number(year) : new Date().getFullYear();
-    const limitDate = new Date(`${yearNum}-12-31T23:59:59.999Z`);
 
-    // 1. Fetch data in parallel
-    const [accounts, movements, heritages, appreciations, badges] = await Promise.all([
+    // 1. Determinar los años a procesar
+    let targetYears: number[] = [];
+    if (year) {
+      targetYears.push(Number(year));
+    } else {
+      const distinctYears = await prisma.heritage.findMany({
+        where: { userId },
+        select: { year: true },
+        distinct: ["year"],
+        orderBy: { year: "desc" },
+      });
+      targetYears = distinctYears.map((h) => h.year);
+
+      // Si no hay patrimonios registrados, usamos el año actual como fallback
+      if (targetYears.length === 0) {
+        targetYears.push(new Date().getFullYear());
+      }
+    }
+
+    // 2. Fetch data compartida una sola vez
+    const [accounts, badges] = await Promise.all([
       prisma.account.findMany({
-        where: { userId, createdAt: { lte: limitDate } },
-        select: { id: true, badgeId: true, initAmount: true }
+        where: { userId },
+        select: { id: true, badgeId: true, initAmount: true, createdAt: true },
       }),
-      prisma.movement.groupBy({
-        by: ['accountId'],
-        where: { userId, datePurchase: { lte: limitDate } },
-        _sum: { amount: true }
-      }),
-      prisma.heritage.findMany({
-        where: { userId, year: yearNum },
-        select: { badgeId: true, comercialAmount: true }
-      }),
-      prisma.investmentAppreciation.groupBy({
-        by: ['investmentId'],
-        where: { userId, dateAppreciation: { lte: limitDate } },
-        _max: { dateAppreciation: true }
-      }),
-      prisma.badge.findMany()
+      prisma.badge.findMany(),
     ]);
 
-    const badgesMap = new Map(badges.map(b => [b.id, b]));
+    const badgesMap = new Map(badges.map((b) => [b.id, b]));
+    const reports: HeritageReport[] = [];
 
-    // 2. Calculate Balances (Account Init + Movements)
-    const movementMap = new Map(movements.map(m => [m.accountId, m._sum.amount || new Decimal(0)]));
-    const totalsByBadge = new Map<string, Decimal>();
+    // 3. Calcular el reporte para cada año
+    for (const yearNum of targetYears) {
+      const limitDate = new Date(`${yearNum}-12-31T23:59:59.999Z`);
 
-    accounts.forEach(acc => {
-      const movementSum = movementMap.get(acc.id) || new Decimal(0);
-      const total = new Decimal(acc.initAmount.toString()).plus(movementSum);
-      const current = totalsByBadge.get(acc.badgeId) || new Decimal(0);
-      totalsByBadge.set(acc.badgeId, current.plus(total));
-    });
+      const [movements, heritages, appreciations] = await Promise.all([
+        prisma.movement.groupBy({
+          by: ["accountId"],
+          where: { userId, datePurchase: { lte: limitDate } },
+          _sum: { amount: true },
+        }),
+        prisma.heritage.findMany({
+          where: { userId, year: yearNum },
+          select: { badgeId: true, comercialAmount: true },
+        }),
+        prisma.investmentAppreciation.groupBy({
+          by: ["investmentId"],
+          where: { userId, dateAppreciation: { lte: limitDate } },
+          _max: { dateAppreciation: true },
+        }),
+      ]);
 
-    // 3. Add Commercial Values from Heritages
-    heritages.forEach(h => {
-      const current = totalsByBadge.get(h.badgeId) || new Decimal(0);
-      totalsByBadge.set(h.badgeId, current.plus(new Decimal(h.comercialAmount.toString())));
-    });
+      const movementMap = new Map(
+        movements.map((m) => [m.accountId, m._sum.amount || new Decimal(0)])
+      );
+      const totalsByBadge = new Map<string, Decimal>();
 
-    // 4. Add Latest Investment Valuations
-    const cleanedAppreciations = appreciations.filter(a => a._max.dateAppreciation !== null);
-    if (cleanedAppreciations.length > 0) {
-      const latestAppreciations = await prisma.investmentAppreciation.findMany({
-        where: {
-          OR: cleanedAppreciations.map(a => ({
-            investmentId: a.investmentId,
-            dateAppreciation: a._max.dateAppreciation!
-          }))
-        },
-        include: { investment: { select: { badgeId: true } } }
+      // A. Balances de cuentas (Init + Movements)
+      accounts.forEach((acc) => {
+        if (acc.createdAt <= limitDate) {
+          const movementSum = movementMap.get(acc.id) || new Decimal(0);
+          const total = new Decimal(acc.initAmount.toString()).plus(movementSum);
+          const current = totalsByBadge.get(acc.badgeId) || new Decimal(0);
+          totalsByBadge.set(acc.badgeId, current.plus(total));
+        }
       });
 
-      latestAppreciations.forEach(la => {
-        const current = totalsByBadge.get(la.investment.badgeId) || new Decimal(0);
-        totalsByBadge.set(la.investment.badgeId, current.plus(new Decimal(la.amount.toString())));
+      // B. Valores comerciales de Patrimonios del año
+      heritages.forEach((h) => {
+        const current = totalsByBadge.get(h.badgeId) || new Decimal(0);
+        totalsByBadge.set(
+          h.badgeId,
+          current.plus(new Decimal(h.comercialAmount.toString()))
+        );
+      });
+
+      // C. Valoraciones de inversiones (última de cada una hasta final de año)
+      const cleanedAppreciations = appreciations.filter(
+        (a) => a._max.dateAppreciation !== null
+      );
+      if (cleanedAppreciations.length > 0) {
+        const latestAppreciations = await prisma.investmentAppreciation.findMany({
+          where: {
+            OR: cleanedAppreciations.map((a) => ({
+              investmentId: a.investmentId,
+              dateAppreciation: a._max.dateAppreciation!,
+            })),
+          },
+          include: { investment: { select: { badgeId: true } } },
+        });
+
+        latestAppreciations.forEach((la) => {
+          const current = totalsByBadge.get(la.investment.badgeId) || new Decimal(0);
+          totalsByBadge.set(
+            la.investment.badgeId,
+            current.plus(new Decimal(la.amount.toString()))
+          );
+        });
+      }
+
+      // Formatear resultados para este año
+      const balancesArray = Array.from(totalsByBadge.entries()).map(
+        ([badgeId, amount]) => {
+          const badge = badgesMap.get(badgeId);
+          return {
+            code: badge?.code || null,
+            flag: badge?.flag || null,
+            symbol: badge?.symbol || null,
+            amount: amount.toNumber(),
+          };
+        }
+      );
+
+      reports.push({
+        year: yearNum,
+        userId: userId || "",
+        balances: balancesArray,
       });
     }
 
-    // 5. Format result
-    const balancesArray = Array.from(totalsByBadge.entries()).map(([badgeId, amount]) => {
-      const badge = badgesMap.get(badgeId);
-      return {
-        code: badge?.code || null,
-        flag: badge?.flag || null,
-        symbol: badge?.symbol || null,
-        amount: amount.toNumber()
-      };
-    });
-
-    return [{
-      year: yearNum,
-      userId: userId || '',
-      balances: balancesArray
-    }];
+    return reports;
   }
 }

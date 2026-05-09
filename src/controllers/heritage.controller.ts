@@ -81,7 +81,7 @@ export class HeritageController {
   };
   yearHeritage = async (request: FastifyRequest, reply: FastifyReply) => {
     const userId = request.user.id;
-    const { year } = request.params as { year: number };
+    const { year } = request.query as { year: number };
 
     return heritageUseCase.yearHeritage({
       year,

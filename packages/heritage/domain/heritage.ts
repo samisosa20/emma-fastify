@@ -14,11 +14,13 @@ export type Heritage = {
 
 export type HeritageReport = {
   year: number | null;
-  code: string | null;
-  flag: string | null;
-  symbol: string | null;
-  amount: Decimal | number;
   userId: string;
+  balances: {
+    code: string | null;
+    flag: string | null;
+    symbol: string | null;
+    amount: Decimal | number;
+  }[];
 };
 
 export type ParamsHeritage = {

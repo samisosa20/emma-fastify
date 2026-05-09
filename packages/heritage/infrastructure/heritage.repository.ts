@@ -1,3 +1,4 @@
+import { Decimal } from "@prisma/client/runtime/library";
 import {
   Heritage,
   CreateHeritage,
@@ -476,35 +477,85 @@ export class HeritagePrismaRepository implements IHeritageRepository {
     params: ParamsHeritage
   ): Promise<HeritageReport[] | null> {
     const { year, userId } = params;
-    const heritage = await prisma.vw_heritagebyyear.findMany({
-      where: {
-        year,
-        userId,
-      },
+    const yearNum = year ? Number(year) : new Date().getFullYear();
+    const limitDate = new Date(`${yearNum}-12-31T23:59:59.999Z`);
+
+    // 1. Fetch data in parallel
+    const [accounts, movements, heritages, appreciations, badges] = await Promise.all([
+      prisma.account.findMany({
+        where: { userId, createdAt: { lte: limitDate } },
+        select: { id: true, badgeId: true, initAmount: true }
+      }),
+      prisma.movement.groupBy({
+        by: ['accountId'],
+        where: { userId, datePurchase: { lte: limitDate } },
+        _sum: { amount: true }
+      }),
+      prisma.heritage.findMany({
+        where: { userId, year: yearNum },
+        select: { badgeId: true, comercialAmount: true }
+      }),
+      prisma.investmentAppreciation.groupBy({
+        by: ['investmentId'],
+        where: { userId, dateAppreciation: { lte: limitDate } },
+        _max: { dateAppreciation: true }
+      }),
+      prisma.badge.findMany()
+    ]);
+
+    const badgesMap = new Map(badges.map(b => [b.id, b]));
+
+    // 2. Calculate Balances (Account Init + Movements)
+    const movementMap = new Map(movements.map(m => [m.accountId, m._sum.amount || new Decimal(0)]));
+    const totalsByBadge = new Map<string, Decimal>();
+
+    accounts.forEach(acc => {
+      const movementSum = movementMap.get(acc.id) || new Decimal(0);
+      const total = new Decimal(acc.initAmount.toString()).plus(movementSum);
+      const current = totalsByBadge.get(acc.badgeId) || new Decimal(0);
+      totalsByBadge.set(acc.badgeId, current.plus(total));
     });
-    const heritageMap = new Map();
 
-    heritage.forEach((item) => {
-      const { year, userId, code, flag, symbol, amount } = item;
+    // 3. Add Commercial Values from Heritages
+    heritages.forEach(h => {
+      const current = totalsByBadge.get(h.badgeId) || new Decimal(0);
+      totalsByBadge.set(h.badgeId, current.plus(new Decimal(h.comercialAmount.toString())));
+    });
 
-      if (!heritageMap.has(year)) {
-        heritageMap.set(year, {
-          year,
-          userId,
-          balances: [],
-        });
-      }
-
-      const currentYearEntry = heritageMap.get(year);
-      currentYearEntry.balances.push({
-        code,
-        flag,
-        symbol,
-        amount,
+    // 4. Add Latest Investment Valuations
+    const cleanedAppreciations = appreciations.filter(a => a._max.dateAppreciation !== null);
+    if (cleanedAppreciations.length > 0) {
+      const latestAppreciations = await prisma.investmentAppreciation.findMany({
+        where: {
+          OR: cleanedAppreciations.map(a => ({
+            investmentId: a.investmentId,
+            dateAppreciation: a._max.dateAppreciation!
+          }))
+        },
+        include: { investment: { select: { badgeId: true } } }
       });
+
+      latestAppreciations.forEach(la => {
+        const current = totalsByBadge.get(la.investment.badgeId) || new Decimal(0);
+        totalsByBadge.set(la.investment.badgeId, current.plus(new Decimal(la.amount.toString())));
+      });
+    }
+
+    // 5. Format result
+    const balancesArray = Array.from(totalsByBadge.entries()).map(([badgeId, amount]) => {
+      const badge = badgesMap.get(badgeId);
+      return {
+        code: badge?.code || null,
+        flag: badge?.flag || null,
+        symbol: badge?.symbol || null,
+        amount: amount.toNumber()
+      };
     });
 
-    const finalHeritageReport = Array.from(heritageMap.values());
-    return finalHeritageReport;
+    return [{
+      year: yearNum,
+      userId: userId || '',
+      balances: balancesArray
+    }];
   }
 }

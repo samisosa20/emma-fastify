@@ -23,3 +23,7 @@
 ## 2026-05-15 - [Database Aggregation for Investment Listings]
 **Learning:** Using Prisma `include` to fetch all movements and appreciations for an investment list causes severe N+1 data bloat and O(N*M) processing in Node.js.
 **Action:** Use `groupBy` for database-level sums and a two-step `groupBy` + `findMany` pattern to efficiently retrieve the "latest" associated records. Use `Map` for O(1) assembly of indicators and ensure `Decimal` safety for nullable fields.
+
+## 2026-05-20 - [Accurate Heritage Reporting with Multi-Source Aggregation]
+**Learning:** Relying on complex database views for year-over-year reporting can lead to data inconsistencies and hidden logic bugs.
+**Action:** Re-implement year-over-year aggregation in the application/infrastructure layer using explicit parallelized queries to sum Balances (Init + Movements), latest Investment Valuations, and Commercial Values, ensuring consistent currency grouping and multi-tenancy.

@@ -21,3 +21,8 @@
 **Vulnerability:** Budget operations (detail, update, delete) relied solely on budget IDs, enabling IDOR attacks where any authenticated user could access or modify others' budgets.
 **Learning:** For models without composite unique keys on `(id, userId)`, multi-tenancy must be enforced by using `findFirst({ where: { id, userId } })` instead of `findUnique({ where: { id } })`. Additionally, critical processes like `importBudgets` must use the authenticated user's ID rather than falling back to global environment variables.
 **Prevention:** Standardize repository methods to always include `userId` in filters for all single-resource operations and ensure that creation/import logic strictly derives ownership from the request context.
+
+## 2025-06-05 - [IDOR and Environment-Dependent Ownership in Investments]
+**Vulnerability:** The Investment module allowed unauthorized access/modification via IDOR and relied on a static `USER_ID` environment variable for data imports.
+**Learning:** Even when authentication is present, resource-level authorization must be explicitly enforced in all CRUD and import operations. Relying on environment variables for user context in multi-tenant applications creates a significant security gap where all imported data is attributed to a single global user.
+**Prevention:** Strictly propagate the authenticated `userId` from the request context to all repository operations and use it as a mandatory filter in Prisma queries (`findFirst` with `userId`).

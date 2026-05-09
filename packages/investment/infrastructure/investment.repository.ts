@@ -238,13 +238,25 @@ export class InvestmentPrismaRepository implements IInvestmentRepository {
 
   public async updateInvestment(
     id: string,
-    data: Partial<CreateInvestment>
+    data: Partial<CreateInvestment>,
+    userId: string
   ): Promise<Investment | ErrorMessage> {
     try {
+      const investment = await prisma.investment.findFirst({
+        where: { id, userId, deletedAt: null },
+      });
+
+      if (!investment) {
+        throw Object.assign(new Error("Investment not found"), {
+          statusCode: 404,
+          error: "Not Found",
+          message: "Investment not found or you don't have permission",
+        });
+      }
+
       const updatedInvestment = await prisma.investment.update({
         where: {
           id,
-          deletedAt: null,
         },
         data,
         include: {
@@ -285,11 +297,12 @@ export class InvestmentPrismaRepository implements IInvestmentRepository {
   }
 
   public async detailInvestment(
-    id: string
+    id: string,
+    userId: string
   ): Promise<(Investment & ExtraInfoInvestment) | null> {
     try {
-      const investment = await prisma.investment.findUnique({
-        where: { id },
+      const investment = await prisma.investment.findFirst({
+        where: { id, userId },
         include: {
           movements: {
             select: {
@@ -342,9 +355,12 @@ export class InvestmentPrismaRepository implements IInvestmentRepository {
     }
   }
 
-  public async deleteInvestment(id: string): Promise<Investment | null> {
-    const investment = await prisma.investment.findUnique({
-      where: { id },
+  public async deleteInvestment(
+    id: string,
+    userId: string
+  ): Promise<Investment | null> {
+    const investment = await prisma.investment.findFirst({
+      where: { id, userId },
       include: {
         movements: {
           select: {
@@ -456,7 +472,7 @@ export class InvestmentPrismaRepository implements IInvestmentRepository {
     };
   }
 
-  public async importInvestments(): Promise<{
+  public async importInvestments(userId: string): Promise<{
     investmentCount: number;
   }> {
     try {
@@ -464,7 +480,6 @@ export class InvestmentPrismaRepository implements IInvestmentRepository {
       const apiProd = process.env.API_PROD;
       const apiEmail = process.env.API_EMAIL;
       const apiPassword = process.env.API_PASSWORD;
-      const userId = process.env.USER_ID;
 
       if (!apiProd || !apiEmail || !apiPassword || !userId) {
         throw Object.assign(new Error("Missing API environment variables"), {

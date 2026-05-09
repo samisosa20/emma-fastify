@@ -48,7 +48,11 @@ export class InvestmentController {
     const { id } = request.params as { id: string };
 
     try {
-      return investmentUseCase.updateInvestment(id, dataInvestment);
+      return investmentUseCase.updateInvestment(
+        id,
+        dataInvestment,
+        request.user.id
+      );
     } catch (error: any) {
       const detail = formatErrorMessage(error);
       return reply.status(400).send({
@@ -61,12 +65,12 @@ export class InvestmentController {
 
   detailInvestment = async (request: FastifyRequest, reply: FastifyReply) => {
     const { id } = request.params as { id: string };
-    return investmentUseCase.detailInvestment(id);
+    return investmentUseCase.detailInvestment(id, request.user.id);
   };
 
   deleteInvestment = async (request: FastifyRequest, reply: FastifyReply) => {
     const { id } = request.params as { id: string };
-    const result = await investmentUseCase.deleteInvestment(id);
+    const result = await investmentUseCase.deleteInvestment(id, request.user.id);
     if (result === null) {
       return reply.status(404).send({ message: "Investment not found" });
     }
@@ -74,7 +78,7 @@ export class InvestmentController {
   };
 
   importInvestments = async (request: FastifyRequest, reply: FastifyReply) => {
-    const result = await investmentUseCase.importInvestments();
+    const result = await investmentUseCase.importInvestments(request.user.id);
     if (result === null) {
       return reply.status(404).send({ message: "Investment not found" });
     }

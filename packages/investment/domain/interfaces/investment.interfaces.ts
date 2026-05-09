@@ -8,11 +8,12 @@ export interface IInvestmentRepository {
   ): Promise<{ content: Investment[]; meta: Paginate }>;
   updateInvestment(
     id: string,
-    account: Partial<CreateInvestment>
+    account: Partial<CreateInvestment>,
+    userId: string
   ): Promise<Investment | ErrorMessage>;
-  detailInvestment(id: string): Promise<Investment | null>;
-  deleteInvestment(id: string): Promise<Investment | null>;
-  importInvestments(): Promise<{
+  detailInvestment(id: string, userId: string): Promise<Investment | null>;
+  deleteInvestment(id: string, userId: string): Promise<Investment | null>;
+  importInvestments(userId: string): Promise<{
     investmentCount: number;
   }>;
 }

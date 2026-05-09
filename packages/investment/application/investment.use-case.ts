@@ -23,22 +23,29 @@ export class InvestmentUseCase {
 
   public async updateInvestment(
     id: string,
-    badge: Partial<CreateInvestment>
+    badge: Partial<CreateInvestment>,
+    userId: string
   ): Promise<Investment | ErrorMessage> {
-    return await this.badgeRepository.updateInvestment(id, badge);
+    return await this.badgeRepository.updateInvestment(id, badge, userId);
   }
 
-  public async detailInvestment(id: string): Promise<Investment | null> {
-    return await this.badgeRepository.detailInvestment(id);
+  public async detailInvestment(
+    id: string,
+    userId: string
+  ): Promise<Investment | null> {
+    return await this.badgeRepository.detailInvestment(id, userId);
   }
 
-  public async deleteInvestment(id: string): Promise<Investment | null> {
-    return await this.badgeRepository.deleteInvestment(id);
+  public async deleteInvestment(
+    id: string,
+    userId: string
+  ): Promise<Investment | null> {
+    return await this.badgeRepository.deleteInvestment(id, userId);
   }
 
-  public async importInvestments(): Promise<{
+  public async importInvestments(userId: string): Promise<{
     investmentCount: number;
   }> {
-    return await this.badgeRepository.importInvestments();
+    return await this.badgeRepository.importInvestments(userId);
   }
 }

@@ -1,6 +1,6 @@
 import { CommonParamsPaginate, ErrorMessage, Paginate } from "packages/shared";
 import { IEventRepository } from "../domain/interfaces/event.interfaces";
-import { Event, CreateEvent } from "../domain/event";
+import { Event, CreateEvent, EventWithBalances } from "../domain/event";
 
 export class EventUseCase {
   private badgeRepository: IEventRepository;
@@ -15,7 +15,7 @@ export class EventUseCase {
 
   public async listEvent(
     params: CommonParamsPaginate
-  ): Promise<{ content: Event[]; meta: Paginate }> {
+  ): Promise<{ content: EventWithBalances[]; meta: Paginate }> {
     return await this.badgeRepository.listEvent(params);
   }
 

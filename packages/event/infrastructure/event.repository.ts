@@ -1,4 +1,4 @@
-import { Event, CreateEvent } from "../domain/event";
+import { Event, CreateEvent, EventWithBalances } from "../domain/event";
 import { IEventRepository } from "../domain/interfaces/event.interfaces";
 
 import prisma from "packages/shared/settings/prisma.client";
@@ -34,38 +34,34 @@ export class EventPrismaRepository implements IEventRepository {
 
   public async listEvent(
     params: CommonParamsPaginate
-  ): Promise<{ content: Event[]; meta: Paginate }> {
-    const { size, page: pageParam } = params;
+  ): Promise<{ content: EventWithBalances[]; meta: Paginate }> {
+    const { size, page: pageParam, userId } = params;
+
+    if (!userId) {
+      throw Object.assign(new Error("User ID is required"), {
+        statusCode: 400,
+        error: "Bad Request",
+        message: "User ID is required to list events",
+      });
+    }
 
     const shouldPaginate = pageParam && Number(pageParam) > 0;
 
-    let rawContent: (Event & { movements: any[] })[];
+    let rawContent: Event[];
     let metaResult: Paginate;
+
+    const where = {
+      ...(userId && { userId }),
+    };
 
     if (shouldPaginate) {
       const currentPage = Number(pageParam);
       const effectiveSize = size && Number(size) > 0 ? Number(size) : 10;
 
+      // ⚡ Bolt: Initial fetch of paginated events without movements to avoid O(N*M) data bloat.
       const [content, metaFromPrisma] = await prisma.event
         .paginate({
-          include: {
-            movements: {
-              select: {
-                amount: true,
-                account: {
-                  select: {
-                    badge: {
-                      select: {
-                        code: true,
-                        flag: true,
-                        symbol: true,
-                      },
-                    },
-                  },
-                },
-              },
-            },
-          },
+          where,
           orderBy: {
             endEvent: "desc",
           },
@@ -75,33 +71,15 @@ export class EventPrismaRepository implements IEventRepository {
           page: currentPage,
         });
 
-      rawContent = content as (Event & { movements: any[] })[];
-
+      rawContent = content as Event[];
       metaResult = metaFromPrisma;
     } else {
       rawContent = (await prisma.event.findMany({
-        include: {
-          movements: {
-            select: {
-              amount: true,
-              account: {
-                select: {
-                  badge: {
-                    select: {
-                      code: true,
-                      flag: true,
-                      symbol: true,
-                    },
-                  },
-                },
-              },
-            },
-          },
-        },
+        where,
         orderBy: {
           endEvent: "desc",
         },
-      })) as (Event & { movements: any[] })[];
+      })) as Event[];
 
       const totalCount = rawContent.length;
       const meta: Paginate = {
@@ -117,46 +95,94 @@ export class EventPrismaRepository implements IEventRepository {
       metaResult = meta;
     }
 
-    const contentWithBalances = rawContent.map((event) => {
-      // 💡 Corrección: El valor del Map debe ser un objeto para guardar varias propiedades.
-      const balancesMap = new Map();
+    if (rawContent.length === 0) {
+      return { content: [], meta: metaResult };
+    }
 
-      event.movements.forEach((movement) => {
-        // 💡 Mejora: Simplificación en la obtención del monto.
-        const amount = movement.amount?.toNumber() ?? 0;
+    const eventIds = rawContent.map((event) => event.id);
 
-        const code = movement.account?.badge?.code;
-        const symbol = String(movement.account?.badge?.symbol);
-        const flag = String(movement.account?.badge?.flag);
+    // ⚡ Bolt: Offload balance calculations to the database using groupBy.
+    // We fetch aggregated sums grouped by event and account (to get currency info) in parallel with account lookups.
+    const [movementSums, userAccounts] = await Promise.all([
+      prisma.movement.groupBy({
+        by: ["eventId", "accountId"],
+        where: {
+          eventId: { in: eventIds },
+          userId,
+        },
+        _sum: {
+          amount: true,
+        },
+      }),
+      prisma.account.findMany({
+        where: { userId },
+        select: {
+          id: true,
+          badge: {
+            select: {
+              code: true,
+              flag: true,
+              symbol: true,
+            },
+          },
+        },
+      }),
+    ]);
 
-        if (code) {
-          // 💡 Corrección: Obtener el objeto de balance actual o crear uno nuevo.
-          // El valor del Map es un objeto, no un número.
-          const currentBalanceData = balancesMap.get(code) || {
-            symbol: symbol,
-            flag: flag,
-            balance: 0,
-          };
+    // ⚡ Bolt: Use a Map for O(1) account -> badge info lookup.
+    const accountBadgeMap = new Map(
+      userAccounts.map((acc) => [
+        acc.id,
+        {
+          code: acc.badge.code,
+          flag: String(acc.badge.flag),
+          symbol: String(acc.badge.symbol),
+        },
+      ])
+    );
 
-          // 💡 Corrección: Actualizar la propiedad `balance` del objeto y volver a guardarlo.
-          currentBalanceData.balance += amount;
-          balancesMap.set(code, currentBalanceData);
-        }
-      });
+    // ⚡ Bolt: Group movement sums by eventId using a nested Map.
+    // eventId -> badgeCode -> balance data
+    const eventBalancesMap = new Map<
+      string,
+      Map<string, { code: string; symbol: string; flag: string; balance: Decimal }>
+    >();
 
-      // 💡 Corrección: Iterar sobre el Map. La función de mapeo ahora recibe
-      // la clave (code) y el valor (data, que es el objeto).
-      const balances = Array.from(balancesMap, ([code, data]) => ({
-        code,
-        symbol: data.symbol,
-        flag: data.flag,
-        // Usamos el balance del objeto.
-        balance: parseFloat(data.balance.toFixed(2)),
-      }));
+    for (const sum of movementSums) {
+      if (!sum.eventId) continue;
 
-      const { movements, ...restOfEvent } = event;
+      const badgeInfo = accountBadgeMap.get(sum.accountId);
+      if (!badgeInfo) continue;
 
-      return { ...restOfEvent, balances };
+      if (!eventBalancesMap.has(sum.eventId)) {
+        eventBalancesMap.set(sum.eventId, new Map());
+      }
+
+      const badgeBalances = eventBalancesMap.get(sum.eventId)!;
+      const currentBalance = badgeBalances.get(badgeInfo.code) || {
+        ...badgeInfo,
+        balance: new Decimal(0),
+      };
+
+      currentBalance.balance = currentBalance.balance.add(
+        sum._sum.amount || new Decimal(0)
+      );
+      badgeBalances.set(badgeInfo.code, currentBalance);
+    }
+
+    // Map the rawContent to include calculated balances
+    const contentWithBalances: EventWithBalances[] = rawContent.map((event) => {
+      const badgeBalancesMap = eventBalancesMap.get(event.id);
+      const balances = badgeBalancesMap
+        ? Array.from(badgeBalancesMap.values()).map((b) => ({
+            code: b.code,
+            symbol: b.symbol,
+            flag: b.flag,
+            balance: parseFloat(b.balance.toFixed(2)),
+          }))
+        : [];
+
+      return { ...event, balances };
     });
 
     return {

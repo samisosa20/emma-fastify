@@ -23,3 +23,7 @@
 ## 2026-05-15 - [Database Aggregation for Investment Listings]
 **Learning:** Using Prisma `include` to fetch all movements and appreciations for an investment list causes severe N+1 data bloat and O(N*M) processing in Node.js.
 **Action:** Use `groupBy` for database-level sums and a two-step `groupBy` + `findMany` pattern to efficiently retrieve the "latest" associated records. Use `Map` for O(1) assembly of indicators and ensure `Decimal` safety for nullable fields.
+
+## 2026-05-09 - [Database-Level Event Balance Aggregation]
+**Learning:** Fetching all movements to calculate event balances in-memory (O(N*M)) causes severe performance degradation and high memory pressure.
+**Action:** Use Prisma `groupBy` to aggregate sums at the database level and combine them with metadata using `Map` for O(1) lookups. Ensure `userId` is enforced to maintain security and optimize queries.

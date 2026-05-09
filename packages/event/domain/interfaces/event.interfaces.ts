@@ -1,11 +1,11 @@
 import { CommonParamsPaginate, ErrorMessage, Paginate } from "packages/shared";
-import { Event, CreateEvent } from "../event";
+import { Event, CreateEvent, EventWithBalances } from "../event";
 
 export interface IEventRepository {
   addEvent(data: CreateEvent): Promise<Event | ErrorMessage>;
   listEvent(
     params: CommonParamsPaginate
-  ): Promise<{ content: Event[]; meta: Paginate }>;
+  ): Promise<{ content: EventWithBalances[]; meta: Paginate }>;
   updateEvent(
     id: string,
     account: Partial<CreateEvent>

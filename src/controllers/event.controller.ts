@@ -19,7 +19,7 @@ const eventUseCase = new EventUseCase(eventRepository);
 export class EventController {
   getAllEvents = async (request: FastifyRequest, reply: FastifyReply) => {
     const params = request.query as EventParams;
-    return await eventUseCase.listEvent(params);
+    return await eventUseCase.listEvent({ ...params, userId: request.user.id });
   };
 
   addEvent = async (request: FastifyRequest, reply: FastifyReply) => {

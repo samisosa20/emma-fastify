@@ -30,6 +30,24 @@ export class PlannedPaymentPrismaRepository
     data: CreatePlannedPayment
   ): Promise<PlannedPayment | ErrorMessage> {
     try {
+      // Security: Verify that the account and category belong to the user
+      const [account, category] = await Promise.all([
+        prisma.account.findFirst({
+          where: { id: data.accountId, userId: data.userId },
+        }),
+        prisma.category.findFirst({
+          where: { id: data.categoryId, userId: data.userId },
+        }),
+      ]);
+
+      if (!account || !category) {
+        throw Object.assign(new Error("Invalid account or category ownership"), {
+          statusCode: 403,
+          error: "Forbidden",
+          message: "Account or Category does not belong to the user.",
+        });
+      }
+
       const newPlannedPayment = await prisma.plannedPayment.create({
         data: {
           specificDay: data.specificDay,
@@ -73,6 +91,7 @@ export class PlannedPaymentPrismaRepository
       });
       return newPlannedPayment;
     } catch (error: any) {
+      if (error.statusCode) throw error;
       throw Object.assign(new Error("Validation Error"), {
         statusCode: 400,
         error: "Bad Request",
@@ -84,12 +103,18 @@ export class PlannedPaymentPrismaRepository
   public async listPlannedPayment(
     params: CommonParamsPaginate
   ): Promise<{ content: PlannedPayment[]; meta: Paginate }> {
-    const { size, page: pageParam } = params;
+    const { size, page: pageParam, userId } = params;
+
+    if (!userId) {
+      throw new Error("userId is required for listPlannedPayment");
+    }
 
     const shouldPaginate = pageParam && Number(pageParam) > 0;
 
     let rawContent: PlannedPayment[];
     let metaResult: Paginate;
+
+    const where = { userId };
 
     if (shouldPaginate) {
       const currentPage = Number(pageParam);
@@ -97,6 +122,7 @@ export class PlannedPaymentPrismaRepository
 
       const [content, metaFromPrisma] = await prisma.plannedPayment
         .paginate({
+          where,
           include: {
             account: {
               select: {
@@ -125,6 +151,7 @@ export class PlannedPaymentPrismaRepository
       metaResult = metaFromPrisma;
     } else {
       rawContent = await prisma.plannedPayment.findMany({
+        where,
         include: {
           account: {
             select: {
@@ -166,9 +193,50 @@ export class PlannedPaymentPrismaRepository
 
   public async updatePlannedPayment(
     id: string,
+    userId: string,
     data: Partial<CreatePlannedPayment>
   ): Promise<PlannedPayment | ErrorMessage> {
     try {
+      // Security: verify ownership first
+      const existing = await prisma.plannedPayment.findFirst({
+        where: { id, userId },
+      });
+
+      if (!existing) {
+        throw Object.assign(new Error("PlannedPayment not found"), {
+          statusCode: 404,
+          error: "Not Found",
+          message: "PlannedPayment not found or does not belong to the user.",
+        });
+      }
+
+      // Security: Verify that the account and category belong to the user if they are being updated
+      if (data.accountId || data.categoryId) {
+        const [account, category] = await Promise.all([
+          data.accountId
+            ? prisma.account.findFirst({
+                where: { id: data.accountId, userId },
+              })
+            : Promise.resolve(true),
+          data.categoryId
+            ? prisma.category.findFirst({
+                where: { id: data.categoryId, userId },
+              })
+            : Promise.resolve(true),
+        ]);
+
+        if (!account || !category) {
+          throw Object.assign(
+            new Error("Invalid account or category ownership"),
+            {
+              statusCode: 403,
+              error: "Forbidden",
+              message: "Account or Category does not belong to the user.",
+            }
+          );
+        }
+      }
+
       const updatedPlannedPayment = await prisma.plannedPayment.update({
         where: {
           id,
@@ -194,6 +262,7 @@ export class PlannedPaymentPrismaRepository
       });
       return updatedPlannedPayment;
     } catch (error: any) {
+      if (error.statusCode) throw error;
       throw Object.assign(new Error("Validation Error"), {
         statusCode: 400,
         error: "Bad Request",
@@ -203,11 +272,12 @@ export class PlannedPaymentPrismaRepository
   }
 
   public async detailPlannedPayment(
-    id: string
+    id: string,
+    userId: string
   ): Promise<PlannedPayment | null> {
     try {
-      return await prisma.plannedPayment.findUnique({
-        where: { id },
+      return await prisma.plannedPayment.findFirst({
+        where: { id, userId },
         include: {
           account: {
             select: {
@@ -236,10 +306,11 @@ export class PlannedPaymentPrismaRepository
   }
 
   public async deletePlannedPayment(
-    id: string
+    id: string,
+    userId: string
   ): Promise<PlannedPayment | null> {
-    const plannedPayment = await prisma.plannedPayment.findUnique({
-      where: { id },
+    const plannedPayment = await prisma.plannedPayment.findFirst({
+      where: { id, userId },
     });
     if (!plannedPayment) {
       return null;
@@ -266,7 +337,7 @@ export class PlannedPaymentPrismaRepository
     });
   }
 
-  public async importPlannedPayments(): Promise<{
+  public async importPlannedPayments(userId: string): Promise<{
     plannedPaymentCount: number;
   }> {
     try {
@@ -274,13 +345,12 @@ export class PlannedPaymentPrismaRepository
       const apiProd = process.env.API_PROD;
       const apiEmail = process.env.API_EMAIL;
       const apiPassword = process.env.API_PASSWORD;
-      const userId = process.env.USER_ID;
 
       if (!apiProd || !apiEmail || !apiPassword || !userId) {
         throw Object.assign(new Error("Missing API environment variables"), {
           statusCode: 500,
           error: "Configuration Error",
-          message: "API_PROD, API_EMAIL, API_PASSWORD, or USER_ID are not set.",
+          message: "API_PROD, API_EMAIL, API_PASSWORD, or userId are not set.",
         });
       }
 
@@ -343,15 +413,15 @@ export class PlannedPaymentPrismaRepository
       // 3. Procesar los pagos y prepararlos para la inserción masiva
       const paymentsToCreatePromises = oldPayments.map(async (payment) => {
         const account = await prisma.account.findFirst({
-          where: { name: payment.account.name },
+          where: { name: payment.account.name, userId },
         });
         const category = await prisma.category.findFirst({
-          where: { name: payment.category.name },
+          where: { name: payment.category.name, userId },
         });
 
         if (!account || !category) {
           console.warn(
-            `Skipping planned payment "${payment.description}" due to missing Account or Category.`
+            `Skipping planned payment "${payment.description}" due to missing Account or Category for user ${userId}.`
           );
           return null;
         }

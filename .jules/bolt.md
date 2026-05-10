@@ -30,3 +30,11 @@
 ## 2026-05-20 - [Accurate Heritage Reporting with Multi-Source Aggregation]
 **Learning:** Relying on complex database views for year-over-year reporting can lead to data inconsistencies and hidden logic bugs.
 **Action:** Re-implement year-over-year aggregation in the application/infrastructure layer using explicit parallelized queries to sum Balances (Init + Movements), latest Investment Valuations, and Commercial Values, ensuring consistent currency grouping and multi-tenancy.
+
+## 2026-05-25 - [Parallelizing Write Path Validations]
+**Learning:** Sequential ownership and existence checks for related resources (Accounts, Categories, Events, Investments) before creating or updating a record add unnecessary latency.
+**Action:** Consolidate all prerequisite database lookups into a single `Promise.all` call to reduce sequential roundtrips.
+
+## 2026-05-25 - [Bulk Metadata Fetching for Imports]
+**Learning:** Performing multiple `findFirst` lookups inside a loop for data imports creates an N*M database bottleneck.
+**Action:** Pre-fetch all relevant metadata (Accounts, Categories, etc.) into Hash Maps before the loop to replace database roundtrips with O(1) in-memory lookups.

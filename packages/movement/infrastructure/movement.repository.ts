@@ -66,14 +66,36 @@ export class MovementPrismaRepository implements IMovementRepository {
     data: CreateMovement
   ): Promise<Movement | ErrorMessage> {
     try {
-      // Security: Verify ownership of related resources
-      const [account, event, investment] = await Promise.all([
-        prisma.account.findFirst({ where: { id: data.accountId, userId: data.userId } }),
-        data.eventId ? prisma.event.findFirst({ where: { id: data.eventId, userId: data.userId } }) : Promise.resolve(true),
-        data.investmentId ? prisma.investment.findFirst({ where: { id: data.investmentId, userId: data.userId } }) : Promise.resolve(true),
-      ]);
+      // ⚡ Bolt: Parallelize all prerequisite lookups (ownership checks and transfer metadata)
+      // to reduce database roundtrips and minimize latency during movement creation.
+      const [account, event, investment, accountEnd, transferCategory] =
+        await Promise.all([
+          prisma.account.findFirst({
+            where: { id: data.accountId, userId: data.userId },
+          }),
+          data.eventId
+            ? prisma.event.findFirst({
+                where: { id: data.eventId, userId: data.userId },
+              })
+            : Promise.resolve(true),
+          data.investmentId
+            ? prisma.investment.findFirst({
+                where: { id: data.investmentId, userId: data.userId },
+              })
+            : Promise.resolve(true),
+          data.type === "transfer" && data.accountEndId
+            ? prisma.account.findFirst({
+                where: { id: data.accountEndId, userId: data.userId },
+              })
+            : Promise.resolve(true),
+          data.type === "transfer"
+            ? prisma.category.findFirst({
+                where: { GroupCategory: { name: "Transferencia" } },
+              })
+            : Promise.resolve(null),
+        ]);
 
-      if (!account || !event || !investment) {
+      if (!account || !event || !investment || !accountEnd) {
         return {
           statusCode: 403,
           error: "Forbidden",
@@ -81,35 +103,12 @@ export class MovementPrismaRepository implements IMovementRepository {
         };
       }
 
-      if (data.type === "transfer" && data.accountEndId) {
-        const accountEnd = await prisma.account.findFirst({
-          where: { id: data.accountEndId, userId: data.userId },
-        });
-        if (!accountEnd) {
-          return {
-            statusCode: 403,
-            error: "Forbidden",
-            message: "Unauthorized resource access",
-          };
-        }
-      }
-
       let categoryId = data.categoryId;
       let trm = 1;
-      if (data.type === "transfer") {
-        const transfer = await prisma.category.findFirst({
-          where: {
-            GroupCategory: {
-              name: "Transferencia",
-            },
-          },
-          include: {
-            GroupCategory: true,
-          },
-        });
 
-        if (transfer) {
-          categoryId = transfer.id;
+      if (data.type === "transfer") {
+        if (transferCategory) {
+          categoryId = transferCategory.id;
         }
         trm = Math.abs(Number(data.amount) / Number(data.amountEnd));
       }
@@ -263,15 +262,49 @@ export class MovementPrismaRepository implements IMovementRepository {
         });
       }
 
-      // Security: Verify ownership of updated related resources
-      const [accountCheck, categoryCheck, eventCheck, investmentCheck] = await Promise.all([
-        data.accountId ? prisma.account.findFirst({ where: { id: data.accountId, userId } }) : Promise.resolve(true),
-        data.categoryId ? prisma.category.findFirst({ where: { id: data.categoryId, userId } }) : Promise.resolve(true),
-        data.eventId ? prisma.event.findFirst({ where: { id: data.eventId, userId } }) : Promise.resolve(true),
-        data.investmentId ? prisma.investment.findFirst({ where: { id: data.investmentId, userId } }) : Promise.resolve(true),
+      // ⚡ Bolt: Consolidate all resource ownership checks and transfer-specific metadata lookups
+      // into a single Promise.all call to minimize total database roundtrips during updates.
+      const [
+        accountCheck,
+        categoryCheck,
+        eventCheck,
+        investmentCheck,
+        accountEnd,
+        transferCategory,
+      ] = await Promise.all([
+        data.accountId
+          ? prisma.account.findFirst({ where: { id: data.accountId, userId } })
+          : Promise.resolve(true),
+        data.categoryId
+          ? prisma.category.findFirst({ where: { id: data.categoryId, userId } })
+          : Promise.resolve(true),
+        data.eventId
+          ? prisma.event.findFirst({ where: { id: data.eventId, userId } })
+          : Promise.resolve(true),
+        data.investmentId
+          ? prisma.investment.findFirst({
+              where: { id: data.investmentId, userId },
+            })
+          : Promise.resolve(true),
+        data.type === "transfer" && data.accountEndId
+          ? prisma.account.findFirst({
+              where: { id: data.accountEndId, userId },
+            })
+          : Promise.resolve(true),
+        data.type === "transfer"
+          ? prisma.category.findFirst({
+              where: { GroupCategory: { name: "Transferencia" } },
+            })
+          : Promise.resolve(null),
       ]);
 
-      if (!accountCheck || !categoryCheck || !eventCheck || !investmentCheck) {
+      if (
+        !accountCheck ||
+        !categoryCheck ||
+        !eventCheck ||
+        !investmentCheck ||
+        !accountEnd
+      ) {
         throw Object.assign(new Error("Unauthorized resource access"), {
           statusCode: 403,
           error: "Forbidden",
@@ -279,35 +312,11 @@ export class MovementPrismaRepository implements IMovementRepository {
         });
       }
 
-      if (data.type === "transfer" && data.accountEndId) {
-        const accountEnd = await prisma.account.findFirst({
-          where: { id: data.accountEndId, userId },
-        });
-        if (!accountEnd) {
-          throw Object.assign(new Error("Unauthorized resource access"), {
-            statusCode: 403,
-            error: "Forbidden",
-            message: "Unauthorized resource access",
-          });
-        }
-      }
-
       const isTransferOut = movement.transferId === null;
 
       if (data.type === "transfer") {
-        const transfer = await prisma.category.findFirst({
-          where: {
-            GroupCategory: {
-              name: "Transferencia",
-            },
-          },
-          include: {
-            GroupCategory: true,
-          },
-        });
-
-        if (transfer) {
-          categoryId = transfer.id;
+        if (transferCategory) {
+          categoryId = transferCategory.id;
         }
         trm = isTransferOut
           ? Math.abs(Number(data.amount) / Number(data.amountEnd))
@@ -572,12 +581,25 @@ export class MovementPrismaRepository implements IMovementRepository {
 
       let count = 0;
 
+      // ⚡ Bolt: Bulk fetch all metadata for the user in parallel to eliminate N+1 queries in the loop.
+      const [userAccounts, userCategories, userEvents, userInvestments] =
+        await Promise.all([
+          prisma.account.findMany({ where: { userId } }),
+          prisma.category.findMany({ where: { userId } }),
+          prisma.event.findMany({ where: { userId } }),
+          prisma.investment.findMany({ where: { userId } }),
+        ]);
+
+      // ⚡ Bolt: Use Hash Maps for O(1) in-memory lookups instead of sequential database calls.
+      const accountsMap = new Map(userAccounts.map((a) => [a.name, a]));
+      const categoriesMap = new Map(userCategories.map((c) => [c.name, c]));
+      const eventsMap = new Map(userEvents.map((e) => [e.name, e]));
+      const investmentsMap = new Map(userInvestments.map((i) => [i.name, i]));
+
       // 3. Procesar los movimientos y prepararlos para la inserción masiva
       for (const movement of oldMovements) {
-        // Lookup Account by name (assuming API ID is not directly usable as Prisma ID)
-        const account = await prisma.account.findFirst({
-          where: { name: movement.account.name },
-        });
+        // Lookup Account by name
+        const account = accountsMap.get(movement.account.name);
         if (!account) {
           console.warn(
             `Account '${movement.account.name}' not found for movement '${movement.description}'. Skipping this movement.`
@@ -586,9 +608,7 @@ export class MovementPrismaRepository implements IMovementRepository {
         }
 
         // Lookup Category by name
-        const category = await prisma.category.findFirst({
-          where: { name: movement.category.name },
-        });
+        const category = categoriesMap.get(movement.category.name);
         if (!category) {
           console.warn(
             `Category '${movement.category.name}' not found for movement '${movement.description}'. Skipping this movement.`
@@ -599,9 +619,7 @@ export class MovementPrismaRepository implements IMovementRepository {
         // Lookup Event (optional) by name
         let eventId: string | null = null;
         if (movement.event) {
-          const event = await prisma.event.findFirst({
-            where: { name: movement.event.name },
-          });
+          const event = eventsMap.get(movement.event.name);
           if (event) {
             eventId = event.id;
           } else {
@@ -612,53 +630,47 @@ export class MovementPrismaRepository implements IMovementRepository {
           }
         }
 
-        // Lookup Event (optional) by name
+        // Lookup Investment (optional) by name
         let investmentId: string | null = null;
         if (movement.investment) {
-          const investment = await prisma.investment.findFirst({
-            where: { name: movement.investment.name },
-          });
+          const investment = investmentsMap.get(movement.investment.name);
           if (investment) {
             investmentId = investment.id;
           } else {
             console.warn(
-              `Event '${movement.investment.name}' not found for movement '${movement.description}'. Skipping investment association.`
+              `Investment '${movement.investment.name}' not found for movement '${movement.description}'. Skipping investment association.`
             );
             continue;
           }
         }
 
-        // Lookup TransferIn (optional, and complex due to ID mismatch and potential uniqueness issues)
-        // This assumes that the transfer_in movement has already been imported
-        // and can be uniquely identified by its description and date_purchase.
-        // For a more robust solution, consider adding an 'externalId: Int? @unique' field
-        // to your Prisma Movement model to store the API's 'id'.
+        // Lookup TransferIn (optional)
         let transferInId: string | null = null;
         if (movement.transfer_out) {
-          const accountTransfer = await prisma.account.findFirst({
-            where: { name: movement.transfer_out.account.name },
-          });
+          const accountTransfer = accountsMap.get(
+            movement.transfer_out.account.name
+          );
           if (!accountTransfer) {
             console.warn(
-              `Account '${movement.account.name}' not found for movement '${movement.description}'. Skipping this movement.`
+              `Account '${movement.transfer_out.account.name}' not found for transfer movement. Skipping transfer association.`
             );
-            continue;
-          }
-          const transferInMovement = await prisma.movement.findFirst({
-            where: {
-              datePurchase: new Date(movement.transfer_out.date_purchase),
-              accountId: accountTransfer.id,
-              categoryId: category.id,
-              amount: movement.transfer_out.amount,
-            },
-          });
-          if (transferInMovement) {
-            transferInId = transferInMovement.id;
           } else {
-            console.warn(
-              `TransferIn movement '${movement.id}' on '${movement.transfer_out.date_purchase}' not found. Skipping transferIn association.`
-            );
-            //continue;
+            // Since paired movements are imported sequentially, we still look up the previously imported pair.
+            const transferInMovement = await prisma.movement.findFirst({
+              where: {
+                datePurchase: new Date(movement.transfer_out.date_purchase),
+                accountId: accountTransfer.id,
+                categoryId: category.id,
+                amount: movement.transfer_out.amount,
+              },
+            });
+            if (transferInMovement) {
+              transferInId = transferInMovement.id;
+            } else {
+              console.warn(
+                `TransferIn movement '${movement.id}' on '${movement.transfer_out.date_purchase}' not found. Skipping transferIn association.`
+              );
+            }
           }
         }
 

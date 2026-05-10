@@ -67,14 +67,13 @@ export class MovementPrismaRepository implements IMovementRepository {
   ): Promise<Movement | ErrorMessage> {
     try {
       // Security: Verify ownership of related resources
-      const [account, category, event, investment] = await Promise.all([
+      const [account, event, investment] = await Promise.all([
         prisma.account.findFirst({ where: { id: data.accountId, userId: data.userId } }),
-        prisma.category.findFirst({ where: { id: data.categoryId, userId: data.userId } }),
         data.eventId ? prisma.event.findFirst({ where: { id: data.eventId, userId: data.userId } }) : Promise.resolve(true),
         data.investmentId ? prisma.investment.findFirst({ where: { id: data.investmentId, userId: data.userId } }) : Promise.resolve(true),
       ]);
 
-      if (!account || !category || !event || !investment) {
+      if (!account || !event || !investment) {
         return {
           statusCode: 403,
           error: "Forbidden",

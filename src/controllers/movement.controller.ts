@@ -30,7 +30,7 @@ export class MovementController {
     const dataMovement = request.body as CreateMovement;
 
     try {
-      return movementUseCase.addMovement({
+      return await movementUseCase.addMovement({
         ...dataMovement,
         userId: request.user.id,
       });

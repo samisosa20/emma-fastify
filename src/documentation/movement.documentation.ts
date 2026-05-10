@@ -91,7 +91,19 @@ const movementObjectSchema: SchemaDefault[] = [
     private: false,
     properties: getProperties(investmentObjectSchema),
   },
-  { name: "userId", type: "string", body: ["create"], private: false },
+  {
+  name: "amountEnd",
+  type: "number",
+  body: ["create"],
+  private: true,
+},
+{
+  name: "accountEndId",
+  type: "string",
+  body: ["create"],
+  private: true,
+},
+  { name: "userId", type: "string", body: false, private: false },
   { name: "createdAt", type: "string", body: false, private: false },
   { name: "updatedAt", type: "string", body: false, private: false },
 ];

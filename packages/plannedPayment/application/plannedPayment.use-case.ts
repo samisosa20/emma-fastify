@@ -23,29 +23,33 @@ export class PlannedPaymentUseCase {
 
   public async updatePlannedPayment(
     id: string,
+    userId: string,
     plannedPayment: Partial<CreatePlannedPayment>
   ): Promise<PlannedPayment | ErrorMessage> {
     return await this.plannedPaymentRepository.updatePlannedPayment(
       id,
+      userId,
       plannedPayment
     );
   }
 
   public async detailPlannedPayment(
-    id: string
+    id: string,
+    userId: string
   ): Promise<PlannedPayment | null> {
-    return await this.plannedPaymentRepository.detailPlannedPayment(id);
+    return await this.plannedPaymentRepository.detailPlannedPayment(id, userId);
   }
 
   public async deletePlannedPayment(
-    id: string
+    id: string,
+    userId: string
   ): Promise<PlannedPayment | null> {
-    return await this.plannedPaymentRepository.deletePlannedPayment(id);
+    return await this.plannedPaymentRepository.deletePlannedPayment(id, userId);
   }
 
-  public async importPlannedPayments(): Promise<{
+  public async importPlannedPayments(userId: string): Promise<{
     plannedPaymentCount: number;
   }> {
-    return await this.plannedPaymentRepository.importPlannedPayments();
+    return await this.plannedPaymentRepository.importPlannedPayments(userId);
   }
 }

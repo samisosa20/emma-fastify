@@ -10,9 +10,10 @@ export interface IPlannedPaymentRepository {
   ): Promise<{ content: PlannedPayment[]; meta: Paginate }>;
   updatePlannedPayment(
     id: string,
+    userId: string,
     account: Partial<CreatePlannedPayment>
   ): Promise<PlannedPayment | ErrorMessage>;
-  detailPlannedPayment(id: string): Promise<PlannedPayment | null>;
-  deletePlannedPayment(id: string): Promise<PlannedPayment | null>;
-  importPlannedPayments(): Promise<{ plannedPaymentCount: number }>;
+  detailPlannedPayment(id: string, userId: string): Promise<PlannedPayment | null>;
+  deletePlannedPayment(id: string, userId: string): Promise<PlannedPayment | null>;
+  importPlannedPayments(userId: string): Promise<{ plannedPaymentCount: number }>;
 }

@@ -26,3 +26,8 @@
 **Vulnerability:** The Investment module allowed unauthorized access/modification via IDOR and relied on a static `USER_ID` environment variable for data imports.
 **Learning:** Even when authentication is present, resource-level authorization must be explicitly enforced in all CRUD and import operations. Relying on environment variables for user context in multi-tenant applications creates a significant security gap where all imported data is attributed to a single global user.
 **Prevention:** Strictly propagate the authenticated `userId` from the request context to all repository operations and use it as a mandatory filter in Prisma queries (`findFirst` with `userId`).
+
+## 2026-05-10 - [IDOR in Planned Payments and Cross-Resource Authorization]
+**Vulnerability:** Planned Payment operations lacked ownership verification, and imports relied on a global environment variable. Additionally, users could link payments to accounts or categories belonging to other users.
+**Learning:** Even if a resource is owned by a user, the system must verify that any related resources (foreign keys) specified in a create/update request are also owned by that same user to prevent cross-user data association.
+**Prevention:** Enforce `userId` scoping in all CRUD operations and explicitly verify ownership of related entities (e.g., `accountId`, `categoryId`) before proceeding with data modification. Derived `userId` from the authenticated session for all operations, including batch imports.

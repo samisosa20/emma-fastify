@@ -24,22 +24,25 @@ export class PlannedPaymentController {
     reply: FastifyReply
   ) => {
     const params = request.query as PlannedPaymentParams;
-    return await plannedPaymentUseCase.listPlannedPayment(params);
+    return await plannedPaymentUseCase.listPlannedPayment({
+      ...params,
+      userId: request.user.id,
+    });
   };
 
   addPlannedPayment = async (request: FastifyRequest, reply: FastifyReply) => {
     const dataPlannedPayment = request.body as CreatePlannedPayment;
 
     try {
-      return plannedPaymentUseCase.addPlannedPayment({
+      return await plannedPaymentUseCase.addPlannedPayment({
         ...dataPlannedPayment,
         userId: request.user.id,
       });
     } catch (error: any) {
       const detail = formatErrorMessage(error);
-      return reply.status(400).send({
-        statusCode: 400,
-        error: "PlannedPayment creation failed",
+      return reply.status(error.statusCode || 400).send({
+        statusCode: error.statusCode || 400,
+        error: error.error || "PlannedPayment creation failed",
         message: detail,
       });
     }
@@ -53,12 +56,16 @@ export class PlannedPaymentController {
     const { id } = request.params as { id: string };
 
     try {
-      return plannedPaymentUseCase.updatePlannedPayment(id, dataPlannedPayment);
+      return await plannedPaymentUseCase.updatePlannedPayment(
+        id,
+        request.user.id,
+        dataPlannedPayment
+      );
     } catch (error: any) {
       const detail = formatErrorMessage(error);
-      return reply.status(400).send({
-        statusCode: 400,
-        error: "PlannedPayment update failed",
+      return reply.status(error.statusCode || 400).send({
+        statusCode: error.statusCode || 400,
+        error: error.error || "PlannedPayment update failed",
         message: detail,
       });
     }
@@ -69,7 +76,14 @@ export class PlannedPaymentController {
     reply: FastifyReply
   ) => {
     const { id } = request.params as { id: string };
-    return plannedPaymentUseCase.detailPlannedPayment(id);
+    const result = await plannedPaymentUseCase.detailPlannedPayment(
+      id,
+      request.user.id
+    );
+    if (!result) {
+      return reply.status(404).send({ message: "PlannedPayment not found" });
+    }
+    return result;
   };
 
   deletePlannedPayment = async (
@@ -77,7 +91,10 @@ export class PlannedPaymentController {
     reply: FastifyReply
   ) => {
     const { id } = request.params as { id: string };
-    const result = await plannedPaymentUseCase.deletePlannedPayment(id);
+    const result = await plannedPaymentUseCase.deletePlannedPayment(
+      id,
+      request.user.id
+    );
     if (result === null) {
       return reply.status(404).send({ message: "PlannedPayment not found" });
     }
@@ -88,6 +105,15 @@ export class PlannedPaymentController {
     request: FastifyRequest,
     reply: FastifyReply
   ) => {
-    return plannedPaymentUseCase.importPlannedPayments();
+    try {
+      return await plannedPaymentUseCase.importPlannedPayments(request.user.id);
+    } catch (error: any) {
+      const detail = formatErrorMessage(error);
+      return reply.status(error.statusCode || 500).send({
+        statusCode: error.statusCode || 500,
+        error: error.error || "PlannedPayment import failed",
+        message: detail,
+      });
+    }
   };
 }

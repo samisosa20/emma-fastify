@@ -308,40 +308,45 @@ export class BudgetPrismaRepository implements IBudgetRepository {
 
       const oldBudgets: APIBudgetResponse = await budgetsResponse.json();
 
+      // ⚡ Bolt: Bulk fetch all metadata (Periods, Badges, and user Categories) in parallel
+      // to eliminate N+1 queries (3*N) inside the loop, significantly reducing latency.
+      const [periods, badges, categories] = await Promise.all([
+        prisma.period.findMany(),
+        prisma.badge.findMany(),
+        prisma.category.findMany({ where: { userId } }),
+      ]);
+
+      // ⚡ Bolt: Use Hash Maps for O(1) in-memory lookups instead of sequential database calls.
+      const periodsMap = new Map(periods.map((p) => [p.name, p]));
+      const badgesMap = new Map(badges.map((b) => [b.code, b]));
+      const categoriesMap = new Map(categories.map((c) => [c.name, c]));
+
       // 3. Procesar los presupuestos y prepararlos para la inserción masiva
-      const budgetsToCreatePromises = oldBudgets.map(async (budget) => {
-        const period = await prisma.period.findFirst({
-          where: { name: budget.period.name },
-        });
-        const badge = await prisma.badge.findFirst({
-          where: { code: budget.currency.code },
-        });
-        const category = await prisma.category.findFirst({
-          where: { name: budget.category.name },
-        });
+      const budgetsToCreate = oldBudgets
+        .map((budget) => {
+          const period = periodsMap.get(budget.period.name);
+          const badge = badgesMap.get(budget.currency.code);
+          const category = categoriesMap.get(budget.category.name);
 
-        if (!period || !badge || !category) {
-          console.warn(
-            `Skipping budget for year ${budget.year} due to missing relation (Period, Badge, or Category).`
-          );
-          return null;
-        }
+          if (!period || !badge || !category) {
+            console.warn(
+              `Skipping budget for year ${budget.year} due to missing relation (Period, Badge, or Category).`
+            );
+            return null;
+          }
 
-        return {
-          amount: budget.amount,
-          year: budget.year,
-          periodId: period.id,
-          badgeId: badge.id,
-          categoryId: category.id,
-          userId: userId,
-          createdAt: new Date(budget.created_at),
-          updatedAt: new Date(budget.updated_at),
-        } as CreateBudget;
-      });
-
-      const budgetsToCreate = (
-        await Promise.all(budgetsToCreatePromises)
-      ).filter((b): b is CreateBudget => b !== null);
+          return {
+            amount: budget.amount,
+            year: budget.year,
+            periodId: period.id,
+            badgeId: badge.id,
+            categoryId: category.id,
+            userId: userId,
+            createdAt: new Date(budget.created_at),
+            updatedAt: new Date(budget.updated_at),
+          } as CreateBudget;
+        })
+        .filter((b): b is CreateBudget => b !== null);
 
       // 4. Insertar los presupuestos en la base de datos local
       const result = await prisma.budget.createMany({

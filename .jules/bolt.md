@@ -38,3 +38,7 @@
 ## 2026-05-25 - [Bulk Metadata Fetching for Imports]
 **Learning:** Performing multiple `findFirst` lookups inside a loop for data imports creates an N*M database bottleneck.
 **Action:** Pre-fetch all relevant metadata (Accounts, Categories, etc.) into Hash Maps before the loop to replace database roundtrips with O(1) in-memory lookups.
+
+## 2026-05-26 - [Eliminating 3*N Database Roundtrips in Budget Imports]
+**Learning:** Sequential database lookups for related resources (Period, Badge, Category) within an import loop cause significant latency and can saturate connection pools.
+**Action:** Use `Promise.all` to pre-fetch global metadata and user-scoped categories in parallel before the loop, utilizing `Map` objects for efficient O(1) retrieval.

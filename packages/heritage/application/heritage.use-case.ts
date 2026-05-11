@@ -34,23 +34,30 @@ export class HeritageUseCase {
 
   public async updateHeritage(
     id: string,
+    userId: string,
     heritage: Partial<CreateHeritage>
   ): Promise<Heritage | ErrorMessage> {
-    return await this.heritageRepository.updateHeritage(id, heritage);
+    return await this.heritageRepository.updateHeritage(id, userId, heritage);
   }
 
-  public async detailHeritage(id: string): Promise<Heritage | null> {
-    return await this.heritageRepository.detailHeritage(id);
+  public async detailHeritage(
+    id: string,
+    userId: string
+  ): Promise<Heritage | null> {
+    return await this.heritageRepository.detailHeritage(id, userId);
   }
 
-  public async deleteHeritage(id: string): Promise<Heritage | null> {
-    return await this.heritageRepository.deleteHeritage(id);
+  public async deleteHeritage(
+    id: string,
+    userId: string
+  ): Promise<Heritage | null> {
+    return await this.heritageRepository.deleteHeritage(id, userId);
   }
 
-  public async importHeritages(): Promise<{
+  public async importHeritages(userId: string): Promise<{
     heritageCount: number;
   }> {
-    return await this.heritageRepository.importHeritages();
+    return await this.heritageRepository.importHeritages(userId);
   }
 
   public async yearHeritage(

@@ -42,3 +42,6 @@
 ## 2026-05-26 - [Eliminating 3*N Database Roundtrips in Budget Imports]
 **Learning:** Sequential database lookups for related resources (Period, Badge, Category) within an import loop cause significant latency and can saturate connection pools.
 **Action:** Use `Promise.all` to pre-fetch global metadata and user-scoped categories in parallel before the loop, utilizing `Map` objects for efficient O(1) retrieval.
+## 2026-05-12 - [O(1) Planned Payment Import Lookup]
+**Learning:** Performing sequential `findFirst` lookups for Accounts and Categories inside a loop during Planned Payment imports created a significant N+1 database bottleneck.
+**Action:** Bulk fetch all metadata into Hash Maps (`Map`) before the loop to replace database roundtrips with O(1) in-memory lookups.

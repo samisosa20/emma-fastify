@@ -38,3 +38,7 @@
 ## 2026-05-25 - [Bulk Metadata Fetching for Imports]
 **Learning:** Performing multiple `findFirst` lookups inside a loop for data imports creates an N*M database bottleneck.
 **Action:** Pre-fetch all relevant metadata (Accounts, Categories, etc.) into Hash Maps before the loop to replace database roundtrips with O(1) in-memory lookups.
+
+## 2026-05-12 - [O(1) Planned Payment Import Lookup]
+**Learning:** Performing sequential `findFirst` lookups for Accounts and Categories inside a loop during Planned Payment imports created a significant N+1 database bottleneck.
+**Action:** Bulk fetch all metadata into Hash Maps (`Map`) before the loop to replace database roundtrips with O(1) in-memory lookups.

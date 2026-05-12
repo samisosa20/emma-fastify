@@ -410,39 +410,43 @@ export class PlannedPaymentPrismaRepository
 
       const oldPayments: APIPaymentResponse = await paymentsResponse.json();
 
+      // ⚡ Bolt: Bulk fetch all metadata for the user in parallel to eliminate N+1 queries in the loop.
+      const [userAccounts, userCategories] = await Promise.all([
+        prisma.account.findMany({ where: { userId } }),
+        prisma.category.findMany({ where: { userId } }),
+      ]);
+
+      // ⚡ Bolt: Use Hash Maps for O(1) in-memory lookups instead of sequential database calls.
+      const accountsMap = new Map(userAccounts.map((a) => [a.name, a]));
+      const categoriesMap = new Map(userCategories.map((c) => [c.name, c]));
+
       // 3. Procesar los pagos y prepararlos para la inserción masiva
-      const paymentsToCreatePromises = oldPayments.map(async (payment) => {
-        const account = await prisma.account.findFirst({
-          where: { name: payment.account.name, userId },
-        });
-        const category = await prisma.category.findFirst({
-          where: { name: payment.category.name, userId },
-        });
+      const paymentsToCreate = oldPayments
+        .map((payment) => {
+          const account = accountsMap.get(payment.account.name);
+          const category = categoriesMap.get(payment.category.name);
 
-        if (!account || !category) {
-          console.warn(
-            `Skipping planned payment "${payment.description}" due to missing Account or Category for user ${userId}.`
-          );
-          return null;
-        }
+          if (!account || !category) {
+            console.warn(
+              `Skipping planned payment "${payment.description}" due to missing Account or Category for user ${userId}.`
+            );
+            return null;
+          }
 
-        return {
-          description: payment.description,
-          amount: payment.amount,
-          startDate: new Date(payment.start_date),
-          endDate: payment.end_date ? new Date(payment.end_date) : null,
-          specificDay: payment.specific_day,
-          categoryId: category.id,
-          accountId: account.id,
-          userId: userId,
-          createdAt: new Date(payment.created_at),
-          updatedAt: new Date(payment.updated_at),
-        } as CreatePlannedPayment;
-      });
-
-      const paymentsToCreate = (
-        await Promise.all(paymentsToCreatePromises)
-      ).filter((p): p is CreatePlannedPayment => p !== null);
+          return {
+            description: payment.description,
+            amount: payment.amount,
+            startDate: new Date(payment.start_date),
+            endDate: payment.end_date ? new Date(payment.end_date) : null,
+            specificDay: payment.specific_day,
+            categoryId: category.id,
+            accountId: account.id,
+            userId: userId,
+            createdAt: new Date(payment.created_at),
+            updatedAt: new Date(payment.updated_at),
+          } as CreatePlannedPayment;
+        })
+        .filter((p): p is CreatePlannedPayment => p !== null);
 
       // 4. Insertar los pagos planificados en la base de datos local
       const result = await prisma.plannedPayment.createMany({

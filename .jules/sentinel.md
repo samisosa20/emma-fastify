@@ -36,3 +36,7 @@
 **Vulnerability:** Category operations lacked ownership verification, and the create/update methods were susceptible to mass assignment of the `userId` field.
 **Learning:** Even with authentication, resource ownership must be enforced at the database query level. Furthermore, explicitly stripping `userId` from input payloads in the repository ensures that ownership cannot be spoofed or transferred by malicious users.
 **Prevention:** Propagate the authenticated `userId` to all repository methods and use it as a mandatory filter in Prisma queries (`findFirst`). Sanitize input payloads to exclude sensitive fields like `userId`.
+## 2026-05-15 - [Pervasive IDOR in Heritage Management]
+**Vulnerability:** Heritage operations (detail, update, delete) lacked ownership verification, and the import process relied on a global environment variable for the user ID.
+**Learning:** Security enforcement must be consistently applied across all resource types. Relying on environment variables for user context in a multi-tenant API is a critical flaw that allows data to be misattributed.
+**Prevention:** Strictly propagate the authenticated `userId` from the request context through the application layers to the repository, and use it as a mandatory filter in all database operations (`findFirst` with `userId` check).

@@ -24,18 +24,22 @@ type APICategoryResponse = {
 };
 export class CategoryPrismaRepository implements ICategoryRepository {
   async addCategory(
-    category: CreateCategory
+    category: CreateCategory,
+    userId: string
   ): Promise<Category | ErrorMessage> {
+    const { userId: _, ...dataToCreate } = category as any;
     const newCategory = await prisma.category.create({
       data: {
-        ...category,
+        ...dataToCreate,
+        userId,
       },
     });
     return newCategory;
   }
 
   async listCategories(
-    params: CommonParamsPaginate
+    params: CommonParamsPaginate,
+    userId: string
   ): Promise<{ content: Category[]; meta: Paginate }> {
     const { deleted, size, page: pageParam } = params;
 
@@ -51,6 +55,7 @@ export class CategoryPrismaRepository implements ICategoryRepository {
       const [content, metaFromPrisma] = await prisma.category
         .paginate({
           where: {
+            userId,
             OR: handleShowDeleteData(deleted === "1"),
           },
         })
@@ -63,7 +68,11 @@ export class CategoryPrismaRepository implements ICategoryRepository {
 
       metaResult = metaFromPrisma;
     } else {
-      rawContent = (await prisma.category.findMany({})) as Category[];
+      rawContent = (await prisma.category.findMany({
+        where: {
+          userId,
+        },
+      })) as Category[];
 
       const totalCount = rawContent.length;
       const meta: Paginate = {
@@ -86,16 +95,30 @@ export class CategoryPrismaRepository implements ICategoryRepository {
 
   async updateCategory(
     id: string,
-    category: Partial<CreateCategory>
+    category: Partial<CreateCategory>,
+    userId: string
   ): Promise<Category | ErrorMessage> {
     try {
+      const categoryExists = await prisma.category.findFirst({
+        where: {
+          id,
+          userId,
+          deletedAt: null,
+        },
+      });
+
+      if (!categoryExists) {
+        throw new Error("Category not found");
+      }
+
+      const { userId: _, ...dataToUpdate } = category as any;
+
       const updatedCategory = await prisma.category.update({
         where: {
           id,
-          deletedAt: null,
         },
         data: {
-          ...category,
+          ...dataToUpdate,
         },
       });
       return updatedCategory;
@@ -108,10 +131,10 @@ export class CategoryPrismaRepository implements ICategoryRepository {
     }
   }
 
-  async detailCategory(id: string): Promise<Category | null> {
+  async detailCategory(id: string, userId: string): Promise<Category | null> {
     try {
-      return await prisma.category.findUnique({
-        where: { id },
+      return await prisma.category.findFirst({
+        where: { id, userId },
       });
     } catch (error: any) {
       throw Object.assign(new Error("Validation Error"), {
@@ -122,8 +145,19 @@ export class CategoryPrismaRepository implements ICategoryRepository {
     }
   }
 
-  async deleteCategory(id: string): Promise<Category | null> {
+  async deleteCategory(id: string, userId: string): Promise<Category | null> {
     try {
+      const categoryExists = await prisma.category.findFirst({
+        where: {
+          id,
+          userId,
+        },
+      });
+
+      if (!categoryExists) {
+        return null;
+      }
+
       return await prisma.category.update({
         where: { id },
         data: { deletedAt: new Date() },
@@ -137,7 +171,10 @@ export class CategoryPrismaRepository implements ICategoryRepository {
     }
   }
 
-  public async importCategories(id?: string): Promise<{
+  public async importCategories(
+    userId: string,
+    id?: string
+  ): Promise<{
     categoryCount: number;
   }> {
     try {
@@ -145,13 +182,13 @@ export class CategoryPrismaRepository implements ICategoryRepository {
       const apiProd = process.env.API_PROD;
       const apiEmail = process.env.API_EMAIL;
       const apiPassword = process.env.API_PASSWORD;
-      const userId = process.env.USER_ID; // Asumiendo que userId es relevante para las categorías
 
       if (!apiProd || !apiEmail || !apiPassword || !userId) {
         throw Object.assign(new Error("Missing API environment variables"), {
           statusCode: 500,
           error: "Configuration Error",
-          message: "API_PROD, API_EMAIL, API_PASSWORD, or USER_ID are not set.",
+          message:
+            "API_PROD, API_EMAIL, API_PASSWORD, or authenticated userId are not set.",
         });
       }
 

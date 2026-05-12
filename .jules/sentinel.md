@@ -32,6 +32,10 @@
 **Learning:** Even if a resource is owned by a user, the system must verify that any related resources (foreign keys) specified in a create/update request are also owned by that same user to prevent cross-user data association.
 **Prevention:** Enforce `userId` scoping in all CRUD operations and explicitly verify ownership of related entities (e.g., `accountId`, `categoryId`) before proceeding with data modification. Derived `userId` from the authenticated session for all operations, including batch imports.
 
+## 2026-05-12 - [IDOR in Category Management and Mass Assignment Protection]
+**Vulnerability:** Category operations lacked ownership verification, and the create/update methods were susceptible to mass assignment of the `userId` field.
+**Learning:** Even with authentication, resource ownership must be enforced at the database query level. Furthermore, explicitly stripping `userId` from input payloads in the repository ensures that ownership cannot be spoofed or transferred by malicious users.
+**Prevention:** Propagate the authenticated `userId` to all repository methods and use it as a mandatory filter in Prisma queries (`findFirst`). Sanitize input payloads to exclude sensitive fields like `userId`.
 ## 2026-05-15 - [Pervasive IDOR in Heritage Management]
 **Vulnerability:** Heritage operations (detail, update, delete) lacked ownership verification, and the import process relied on a global environment variable for the user ID.
 **Learning:** Security enforcement must be consistently applied across all resource types. Relying on environment variables for user context in a multi-tenant API is a critical flaw that allows data to be misattributed.

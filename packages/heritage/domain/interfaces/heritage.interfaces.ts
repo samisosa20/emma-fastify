@@ -19,11 +19,12 @@ export interface IHeritageRepository {
   }>;
   updateHeritage(
     id: string,
+    userId: string,
     account: Partial<CreateHeritage>
   ): Promise<Heritage | ErrorMessage>;
-  detailHeritage(id: string): Promise<Heritage | null>;
-  deleteHeritage(id: string): Promise<Heritage | null>;
-  importHeritages(): Promise<{
+  detailHeritage(id: string, userId: string): Promise<Heritage | null>;
+  deleteHeritage(id: string, userId: string): Promise<Heritage | null>;
+  importHeritages(userId: string): Promise<{
     heritageCount: number;
   }>;
   yearHeritage(params: ParamsHeritage): Promise<HeritageReport[] | null>;

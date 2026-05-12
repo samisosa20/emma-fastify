@@ -31,3 +31,8 @@
 **Vulnerability:** Planned Payment operations lacked ownership verification, and imports relied on a global environment variable. Additionally, users could link payments to accounts or categories belonging to other users.
 **Learning:** Even if a resource is owned by a user, the system must verify that any related resources (foreign keys) specified in a create/update request are also owned by that same user to prevent cross-user data association.
 **Prevention:** Enforce `userId` scoping in all CRUD operations and explicitly verify ownership of related entities (e.g., `accountId`, `categoryId`) before proceeding with data modification. Derived `userId` from the authenticated session for all operations, including batch imports.
+
+## 2026-05-15 - [Pervasive IDOR in Heritage Management]
+**Vulnerability:** Heritage operations (detail, update, delete) lacked ownership verification, and the import process relied on a global environment variable for the user ID.
+**Learning:** Security enforcement must be consistently applied across all resource types. Relying on environment variables for user context in a multi-tenant API is a critical flaw that allows data to be misattributed.
+**Prevention:** Strictly propagate the authenticated `userId` from the request context through the application layers to the repository, and use it as a mandatory filter in all database operations (`findFirst` with `userId` check).

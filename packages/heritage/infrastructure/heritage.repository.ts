@@ -280,9 +280,22 @@ export class HeritagePrismaRepository implements IHeritageRepository {
 
   public async updateHeritage(
     id: string,
+    userId: string,
     data: Partial<CreateHeritage>
   ): Promise<Heritage | ErrorMessage> {
     try {
+      const heritage = await prisma.heritage.findFirst({
+        where: { id, userId },
+      });
+
+      if (!heritage) {
+        return {
+          statusCode: 404,
+          error: "Not Found",
+          message: "Heritage not found",
+        };
+      }
+
       const updatedHeritage = await prisma.heritage.update({
         where: {
           id,
@@ -302,10 +315,13 @@ export class HeritagePrismaRepository implements IHeritageRepository {
     }
   }
 
-  public async detailHeritage(id: string): Promise<Heritage | null> {
+  public async detailHeritage(
+    id: string,
+    userId: string
+  ): Promise<Heritage | null> {
     try {
-      return await prisma.heritage.findUnique({
-        where: { id },
+      return await prisma.heritage.findFirst({
+        where: { id, userId },
         include: {
           badge: true,
         },
@@ -319,9 +335,12 @@ export class HeritagePrismaRepository implements IHeritageRepository {
     }
   }
 
-  public async deleteHeritage(id: string): Promise<Heritage | null> {
-    const heritage = await prisma.heritage.findUnique({
-      where: { id },
+  public async deleteHeritage(
+    id: string,
+    userId: string
+  ): Promise<Heritage | null> {
+    const heritage = await prisma.heritage.findFirst({
+      where: { id, userId },
     });
     if (!heritage) {
       return null;
@@ -334,7 +353,7 @@ export class HeritagePrismaRepository implements IHeritageRepository {
     });
   }
 
-  public async importHeritages(): Promise<{
+  public async importHeritages(userId: string): Promise<{
     heritageCount: number;
   }> {
     try {
@@ -342,13 +361,12 @@ export class HeritagePrismaRepository implements IHeritageRepository {
       const apiProd = process.env.API_PROD;
       const apiEmail = process.env.API_EMAIL;
       const apiPassword = process.env.API_PASSWORD;
-      const userId = process.env.USER_ID;
 
       if (!apiProd || !apiEmail || !apiPassword || !userId) {
         throw Object.assign(new Error("Missing API environment variables"), {
           statusCode: 500,
           error: "Configuration Error",
-          message: "API_PROD, API_EMAIL, API_PASSWORD, or USER_ID are not set.",
+          message: "API_PROD, API_EMAIL, API_PASSWORD, or userId are not set.",
         });
       }
 

@@ -47,9 +47,10 @@ export class HeritageController {
   updateHeritage = async (request: FastifyRequest, reply: FastifyReply) => {
     const dataHeritage = request.body as Partial<CreateHeritage>; // Usar Partial para actualizaciones
     const { id } = request.params as { id: string };
+    const userId = request.user.id;
 
     try {
-      return heritageUseCase.updateHeritage(id, dataHeritage);
+      return heritageUseCase.updateHeritage(id, userId, dataHeritage);
     } catch (error: any) {
       const detail = formatErrorMessage(error);
       return reply.status(400).send({
@@ -62,13 +63,15 @@ export class HeritageController {
 
   detailHeritage = async (request: FastifyRequest, reply: FastifyReply) => {
     const { id } = request.params as { id: string };
-    return heritageUseCase.detailHeritage(id);
+    const userId = request.user.id;
+    return heritageUseCase.detailHeritage(id, userId);
   };
 
   deleteHeritage = async (request: FastifyRequest, reply: FastifyReply) => {
     const { id } = request.params as { id: string };
+    const userId = request.user.id;
     // Asumiendo que el use case tiene un método deleteHeritage o similar
-    const result = await heritageUseCase.deleteHeritage(id);
+    const result = await heritageUseCase.deleteHeritage(id, userId);
     if (result === null) {
       // Manejar caso donde no se encuentra el patrimonio para eliminar
       return reply.status(404).send({ message: "Heritage not found" });
@@ -77,7 +80,8 @@ export class HeritageController {
   };
 
   importHeritages = async (request: FastifyRequest, reply: FastifyReply) => {
-    return heritageUseCase.importHeritages();
+    const userId = request.user.id;
+    return heritageUseCase.importHeritages(userId);
   };
   yearHeritage = async (request: FastifyRequest, reply: FastifyReply) => {
     const userId = request.user.id;

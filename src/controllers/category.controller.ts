@@ -19,17 +19,14 @@ const categoryUseCase = new CategoryUseCase(categoryRepository);
 export class CategoryController {
   getAllCategories = async (request: FastifyRequest, reply: FastifyReply) => {
     const params = request.query as CategoryParams;
-    return await categoryUseCase.listCategories(params);
+    return await categoryUseCase.listCategories(params, request.user.id);
   };
 
   addCategory = async (request: FastifyRequest, reply: FastifyReply) => {
     const dataCategory = request.body as CreateCategory;
 
     try {
-      return categoryUseCase.addCategory({
-        ...dataCategory,
-        userId: request.user.id,
-      });
+      return categoryUseCase.addCategory(dataCategory, request.user.id);
     } catch (error: any) {
       const detail = formatErrorMessage(error);
       return reply.status(400).send({
@@ -45,7 +42,7 @@ export class CategoryController {
     const { id } = request.params as { id: string };
 
     try {
-      return categoryUseCase.updateCategory(id, dataCategory);
+      return categoryUseCase.updateCategory(id, dataCategory, request.user.id);
     } catch (error: any) {
       const detail = formatErrorMessage(error);
       return reply.status(400).send({
@@ -58,12 +55,12 @@ export class CategoryController {
 
   detailCategory = async (request: FastifyRequest, reply: FastifyReply) => {
     const { id } = request.params as { id: string };
-    return categoryUseCase.detailCategory(id);
+    return categoryUseCase.detailCategory(id, request.user.id);
   };
 
   deleteCategory = async (request: FastifyRequest, reply: FastifyReply) => {
     const { id } = request.params as { id: string };
-    const result = await categoryUseCase.deleteCategory(id);
+    const result = await categoryUseCase.deleteCategory(id, request.user.id);
     if (result === null) {
       return reply.status(404).send({ message: "Category not found" });
     }
@@ -71,7 +68,7 @@ export class CategoryController {
   };
   importCategories = async (request: FastifyRequest, reply: FastifyReply) => {
     const { id } = request.query as { id: string };
-    const result = await categoryUseCase.importCategories(id);
+    const result = await categoryUseCase.importCategories(request.user.id, id);
     if (result === null) {
       return reply.status(404).send({ message: "Category not found" });
     }

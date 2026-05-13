@@ -40,3 +40,8 @@
 **Vulnerability:** Heritage operations (detail, update, delete) lacked ownership verification, and the import process relied on a global environment variable for the user ID.
 **Learning:** Security enforcement must be consistently applied across all resource types. Relying on environment variables for user context in a multi-tenant API is a critical flaw that allows data to be misattributed.
 **Prevention:** Strictly propagate the authenticated `userId` from the request context through the application layers to the repository, and use it as a mandatory filter in all database operations (`findFirst` with `userId` check).
+
+## 2026-05-18 - [IDOR in Investment Appreciations and Parent Resource Verification]
+**Vulnerability:** Appreciation operations lacked ownership verification, and the import process relied on a global environment variable. Additionally, users could add appreciations to investments belonging to others.
+**Learning:** Security enforcement must extend to sub-resources. Verifying ownership of the parent resource (Investment) during the creation of a child resource (Appreciation) is critical to prevent unauthorized data association.
+**Prevention:** Always scope queries by `userId` and explicitly verify ownership of parent resources before creating or modifying dependent records.

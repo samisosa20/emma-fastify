@@ -22,7 +22,7 @@ export class AppreciationController {
     reply: FastifyReply
   ) => {
     const params = request.query as AppreciationParams;
-    return await appreciationUseCase.listAppreciation(params);
+    return await appreciationUseCase.listAppreciation(params, request.user.id);
   };
 
   addAppreciation = async (request: FastifyRequest, reply: FastifyReply) => {
@@ -30,11 +30,14 @@ export class AppreciationController {
     const { id } = request.params as { id: string };
 
     try {
-      return appreciationUseCase.addAppreciation({
-        ...dataAppreciation,
-        investmentId: id,
-        userId: request.user.id,
-      });
+      return appreciationUseCase.addAppreciation(
+        {
+          ...dataAppreciation,
+          investmentId: id,
+          userId: request.user.id,
+        },
+        request.user.id
+      );
     } catch (error: any) {
       const detail = formatErrorMessage(error);
       return reply.status(400).send({
@@ -56,7 +59,8 @@ export class AppreciationController {
       return appreciationUseCase.updateAppreciation(
         id,
         appreciationId,
-        dataAppreciation
+        dataAppreciation,
+        request.user.id
       );
     } catch (error: any) {
       const detail = formatErrorMessage(error);
@@ -73,7 +77,10 @@ export class AppreciationController {
       id: string;
       appreciationId: string;
     };
-    return appreciationUseCase.detailAppreciation(appreciationId);
+    return appreciationUseCase.detailAppreciation(
+      appreciationId,
+      request.user.id
+    );
   };
 
   deleteAppreciation = async (request: FastifyRequest, reply: FastifyReply) => {
@@ -83,7 +90,8 @@ export class AppreciationController {
     };
     const result = await appreciationUseCase.deleteAppreciation(
       id,
-      appreciationId
+      appreciationId,
+      request.user.id
     );
     if (result === null) {
       return reply.status(404).send({ message: "Appreciation not found" });
@@ -95,7 +103,9 @@ export class AppreciationController {
     request: FastifyRequest,
     reply: FastifyReply
   ) => {
-    const result = await appreciationUseCase.importAppreciations();
+    const result = await appreciationUseCase.importAppreciations(
+      request.user.id
+    );
     if (result === null) {
       return reply.status(404).send({ message: "Appreciation not found" });
     }

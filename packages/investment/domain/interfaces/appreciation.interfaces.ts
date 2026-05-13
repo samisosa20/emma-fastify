@@ -3,22 +3,26 @@ import { Appreciation, CreateAppreciation } from "../appreciation";
 
 export interface IAppreciationRepository {
   addAppreciation(
-    data: CreateAppreciation
+    data: CreateAppreciation,
+    userId: string
   ): Promise<Appreciation | ErrorMessage>;
   listAppreciation(
-    params: CommonParamsPaginate
+    params: CommonParamsPaginate,
+    userId: string
   ): Promise<{ content: Appreciation[]; meta: Paginate }>;
   updateAppreciation(
     id: string,
     appreciationId: string,
-    account: Partial<CreateAppreciation>
+    account: Partial<CreateAppreciation>,
+    userId: string
   ): Promise<Appreciation | ErrorMessage>;
-  detailAppreciation(id: string): Promise<Appreciation | null>;
+  detailAppreciation(id: string, userId: string): Promise<Appreciation | null>;
   deleteAppreciation(
     id: string,
-    appreciationId: string
+    appreciationId: string,
+    userId: string
   ): Promise<Appreciation | null>;
-  importAppreciations(): Promise<{
+  importAppreciations(userId: string): Promise<{
     appreciationCount: number;
   }>;
 }

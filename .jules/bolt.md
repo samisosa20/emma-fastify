@@ -45,3 +45,7 @@
 ## 2026-05-12 - [O(1) Planned Payment Import Lookup]
 **Learning:** Performing sequential `findFirst` lookups for Accounts and Categories inside a loop during Planned Payment imports created a significant N+1 database bottleneck.
 **Action:** Bulk fetch all metadata into Hash Maps (`Map`) before the loop to replace database roundtrips with O(1) in-memory lookups.
+
+## 2026-05-27 - [O(1) Category Import Lookup]
+**Learning:** Performing sequential `findFirst` lookups for GroupCategories and parent Categories inside a loop during Category imports created a significant N+1 database bottleneck.
+**Action:** Bulk fetch all metadata into Hash Maps (`Map`) before the loop to replace database roundtrips with O(1) in-memory lookups.

@@ -268,51 +268,56 @@ export class CategoryPrismaRepository implements ICategoryRepository {
         oldCategories = rawApiResponse.categories;
       }
 
+      // ⚡ Bolt: Bulk fetch all GroupCategory and existing user Category records in parallel
+      // to eliminate N+1 queries (up to 2*N) inside the loop, significantly reducing latency.
+      const [allGroupCategories, allUserCategories] = await Promise.all([
+        prisma.groupCategory.findMany(),
+        prisma.category.findMany({ where: { userId } }),
+      ]);
+
+      // ⚡ Bolt: Initialize Maps for O(1) in-memory lookups.
+      const groupCategoriesMap = new Map(allGroupCategories.map((g) => [g.name, g]));
+      const userCategoriesMap = new Map(allUserCategories.map((c) => [c.name, c]));
+
       // 3. Procesar las categorías y prepararlas para la inserción masiva
-      const categoriesToCreatePromises = oldCategories.map(async (category) => {
-        const groupCategory = await prisma.groupCategory.findFirst({
-          where: { name: category.group.name },
-        });
+      const categoriesToCreate = oldCategories
+        .map((category) => {
+          const groupCategory = groupCategoriesMap.get(category.group.name);
 
-        if (!groupCategory) {
-          console.warn(
-            `GroupCategory '${category.group.name}' not found for category '${category.name}'. Skipping.`
-          );
-          return null;
-        }
-
-        let categoryFatherId: string | null = null;
-        if (category.category_father) {
-          const categoryFather = await prisma.category.findFirst({
-            where: {
-              name: category.category_father.name,
-            },
-          });
-          if (categoryFather) {
-            categoryFatherId = categoryFather.id;
-          } else {
+          if (!groupCategory) {
             console.warn(
-              `Category father '${category.category_father.name}' not found for category '${category.name}'. Skipping category father association.`
+              `GroupCategory '${category.group.name}' not found for category '${category.name}'. Skipping.`
             );
+            return null;
           }
-        }
 
-        return {
-          name: category.name,
-          description: category.description ?? "",
-          groupId: groupCategory.id,
-          color: "#000000",
-          icon: null,
-          createdAt: new Date(category.created_at),
-          updatedAt: new Date(category.updated_at),
-          deletedAt: category.deleted_at ? new Date(category.deleted_at) : null,
-          userId: userId,
-        } as CreateCategory;
-      });
+          // Note: category_father is currently not supported in the local Category model schema,
+          // but we still perform the O(1) lookup to maintain parity with the previous logic
+          // while avoiding database roundtrips.
+          if (category.category_father) {
+            const categoryFather = userCategoriesMap.get(
+              category.category_father.name
+            );
+            if (!categoryFather) {
+              console.warn(
+                `Category father '${category.category_father.name}' not found for category '${category.name}'. Skipping category father association.`
+              );
+            }
+          }
 
-      const categoriesToCreate = (
-        await Promise.all(categoriesToCreatePromises)
-      ).filter((cat): cat is CreateCategory => cat !== null);
+          return {
+            name: category.name,
+            description: category.description ?? "",
+            groupId: groupCategory.id,
+            color: "#000000",
+            icon: null,
+            createdAt: new Date(category.created_at),
+            updatedAt: new Date(category.updated_at),
+            deletedAt: category.deleted_at ? new Date(category.deleted_at) : null,
+            userId: userId,
+          } as CreateCategory;
+        })
+        .filter((cat): cat is CreateCategory => cat !== null);
 
       // 4. Insertar las categorías en la base de datos local
       const result = await prisma.category.createMany({

@@ -10,43 +10,55 @@ export class AppreciationUseCase {
   }
 
   public async addAppreciation(
-    data: CreateAppreciation
+    data: CreateAppreciation,
+    userId: string
   ): Promise<Appreciation | ErrorMessage> {
-    return await this.badgeRepository.addAppreciation(data);
+    return await this.badgeRepository.addAppreciation(data, userId);
   }
 
   public async listAppreciation(
-    params: CommonParamsPaginate
+    params: CommonParamsPaginate,
+    userId: string
   ): Promise<{ content: Appreciation[]; meta: Paginate }> {
-    return await this.badgeRepository.listAppreciation(params);
+    return await this.badgeRepository.listAppreciation(params, userId);
   }
 
   public async updateAppreciation(
     id: string,
     appreciationId: string,
-    badge: Partial<CreateAppreciation>
+    badge: Partial<CreateAppreciation>,
+    userId: string
   ): Promise<Appreciation | ErrorMessage> {
     return await this.badgeRepository.updateAppreciation(
       id,
       appreciationId,
-      badge
+      badge,
+      userId
     );
   }
 
-  public async detailAppreciation(id: string): Promise<Appreciation | null> {
-    return await this.badgeRepository.detailAppreciation(id);
+  public async detailAppreciation(
+    id: string,
+    userId: string
+  ): Promise<Appreciation | null> {
+    return await this.badgeRepository.detailAppreciation(id, userId);
   }
 
   public async deleteAppreciation(
     id: string,
-    appreciationId: string
+    appreciationId: string,
+    userId: string
   ): Promise<Appreciation | null> {
-    return await this.badgeRepository.deleteAppreciation(id, appreciationId);
+    return await this.badgeRepository.deleteAppreciation(
+      id,
+      appreciationId,
+      userId
+    );
   }
 
-  public async importAppreciations(): Promise<{
+  public async importAppreciations(userId: string): Promise<{
     appreciationCount: number;
   }> {
-    return await this.badgeRepository.importAppreciations();
+    return await this.badgeRepository.importAppreciations(userId);
   }
 }

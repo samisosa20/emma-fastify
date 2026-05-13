@@ -26,9 +26,21 @@ type APIAppreciationResponse = APIAppreciationItem[];
 
 export class AppreciationPrismaRepository implements IAppreciationRepository {
   public async addAppreciation(
-    data: CreateAppreciation
+    data: CreateAppreciation,
+    userId: string
   ): Promise<Appreciation | ErrorMessage> {
     try {
+      const investmentExists = await prisma.investment.findFirst({
+        where: {
+          id: data.investmentId,
+          userId,
+        },
+      });
+
+      if (!investmentExists) {
+        throw new Error("Investment not found");
+      }
+
       const newAppreciation = await prisma.investmentAppreciation.create({
         data: {
           amount: data.amount,
@@ -40,7 +52,7 @@ export class AppreciationPrismaRepository implements IAppreciationRepository {
           },
           user: {
             connect: {
-              id: data.userId,
+              id: userId,
             },
           },
         },
@@ -56,12 +68,14 @@ export class AppreciationPrismaRepository implements IAppreciationRepository {
   }
 
   public async listAppreciation(
-    params: CommonParamsPaginate
+    params: CommonParamsPaginate,
+    userId: string
   ): Promise<{ content: Appreciation[]; meta: Paginate }> {
     const { deleted, size, page } = params;
     const [content, meta] = await prisma.investmentAppreciation
       .paginate({
         where: {
+          userId,
           OR: handleShowDeleteData(deleted === "1"),
         },
       })
@@ -79,13 +93,25 @@ export class AppreciationPrismaRepository implements IAppreciationRepository {
   public async updateAppreciation(
     id: string,
     appreciationId: string,
-    data: Partial<CreateAppreciation>
+    data: Partial<CreateAppreciation>,
+    userId: string
   ): Promise<Appreciation | ErrorMessage> {
     try {
-      const updatedAppreciation = await prisma.investmentAppreciation.update({
+      const appreciationExists = await prisma.investmentAppreciation.findFirst({
         where: {
           id: appreciationId,
           investmentId: id,
+          userId,
+        },
+      });
+
+      if (!appreciationExists) {
+        throw new Error("Appreciation not found");
+      }
+
+      const updatedAppreciation = await prisma.investmentAppreciation.update({
+        where: {
+          id: appreciationId,
         },
         data,
       });
@@ -99,10 +125,13 @@ export class AppreciationPrismaRepository implements IAppreciationRepository {
     }
   }
 
-  public async detailAppreciation(id: string): Promise<Appreciation | null> {
+  public async detailAppreciation(
+    id: string,
+    userId: string
+  ): Promise<Appreciation | null> {
     try {
-      return await prisma.investmentAppreciation.findUnique({
-        where: { id },
+      return await prisma.investmentAppreciation.findFirst({
+        where: { id, userId },
       });
     } catch (error: any) {
       throw Object.assign(new Error("Validation Error"), {
@@ -115,20 +144,21 @@ export class AppreciationPrismaRepository implements IAppreciationRepository {
 
   public async deleteAppreciation(
     id: string,
-    appreciationId: string
+    appreciationId: string,
+    userId: string
   ): Promise<Appreciation | null> {
-    const appreciation = await prisma.investmentAppreciation.findUnique({
-      where: { id: appreciationId, investmentId: id },
+    const appreciation = await prisma.investmentAppreciation.findFirst({
+      where: { id: appreciationId, investmentId: id, userId },
     });
     if (!appreciation) {
       return null;
     }
     return await prisma.investmentAppreciation.delete({
-      where: { id: appreciationId, investmentId: id },
+      where: { id: appreciationId },
     });
   }
 
-  public async importAppreciations(): Promise<{
+  public async importAppreciations(userId: string): Promise<{
     appreciationCount: number;
   }> {
     try {
@@ -136,13 +166,13 @@ export class AppreciationPrismaRepository implements IAppreciationRepository {
       const apiProd = process.env.API_PROD;
       const apiEmail = process.env.API_EMAIL;
       const apiPassword = process.env.API_PASSWORD;
-      const userId = process.env.USER_ID;
 
       if (!apiProd || !apiEmail || !apiPassword || !userId) {
         throw Object.assign(new Error("Missing API environment variables"), {
           statusCode: 500,
           error: "Configuration Error",
-          message: "API_PROD, API_EMAIL, API_PASSWORD, or USER_ID are not set.",
+          message:
+            "API_PROD, API_EMAIL, API_PASSWORD, or authenticated userId are not set.",
         });
       }
 

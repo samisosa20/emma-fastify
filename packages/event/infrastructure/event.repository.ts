@@ -15,10 +15,12 @@ type APIEventResponse = {
 
 export class EventPrismaRepository implements IEventRepository {
   public async addEvent(data: CreateEvent): Promise<Event | ErrorMessage> {
+    const { userId, ...rest } = data;
     try {
       const newEvent = await prisma.event.create({
         data: {
-          ...data,
+          ...rest,
+          userId,
           endEvent: new Date(data.endEvent),
         },
       });
@@ -193,15 +195,29 @@ export class EventPrismaRepository implements IEventRepository {
 
   public async updateEvent(
     id: string,
+    userId: string,
     data: Partial<CreateEvent>
   ): Promise<Event | ErrorMessage> {
+    const { userId: _, ...rest } = data;
     try {
+      const event = await prisma.event.findFirst({
+        where: { id, userId },
+      });
+
+      if (!event) {
+        throw Object.assign(new Error("Event not found"), {
+          statusCode: 404,
+          error: "Not Found",
+          message: "Event not found or you don't have permission to update it",
+        });
+      }
+
       const updatedEvent = await prisma.event.update({
         where: {
           id,
         },
         data: {
-          ...data,
+          ...rest,
           ...(data.endEvent && { endEvent: new Date(data.endEvent) }),
         },
       });
@@ -215,10 +231,10 @@ export class EventPrismaRepository implements IEventRepository {
     }
   }
 
-  public async detailEvent(id: string): Promise<any | null> {
+  public async detailEvent(id: string, userId: string): Promise<any | null> {
     try {
-      const event = await prisma.event.findUnique({
-        where: { id },
+      const event = await prisma.event.findFirst({
+        where: { id, userId },
         include: {
           movements: {
             select: {
@@ -361,9 +377,9 @@ export class EventPrismaRepository implements IEventRepository {
     }
   }
 
-  public async deleteEvent(id: string): Promise<Event | null> {
-    const event = await prisma.event.findUnique({
-      where: { id },
+  public async deleteEvent(id: string, userId: string): Promise<Event | null> {
+    const event = await prisma.event.findFirst({
+      where: { id, userId },
     });
     if (!event) {
       return null;
@@ -373,7 +389,7 @@ export class EventPrismaRepository implements IEventRepository {
     });
   }
 
-  public async importEvents(): Promise<{
+  public async importEvents(userId: string): Promise<{
     eventCount: number;
   }> {
     try {
@@ -381,13 +397,12 @@ export class EventPrismaRepository implements IEventRepository {
       const apiProd = process.env.API_PROD;
       const apiEmail = process.env.API_EMAIL;
       const apiPassword = process.env.API_PASSWORD;
-      const userId = process.env.USER_ID;
 
       if (!apiProd || !apiEmail || !apiPassword || !userId) {
         throw Object.assign(new Error("Missing API environment variables"), {
           statusCode: 500,
           error: "Configuration Error",
-          message: "API_PROD, API_EMAIL, API_PASSWORD, or USER_ID are not set.",
+          message: "API_PROD, API_EMAIL, API_PASSWORD, or userId are not set.",
         });
       }
 

@@ -42,7 +42,7 @@ export class EventController {
     const { id } = request.params as { id: string };
 
     try {
-      return eventUseCase.updateEvent(id, dataEvent);
+      return eventUseCase.updateEvent(id, request.user.id, dataEvent);
     } catch (error: any) {
       const detail = formatErrorMessage(error);
       return reply.status(400).send({
@@ -55,19 +55,19 @@ export class EventController {
 
   detailEvent = async (request: FastifyRequest, reply: FastifyReply) => {
     const { id } = request.params as { id: string };
-    return eventUseCase.detailEvent(id);
+    return eventUseCase.detailEvent(id, request.user.id);
   };
 
   deleteEvent = async (request: FastifyRequest, reply: FastifyReply) => {
     const { id } = request.params as { id: string };
-    const result = await eventUseCase.deleteEvent(id);
+    const result = await eventUseCase.deleteEvent(id, request.user.id);
     if (result === null) {
       return reply.status(404).send({ message: "Event not found" });
     }
     return result;
   };
   importEvents = async (request: FastifyRequest, reply: FastifyReply) => {
-    const result = await eventUseCase.importEvents();
+    const result = await eventUseCase.importEvents(request.user.id);
     if (result === null) {
       return reply.status(404).send({ message: "Event not found" });
     }

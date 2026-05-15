@@ -8,11 +8,12 @@ export interface IEventRepository {
   ): Promise<{ content: EventWithBalances[]; meta: Paginate }>;
   updateEvent(
     id: string,
-    account: Partial<CreateEvent>
+    userId: string,
+    data: Partial<CreateEvent>
   ): Promise<Event | ErrorMessage>;
-  detailEvent(id: string): Promise<Event | null>;
-  deleteEvent(id: string): Promise<Event | null>;
-  importEvents(): Promise<{
+  detailEvent(id: string, userId: string): Promise<Event | null>;
+  deleteEvent(id: string, userId: string): Promise<Event | null>;
+  importEvents(userId: string): Promise<{
     eventCount: number;
   }>;
 }

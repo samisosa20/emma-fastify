@@ -21,22 +21,23 @@ export class EventUseCase {
 
   public async updateEvent(
     id: string,
-    badge: Partial<CreateEvent>
+    userId: string,
+    data: Partial<CreateEvent>
   ): Promise<Event | ErrorMessage> {
-    return await this.badgeRepository.updateEvent(id, badge);
+    return await this.badgeRepository.updateEvent(id, userId, data);
   }
 
-  public async detailEvent(id: string): Promise<Event | null> {
-    return await this.badgeRepository.detailEvent(id);
+  public async detailEvent(id: string, userId: string): Promise<Event | null> {
+    return await this.badgeRepository.detailEvent(id, userId);
   }
 
-  public async deleteEvent(id: string): Promise<Event | null> {
-    return await this.badgeRepository.deleteEvent(id);
+  public async deleteEvent(id: string, userId: string): Promise<Event | null> {
+    return await this.badgeRepository.deleteEvent(id, userId);
   }
 
-  public async importEvents(): Promise<{
+  public async importEvents(userId: string): Promise<{
     eventCount: number;
   }> {
-    return await this.badgeRepository.importEvents();
+    return await this.badgeRepository.importEvents(userId);
   }
 }

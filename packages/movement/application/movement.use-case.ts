@@ -43,7 +43,9 @@ export class MovementUseCase {
     return await this.movementRepository.deleteMovement(id, userId);
   }
 
-  public async importMovements(): Promise<{ movementCount: number }> {
-    return await this.movementRepository.importMovements();
+  public async importMovements(
+    userId: string
+  ): Promise<{ movementCount: number }> {
+    return await this.movementRepository.importMovements(userId);
   }
 }

@@ -496,7 +496,7 @@ export class MovementPrismaRepository implements IMovementRepository {
     return movement;
   }
 
-  public async importMovements(): Promise<{
+  public async importMovements(userId: string): Promise<{
     movementCount: number;
   }> {
     try {
@@ -504,13 +504,12 @@ export class MovementPrismaRepository implements IMovementRepository {
       const apiProd = process.env.API_PROD;
       const apiEmail = process.env.API_EMAIL;
       const apiPassword = process.env.API_PASSWORD;
-      const userId = process.env.USER_ID;
 
       if (!apiProd || !apiEmail || !apiPassword || !userId) {
         throw Object.assign(new Error("Missing API environment variables"), {
           statusCode: 500,
           error: "Configuration Error",
-          message: "API_PROD, API_EMAIL, API_PASSWORD, or USER_ID are not set.",
+          message: "API_PROD, API_EMAIL, API_PASSWORD, or userId are not set.",
         });
       }
 
@@ -658,6 +657,7 @@ export class MovementPrismaRepository implements IMovementRepository {
             // Since paired movements are imported sequentially, we still look up the previously imported pair.
             const transferInMovement = await prisma.movement.findFirst({
               where: {
+                userId,
                 datePurchase: new Date(movement.transfer_out.date_purchase),
                 accountId: accountTransfer.id,
                 categoryId: category.id,

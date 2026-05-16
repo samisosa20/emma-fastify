@@ -555,12 +555,16 @@ export class InvestmentPrismaRepository implements IInvestmentRepository {
         await investmentsResponse.json();
       const oldInvestments: APIInvestmentItem[] = rawApiResponse.investments;
 
+      // ⚡ Bolt: Bulk fetch all badges to eliminate N database queries (N*1) inside the loop.
+      const allBadges = await prisma.badge.findMany();
+
+      // ⚡ Bolt: Use a Hash Map for O(1) in-memory lookups instead of sequential database calls.
+      const badgesMap = new Map(allBadges.map((b) => [b.code, b]));
+
       // 3. Procesar las inversiones y prepararlas para la inserción masiva
-      const investmentsToCreatePromises = oldInvestments.map(
-        async (investment) => {
-          const badge = await prisma.badge.findFirst({
-            where: { code: investment.currency.code },
-          });
+      const investmentsToCreate = oldInvestments
+        .map((investment) => {
+          const badge = badgesMap.get(investment.currency.code);
 
           if (!badge) {
             console.warn(
@@ -582,12 +586,8 @@ export class InvestmentPrismaRepository implements IInvestmentRepository {
               ? new Date(investment.deleted_at)
               : null,
           } as CreateInvestment;
-        }
-      );
-
-      const investmentsToCreate = (
-        await Promise.all(investmentsToCreatePromises)
-      ).filter((inv): inv is CreateInvestment => inv !== null);
+        })
+        .filter((inv): inv is CreateInvestment => inv !== null);
 
       // 4. Insertar las inversiones en la base de datos local
       const result = await prisma.investment.createMany({

@@ -53,3 +53,7 @@
 ## 2026-05-28 - [Eliminating N+1 queries in Account Import]
 **Learning:** Performing sequential `findFirst` lookups for AccountTypes and Badges inside a loop during Account imports created a significant N+1 database bottleneck.
 **Action:** Bulk fetch all metadata (AccountTypes, Badges) in parallel using `Promise.all` and use Hash Maps for O(1) in-memory lookups during the import loop.
+
+## 2026-05-29 - [Eliminating N+1 queries in Investment, Appreciation, and Heritage Imports]
+**Learning:** Performing sequential database lookups (findFirst) for related resources (Badges, Investments) within an import loop creates significant N+1 bottlenecks.
+**Action:** Pre-fetch all relevant metadata into Hash Maps before the loop to replace database roundtrips with O(1) in-memory lookups.

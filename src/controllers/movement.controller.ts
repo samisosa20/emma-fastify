@@ -75,7 +75,7 @@ export class MovementController {
   };
 
   importMovements = async (request: FastifyRequest, reply: FastifyReply) => {
-    const result = await movementUseCase.importMovements();
+    const result = await movementUseCase.importMovements(request.user.id);
     if (result === null) {
       return reply.status(404).send({ message: "Movement not found" });
     }

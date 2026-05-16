@@ -206,7 +206,7 @@ export class AppreciationPrismaRepository implements IAppreciationRepository {
       const token = apiResponse.token;
 
       // 2. Obtener las apreciaciones de la API externa
-      const appreciationsResponse = await fetch(`${apiProd}/appretiations`, {
+      const appreciationsResponse = await fetch(`${apiProd}/appreciations`, {
         method: "GET",
         headers: {
           "Content-Type": "application/json",
@@ -238,7 +238,7 @@ export class AppreciationPrismaRepository implements IAppreciationRepository {
         .filter((appreciation) => appreciation.investment)
         .map(async (appreciation) => {
           const investmentAppreciation = await prisma.investment.findFirst({
-            where: { name: appreciation.investment.name },
+            where: { name: appreciation.investment.name, userId },
           });
 
           if (!investmentAppreciation) {

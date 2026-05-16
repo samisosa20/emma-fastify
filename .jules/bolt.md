@@ -49,3 +49,7 @@
 ## 2026-05-27 - [O(1) Category Import Lookup]
 **Learning:** Performing sequential `findFirst` lookups for GroupCategories and parent Categories inside a loop during Category imports created a significant N+1 database bottleneck.
 **Action:** Bulk fetch all metadata into Hash Maps (`Map`) before the loop to replace database roundtrips with O(1) in-memory lookups.
+
+## 2026-05-28 - [Eliminating N+1 queries in Account Import]
+**Learning:** Performing sequential `findFirst` lookups for AccountTypes and Badges inside a loop during Account imports created a significant N+1 database bottleneck.
+**Action:** Bulk fetch all metadata (AccountTypes, Badges) in parallel using `Promise.all` and use Hash Maps for O(1) in-memory lookups during the import loop.

@@ -399,51 +399,49 @@ export class AccountPrismaRepository implements IAccountRepository {
         await accountsResponse.json();
       const oldAccounts = apiResponseAccount.accounts;
 
-      // CORRECCIÓN: Usar Promise.all para manejar las promesas dentro del map
-      const accountsToCreatePromises = oldAccounts.map(async (account) => {
-        const type = await prisma.accountType.findFirst({
-          where: {
-            name: account.type.name,
-          },
-        });
+      // ⚡ Bolt: Bulk fetch all account types and badges in parallel to eliminate N+1 queries (2*N) in the loop.
+      const [allTypes, allBadges] = await Promise.all([
+        prisma.accountType.findMany(),
+        prisma.badge.findMany(),
+      ]);
 
-        const badge = await prisma.badge.findFirst({
-          where: {
-            code: account.currency.code,
-          },
-        });
+      // ⚡ Bolt: Use Hash Maps for O(1) in-memory lookups instead of sequential database calls.
+      const typesMap = new Map(allTypes.map((t) => [t.name, t]));
+      const badgesMap = new Map(allBadges.map((b) => [b.code, b]));
 
-        // Manejar casos donde type o badge no se encuentren
-        if (!type) {
-          console.warn(
-            `Account type '${account.type.name}' not found for account '${account.name}'. Skipping.`
-          );
-          return null; // O lanzar un error, dependiendo del comportamiento deseado
-        }
-        if (!badge) {
-          console.warn(
-            `Badge with code '${account.currency.code}' not found for account '${account.name}'. Skipping.`
-          );
-          return null; // O lanzar un error
-        }
+      // CORRECCIÓN: Usar map para transformar los datos sincrónicamente utilizando los mapas
+      const accountsToCreate = oldAccounts
+        .map((account) => {
+          const type = typesMap.get(account.type.name);
+          const badge = badgesMap.get(account.currency.code);
 
-        return {
-          name: account.name,
-          description: account.description,
-          badgeId: badge.id,
-          initAmount: account.init_amount ?? 0,
-          limit: account.limit ?? 0,
-          typeId: type.id,
-          userId: userId,
-          createdAt: new Date(account.created_at),
-          deletedAt: account.deleted_at ? new Date(account.deleted_at) : null,
-        } as CreateAccount;
-      });
+          // Manejar casos donde type o badge no se encuentren
+          if (!type) {
+            console.warn(
+              `Account type '${account.type.name}' not found for account '${account.name}'. Skipping.`
+            );
+            return null; // O lanzar un error, dependiendo del comportamiento deseado
+          }
+          if (!badge) {
+            console.warn(
+              `Badge with code '${account.currency.code}' not found for account '${account.name}'. Skipping.`
+            );
+            return null; // O lanzar un error
+          }
 
-      // Filtrar los resultados nulos si se omitieron algunas cuentas
-      const accountsToCreate = (
-        await Promise.all(accountsToCreatePromises)
-      ).filter((account): account is CreateAccount => account !== null);
+          return {
+            name: account.name,
+            description: account.description,
+            badgeId: badge.id,
+            initAmount: account.init_amount ?? 0,
+            limit: account.limit ?? 0,
+            typeId: type.id,
+            userId: userId,
+            createdAt: new Date(account.created_at),
+            deletedAt: account.deleted_at ? new Date(account.deleted_at) : null,
+          } as CreateAccount;
+        })
+        .filter((account): account is CreateAccount => account !== null);
 
       const result = await prisma.account.createMany({
         data: accountsToCreate,

@@ -256,19 +256,11 @@ export class UserRepositoryPrismaPostgres implements IUserRepository {
       where: { email },
     });
 
-    if (!user) {
+    if (!user || user.confirmedEmailAt) {
       return {
-        statusCode: 400,
-        message: "Bad request",
-        error: "User not found.",
-      };
-    }
-
-    if (user.confirmedEmailAt) {
-      return {
-        statusCode: 400,
-        message: "Bad request",
-        error: "User already confirm the email",
+        statusCode: 200,
+        message: "Confirmation email sent.",
+        error: "OK",
       };
     }
 
@@ -295,7 +287,7 @@ export class UserRepositoryPrismaPostgres implements IUserRepository {
     return {
       statusCode: 200,
       message: "Confirmation email sent.",
-      error: `Email sent to ${email} `,
+      error: "OK",
     };
   }
 
@@ -308,8 +300,8 @@ export class UserRepositoryPrismaPostgres implements IUserRepository {
     if (!user) {
       return {
         statusCode: 200,
-        message: "Email sent",
-        error: "Email sent",
+        message: "Email sent.",
+        error: "OK",
       };
     }
 
@@ -330,7 +322,7 @@ export class UserRepositoryPrismaPostgres implements IUserRepository {
     return {
       statusCode: 200,
       message: "Email sent.",
-      error: `Email sent `,
+      error: "OK",
     };
   }
 }

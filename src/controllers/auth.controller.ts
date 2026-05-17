@@ -136,10 +136,11 @@ export class AuthController {
 
       return confirmation;
     } catch (error: any) {
+      const detail = formatErrorMessage(error);
       reply.status(400).send({
         statusCode: 400,
         message: "User confirmation failed",
-        error,
+        error: detail,
       });
     }
   };
@@ -157,10 +158,11 @@ export class AuthController {
         return reply.status(Number(confirmation.statusCode)).send(confirmation);
       }
     } catch (error) {
+      const detail = formatErrorMessage(error);
       reply.status(400).send({
         statusCode: 400,
         message: "Bad request",
-        error,
+        error: detail,
       });
     }
   };
@@ -175,10 +177,11 @@ export class AuthController {
         return reply.status(Number(confirmation.statusCode)).send(confirmation);
       }
     } catch (error) {
+      const detail = formatErrorMessage(error);
       reply.status(400).send({
         statusCode: 400,
         message: "Bad request",
-        error,
+        error: detail,
       });
     }
   };

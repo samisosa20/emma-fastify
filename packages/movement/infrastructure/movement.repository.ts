@@ -90,7 +90,10 @@ export class MovementPrismaRepository implements IMovementRepository {
             : Promise.resolve(true),
           data.type === "transfer"
             ? prisma.category.findFirst({
-                where: { GroupCategory: { name: "Transferencia" } },
+                where: {
+                  GroupCategory: { name: "Transferencia" },
+                  userId: data.userId,
+                },
               })
             : Promise.resolve(null),
         ]);
@@ -293,7 +296,10 @@ export class MovementPrismaRepository implements IMovementRepository {
           : Promise.resolve(true),
         data.type === "transfer"
           ? prisma.category.findFirst({
-              where: { GroupCategory: { name: "Transferencia" } },
+              where: {
+                GroupCategory: { name: "Transferencia" },
+                userId,
+              },
             })
           : Promise.resolve(null),
       ]);

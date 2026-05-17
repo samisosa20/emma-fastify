@@ -19,9 +19,9 @@ export const validateBadgeUpdate = async (
   reply: FastifyReply
 ) => {
   try {
-    return BadgeCreateInput.partial().parse(request.body);
+    const body = await BadgeCreateInput.partial().parseAsync(request.body);
+    request.body = body;
   } catch (error) {
-    formatErrorMessageMiddleware(error);
-    throw error;
+    return reply.status(400).send(formatErrorMessageMiddleware(error));
   }
 };

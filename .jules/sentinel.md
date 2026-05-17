@@ -45,3 +45,8 @@
 **Vulnerability:** Appreciation operations lacked ownership verification, and the import process relied on a global environment variable. Additionally, users could add appreciations to investments belonging to others.
 **Learning:** Security enforcement must extend to sub-resources. Verifying ownership of the parent resource (Investment) during the creation of a child resource (Appreciation) is critical to prevent unauthorized data association.
 **Prevention:** Always scope queries by `userId` and explicitly verify ownership of parent resources before creating or modifying dependent records.
+
+## 2026-05-17 - [Silent Data Leakage and Unscoped Global Lookups]
+**Vulnerability:** Hashed passwords were leaked in API responses because repositories returned full Prisma objects despite TypeScript `Omit` signatures. Also, internal lookups for common resources (like the "Transferencia" category) lacked `userId` scoping, leading to IDOR.
+**Learning:** TypeScript's `Omit` and `Pick` types only provide compile-time safety; they do not remove fields from the runtime object, which Prisma returns in full. Furthermore, even "standard" resources must be explicitly scoped to the user to maintain multi-tenant isolation.
+**Prevention:** Explicitly destructure and remove sensitive fields from database results before they leave the repository. Always include `userId` in Prisma `where` clauses, even when searching for resources by unique names or types.

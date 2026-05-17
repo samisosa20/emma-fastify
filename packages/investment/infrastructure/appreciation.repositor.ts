@@ -233,13 +233,21 @@ export class AppreciationPrismaRepository implements IAppreciationRepository {
       const oldAppreciations: APIAppreciationResponse =
         await appreciationsResponse.json();
 
+      // ⚡ Bolt: Bulk fetch all user investments to eliminate N database queries (N*1) inside the loop.
+      const userInvestments = await prisma.investment.findMany({
+        where: { userId },
+      });
+
+      // ⚡ Bolt: Use a Hash Map for O(1) in-memory lookups instead of sequential database calls.
+      const investmentsMap = new Map(userInvestments.map((i) => [i.name, i]));
+
       // 3. Procesar las apreciaciones y prepararlas para la inserción masiva
-      const appreciationsToCreatePromises = oldAppreciations
+      const appreciationsToCreate = oldAppreciations
         .filter((appreciation) => appreciation.investment)
-        .map(async (appreciation) => {
-          const investmentAppreciation = await prisma.investment.findFirst({
-            where: { name: appreciation.investment.name, userId },
-          });
+        .map((appreciation) => {
+          const investmentAppreciation = investmentsMap.get(
+            appreciation.investment.name
+          );
 
           if (!investmentAppreciation) {
             console.warn(
@@ -256,11 +264,8 @@ export class AppreciationPrismaRepository implements IAppreciationRepository {
             createdAt: new Date(appreciation.created_at),
             updatedAt: new Date(appreciation.updated_at),
           } as CreateAppreciation;
-        });
-
-      const appreciationsToCreate = (
-        await Promise.all(appreciationsToCreatePromises)
-      ).filter((app) => app !== null);
+        })
+        .filter((app): app is CreateAppreciation => app !== null);
 
       // 4. Insertar las apreciaciones en la base de datos local
       const result = await prisma.investmentAppreciation.createMany({

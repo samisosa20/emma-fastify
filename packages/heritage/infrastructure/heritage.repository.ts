@@ -428,34 +428,36 @@ export class HeritagePrismaRepository implements IHeritageRepository {
         await heritagesResponse.json();
       const oldHeritages: APIHeritageItem[] = rawApiResponse.heritages;
 
-      // 3. Procesar los patrimonios y prepararlos para la inserción masiva
-      const heritagesToCreatePromises = oldHeritages.map(async (heritage) => {
-        const badge = await prisma.badge.findFirst({
-          where: { code: heritage.currency.code },
-        });
+      // ⚡ Bolt: Bulk fetch all badges to eliminate N database queries (N*1) inside the loop.
+      const allBadges = await prisma.badge.findMany();
 
-        if (!badge) {
-          console.warn(
-            `Badge with code '${heritage.currency.code}' not found for heritage '${heritage.name}'. Skipping.`
-          );
-          return null;
-        }
+      // ⚡ Bolt: Use a Hash Map for O(1) in-memory lookups instead of sequential database calls.
+      const badgesMap = new Map(allBadges.map((b) => [b.code, b]));
 
-        return {
-          name: heritage.name,
-          comercialAmount: heritage.comercial_amount,
-          legalAmount: heritage.legal_amount,
-          year: heritage.year,
-          badgeId: badge.id,
-          userId: userId,
-          createdAt: new Date(heritage.created_at),
-          updatedAt: new Date(heritage.updated_at),
-        } as CreateHeritage;
-      });
+      // 3. Procesar los patrimonios y prepararlas para la inserción masiva
+      const heritagesToCreate = oldHeritages
+        .map((heritage) => {
+          const badge = badgesMap.get(heritage.currency.code);
 
-      const heritagesToCreate = (
-        await Promise.all(heritagesToCreatePromises)
-      ).filter((h): h is CreateHeritage => h !== null);
+          if (!badge) {
+            console.warn(
+              `Badge with code '${heritage.currency.code}' not found for heritage '${heritage.name}'. Skipping.`
+            );
+            return null;
+          }
+
+          return {
+            name: heritage.name,
+            comercialAmount: heritage.comercial_amount,
+            legalAmount: heritage.legal_amount,
+            year: heritage.year,
+            badgeId: badge.id,
+            userId: userId,
+            createdAt: new Date(heritage.created_at),
+            updatedAt: new Date(heritage.updated_at),
+          } as CreateHeritage;
+        })
+        .filter((h): h is CreateHeritage => h !== null);
 
       // 4. Insertar los patrimonios en la base de datos local
       const result = await prisma.heritage.createMany({

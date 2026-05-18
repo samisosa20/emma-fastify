@@ -1,6 +1,6 @@
 import { FastifyRequest, FastifyReply } from "fastify";
 
-import { formatErrorMessage } from "@lib";
+import { formatErrorMessage, isAdmin } from "@lib";
 
 import { BadgeUseCase } from "packages/badge/application/badge.use-case";
 import { BadgePrismaRepository } from "packages/badge/infrastructure/badge.repository";
@@ -23,6 +23,15 @@ export class BadgeController {
   };
 
   addBadge = async (request: FastifyRequest, reply: FastifyReply) => {
+    // Security: Only allow administrators to create new global resources
+    if (!isAdmin(request.user)) {
+      return reply.status(403).send({
+        statusCode: 403,
+        error: "Forbidden",
+        message: "Only administrators can perform this action.",
+      });
+    }
+
     const dataBadge = request.body as CreateBadge;
 
     try {
@@ -38,6 +47,15 @@ export class BadgeController {
   };
 
   updateBadge = async (request: FastifyRequest, reply: FastifyReply) => {
+    // Security: Only allow administrators to modify existing global resources
+    if (!isAdmin(request.user)) {
+      return reply.status(403).send({
+        statusCode: 403,
+        error: "Forbidden",
+        message: "Only administrators can perform this action.",
+      });
+    }
+
     const dataBadge = request.body as CreateBadge;
     const { id } = request.params as { id: string };
 
@@ -59,10 +77,28 @@ export class BadgeController {
   };
 
   deleteBadge = async (request: FastifyRequest, reply: FastifyReply) => {
+    // Security: Only allow administrators to delete global resources
+    if (!isAdmin(request.user)) {
+      return reply.status(403).send({
+        statusCode: 403,
+        error: "Forbidden",
+        message: "Only administrators can perform this action.",
+      });
+    }
+
     const { id } = request.params as { id: string };
     return await badgeUseCase.deleteBadge(id);
   };
   importBadge = async (request: FastifyRequest, reply: FastifyReply) => {
+    // Security: Only allow administrators to perform mass imports of global resources
+    if (!isAdmin(request.user)) {
+      return reply.status(403).send({
+        statusCode: 403,
+        error: "Forbidden",
+        message: "Only administrators can perform this action.",
+      });
+    }
+
     return await badgeUseCase.importCurrenciesAsBadges();
   };
 }

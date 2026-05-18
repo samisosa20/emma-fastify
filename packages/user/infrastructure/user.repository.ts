@@ -31,12 +31,15 @@ export class UserRepositoryPrismaPostgres implements IUserRepository {
       };
     }
 
-    return await prisma.user.create({
+    const newUser = await prisma.user.create({
       data: {
         ...user,
         password: user.password ? await hashPassword(user.password) : null,
       },
     });
+
+    const { password: _, ...userWithoutPassword } = newUser as any;
+    return userWithoutPassword;
   }
   public async listUser(
     params: CommonParamsPaginate
@@ -54,7 +57,10 @@ export class UserRepositoryPrismaPostgres implements IUserRepository {
       });
 
     return {
-      content,
+      content: content.map((user) => {
+        const { password: _, ...userWithoutPassword } = user as any;
+        return userWithoutPassword;
+      }),
       meta,
     };
   }
@@ -91,7 +97,7 @@ export class UserRepositoryPrismaPostgres implements IUserRepository {
       const { currentPassword, confirmPassword, ...userWithoutPasswordValid } =
         user;
 
-      return await prisma.user.update({
+      const updatedUser = await prisma.user.update({
         where: {
           id,
         },
@@ -100,6 +106,9 @@ export class UserRepositoryPrismaPostgres implements IUserRepository {
           ...(user.password && { password: await hashPassword(user.password) }),
         },
       });
+
+      const { password: _, ...userWithoutPassword } = updatedUser as any;
+      return userWithoutPassword;
     } catch (error: any) {
       throw Object.assign(new Error("Validation Error"), {
         statusCode: 400,
@@ -110,9 +119,14 @@ export class UserRepositoryPrismaPostgres implements IUserRepository {
   }
   public async detailUser(id: string): Promise<Omit<User, "password"> | null> {
     try {
-      return await prisma.user.findUnique({
+      const user = await prisma.user.findUnique({
         where: { id },
       });
+
+      if (!user) return null;
+
+      const { password: _, ...userWithoutPassword } = user as any;
+      return userWithoutPassword;
     } catch (error: any) {
       throw Object.assign(new Error("Validation Error"), {
         statusCode: 400,
@@ -123,9 +137,12 @@ export class UserRepositoryPrismaPostgres implements IUserRepository {
   }
   public async deleteUser(id: string): Promise<Omit<User, "password"> | null> {
     try {
-      return await prisma.user.delete({
+      const deletedUser = await prisma.user.delete({
         where: { id },
       });
+
+      const { password: _, ...userWithoutPassword } = deletedUser as any;
+      return userWithoutPassword;
     } catch (error: any) {
       throw Object.assign(new Error("Validation Error"), {
         statusCode: 400,
@@ -160,6 +177,7 @@ export class UserRepositoryPrismaPostgres implements IUserRepository {
     const transferId = await prisma.category.findFirst({
       where: {
         name: "Transferencia",
+        userId: user?.id,
       },
       select: {
         id: true,
@@ -219,6 +237,7 @@ export class UserRepositoryPrismaPostgres implements IUserRepository {
     const transferId = await prisma.category.findFirst({
       where: {
         name: "Transferencia",
+        userId: user?.id,
       },
       select: {
         id: true,

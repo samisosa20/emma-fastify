@@ -600,6 +600,8 @@ export class MovementPrismaRepository implements IMovementRepository {
       const categoriesMap = new Map(userCategories.map((c) => [c.name, c]));
       const eventsMap = new Map(userEvents.map((e) => [e.name, e]));
       const investmentsMap = new Map(userInvestments.map((i) => [i.name, i]));
+      // ⚡ Bolt: Use a Map to cache newly created movements to eliminate N+1 database calls during transfer pairing.
+      const importedMovementsMap = new Map<string, string>();
 
       // 3. Procesar los movimientos y prepararlos para la inserción masiva
       for (const movement of oldMovements) {
@@ -660,21 +662,17 @@ export class MovementPrismaRepository implements IMovementRepository {
               `Account '${movement.transfer_out.account.name}' not found for transfer movement. Skipping transfer association.`
             );
           } else {
-            // Since paired movements are imported sequentially, we still look up the previously imported pair.
-            const transferInMovement = await prisma.movement.findFirst({
-              where: {
-                userId,
-                datePurchase: new Date(movement.transfer_out.date_purchase),
-                accountId: accountTransfer.id,
-                categoryId: category.id,
-                amount: movement.transfer_out.amount,
-              },
-            });
-            if (transferInMovement) {
-              transferInId = transferInMovement.id;
+            // ⚡ Bolt: Optimized transfer pairing using O(1) in-memory lookup instead of O(N) database roundtrips.
+            const searchKey = `${accountTransfer.id}-${new Date(
+              movement.transfer_out.date_purchase
+            ).getTime()}-${movement.transfer_out.amount}-${category.id}`;
+            const transferInMovementId = importedMovementsMap.get(searchKey);
+
+            if (transferInMovementId) {
+              transferInId = transferInMovementId;
             } else {
               console.warn(
-                `TransferIn movement '${movement.id}' on '${movement.transfer_out.date_purchase}' not found. Skipping transferIn association.`
+                `TransferIn movement '${movement.id}' on '${movement.transfer_out.date_purchase}' not found in cache. Skipping transferIn association.`
               );
             }
           }
@@ -700,6 +698,11 @@ export class MovementPrismaRepository implements IMovementRepository {
           data,
         });
         if (move) {
+          // ⚡ Bolt: Cache the created movement to enable O(1) pairing for subsequent transfer movements.
+          const cacheKey = `${data.accountId}-${data.datePurchase.getTime()}-${
+            data.amount
+          }-${data.categoryId}`;
+          importedMovementsMap.set(cacheKey, move.id);
           count++;
         }
       }

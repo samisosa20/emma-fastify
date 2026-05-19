@@ -57,3 +57,7 @@
 ## 2026-05-29 - [Eliminating N+1 queries in Investment, Appreciation, and Heritage Imports]
 **Learning:** Performing sequential database lookups (findFirst) for related resources (Badges, Investments) within an import loop creates significant N+1 bottlenecks.
 **Action:** Pre-fetch all relevant metadata into Hash Maps before the loop to replace database roundtrips with O(1) in-memory lookups.
+
+## 2026-05-30 - [O(1) Transfer Pairing in Movement Import]
+**Learning:** Performing a database lookup (`findFirst`) inside a loop for pairing transfer movements during an import creates an N+1 bottleneck. Since paired movements are imported in the same batch, they can be linked in-memory.
+**Action:** Use a `Map` with a composite key (`${accountId}-${date}-${amount}-${categoryId}`) to cache newly created movements during the import loop for O(1) pairing lookups.

@@ -46,6 +46,11 @@
 **Learning:** Security enforcement must extend to sub-resources. Verifying ownership of the parent resource (Investment) during the creation of a child resource (Appreciation) is critical to prevent unauthorized data association.
 **Prevention:** Always scope queries by `userId` and explicitly verify ownership of parent resources before creating or modifying dependent records.
 
+## 2026-05-19 - [Broken Access Control on Global Resources]
+**Vulnerability:** System-wide resources (`Badge`, `AccountType`, etc.) lacked role-based access control, allowing any authenticated user to perform administrative mutations.
+**Learning:** Authentication (knowing who a user is) does not equate to authorization (what they can do). Global resources without a `userId` owner are particularly vulnerable in multi-tenant systems if they lack specific administrative checks.
+**Prevention:** Implement a fail-secure `isAdmin` helper that validates the user's identity against a trusted source (e.g., an `ADMIN_EMAIL` env var) and explicitly check for administrative privileges on all system-wide mutation endpoints.
+
 ## 2026-05-17 - [Silent Data Leakage and Unscoped Global Lookups]
 **Vulnerability:** Hashed passwords were leaked in API responses because repositories returned full Prisma objects despite TypeScript `Omit` signatures. Also, internal lookups for common resources (like the "Transferencia" category) lacked `userId` scoping, leading to IDOR.
 **Learning:** TypeScript's `Omit` and `Pick` types only provide compile-time safety; they do not remove fields from the runtime object, which Prisma returns in full. Furthermore, even "standard" resources must be explicitly scoped to the user to maintain multi-tenant isolation.

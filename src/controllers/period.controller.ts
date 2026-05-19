@@ -1,6 +1,6 @@
 import { FastifyRequest, FastifyReply } from "fastify";
 
-import { formatErrorMessage } from "@lib";
+import { formatErrorMessage, isAdmin } from "@lib";
 
 import { PeriodUseCase } from "packages/period/application/period.use-case";
 import { PeriodPrismaRepository } from "packages/period/infrastructure/period.repository";
@@ -10,7 +10,6 @@ type PeriodParams = {
   page: number;
   deleted?: "1" | "0";
   size?: number;
-  // Agrega aquí otros parámetros de consulta específicos para Period si son necesarios
 };
 
 const periodRepository = new PeriodPrismaRepository();
@@ -23,6 +22,14 @@ export class PeriodController {
   };
 
   addPeriod = async (request: FastifyRequest, reply: FastifyReply) => {
+    if (!isAdmin(request.user)) {
+      return reply.status(403).send({
+        statusCode: 403,
+        error: "Forbidden",
+        message: "Only administrators can perform this action.",
+      });
+    }
+
     const dataPeriod = request.body as CreatePeriod;
 
     try {
@@ -38,6 +45,14 @@ export class PeriodController {
   };
 
   updatePeriod = async (request: FastifyRequest, reply: FastifyReply) => {
+    if (!isAdmin(request.user)) {
+      return reply.status(403).send({
+        statusCode: 403,
+        error: "Forbidden",
+        message: "Only administrators can perform this action.",
+      });
+    }
+
     const dataPeriod = request.body as Partial<CreatePeriod>;
     const { id } = request.params as { id: string };
 
@@ -59,6 +74,14 @@ export class PeriodController {
   };
 
   deletePeriod = async (request: FastifyRequest, reply: FastifyReply) => {
+    if (!isAdmin(request.user)) {
+      return reply.status(403).send({
+        statusCode: 403,
+        error: "Forbidden",
+        message: "Only administrators can perform this action.",
+      });
+    }
+
     const { id } = request.params as { id: string };
     const result = await periodUseCase.deletePeriod(id);
     if (result === null) {

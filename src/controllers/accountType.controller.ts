@@ -1,6 +1,6 @@
 import { FastifyRequest, FastifyReply } from "fastify";
 
-import { formatErrorMessage } from "@lib";
+import { formatErrorMessage, isAdmin } from "@lib";
 
 import { AccountTypeUseCase } from "packages/account/application/accountType.use-case";
 import { AccountTypePrismaRepository } from "packages/account/infrastructure/accountType.repository";
@@ -10,7 +10,6 @@ type AccountTypeParams = {
   page: number;
   deleted?: "1" | "0";
   size?: number;
-  // Agrega aquí otros parámetros de consulta específicos para AccountType si son necesarios
 };
 
 const accountTypeRepository = new AccountTypePrismaRepository();
@@ -23,6 +22,14 @@ export class AccountTypeController {
   };
 
   addAccountType = async (request: FastifyRequest, reply: FastifyReply) => {
+    if (!isAdmin(request.user)) {
+      return reply.status(403).send({
+        statusCode: 403,
+        error: "Forbidden",
+        message: "Only administrators can perform this action.",
+      });
+    }
+
     const dataAccountType = request.body as CreateAccountType;
 
     try {
@@ -38,6 +45,14 @@ export class AccountTypeController {
   };
 
   updateAccountType = async (request: FastifyRequest, reply: FastifyReply) => {
+    if (!isAdmin(request.user)) {
+      return reply.status(403).send({
+        statusCode: 403,
+        error: "Forbidden",
+        message: "Only administrators can perform this action.",
+      });
+    }
+
     const dataAccountType = request.body as Partial<CreateAccountType>;
     const { id } = request.params as { id: string };
 
@@ -59,6 +74,14 @@ export class AccountTypeController {
   };
 
   deleteAccountType = async (request: FastifyRequest, reply: FastifyReply) => {
+    if (!isAdmin(request.user)) {
+      return reply.status(403).send({
+        statusCode: 403,
+        error: "Forbidden",
+        message: "Only administrators can perform this action.",
+      });
+    }
+
     const { id } = request.params as { id: string };
     const result = await accountTypeUseCase.deleteAccountType(id);
     if (result === null) {

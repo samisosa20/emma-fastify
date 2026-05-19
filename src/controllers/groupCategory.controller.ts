@@ -1,6 +1,6 @@
 import { FastifyRequest, FastifyReply } from "fastify";
 
-import { formatErrorMessage } from "@lib";
+import { formatErrorMessage, isAdmin } from "@lib";
 
 import { GroupCategoryUseCase } from "packages/category/application/groupCategory.use-case";
 import { GroupCategoryPrismaRepository } from "packages/category/infrastructure/groupCategory.repository";
@@ -10,7 +10,6 @@ type GroupCategoryParams = {
   page: number;
   deleted?: "1" | "0";
   size?: number;
-  // Agrega aquí otros parámetros de consulta específicos para GroupCategory si son necesarios
 };
 
 const groupCategoryRepository = new GroupCategoryPrismaRepository();
@@ -26,6 +25,14 @@ export class GroupCategoryController {
   };
 
   addGroupCategory = async (request: FastifyRequest, reply: FastifyReply) => {
+    if (!isAdmin(request.user)) {
+      return reply.status(403).send({
+        statusCode: 403,
+        error: "Forbidden",
+        message: "Only administrators can perform this action.",
+      });
+    }
+
     const dataGroupCategory = request.body as CreateGroupCategory;
 
     try {
@@ -44,6 +51,14 @@ export class GroupCategoryController {
     request: FastifyRequest,
     reply: FastifyReply
   ) => {
+    if (!isAdmin(request.user)) {
+      return reply.status(403).send({
+        statusCode: 403,
+        error: "Forbidden",
+        message: "Only administrators can perform this action.",
+      });
+    }
+
     const dataGroupCategory = request.body as Partial<CreateGroupCategory>;
     const { id } = request.params as { id: string };
 
@@ -71,6 +86,14 @@ export class GroupCategoryController {
     request: FastifyRequest,
     reply: FastifyReply
   ) => {
+    if (!isAdmin(request.user)) {
+      return reply.status(403).send({
+        statusCode: 403,
+        error: "Forbidden",
+        message: "Only administrators can perform this action.",
+      });
+    }
+
     const { id } = request.params as { id: string };
     const result = await groupCategoryUseCase.deleteGroupCategory(id);
     if (result === null) {

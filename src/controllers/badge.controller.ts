@@ -89,6 +89,7 @@ export class BadgeController {
     const { id } = request.params as { id: string };
     return await badgeUseCase.deleteBadge(id);
   };
+
   importBadge = async (request: FastifyRequest, reply: FastifyReply) => {
     // Security: Only allow administrators to perform mass imports of global resources
     if (!isAdmin(request.user)) {

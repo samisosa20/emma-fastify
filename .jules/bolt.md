@@ -61,3 +61,7 @@
 ## 2026-05-30 - [O(1) Transfer Pairing in Movement Import]
 **Learning:** Performing a database lookup (`findFirst`) inside a loop for pairing transfer movements during an import creates an N+1 bottleneck. Since paired movements are imported in the same batch, they can be linked in-memory.
 **Action:** Use a `Map` with a composite key (`${accountId}-${date}-${amount}-${categoryId}`) to cache newly created movements during the import loop for O(1) pairing lookups.
+
+## 2026-05-31 - [Database Query Consolidation in Balance History]
+**Learning:** Making three independent database queries for different periods (current, last year, previous) in `reportBalanceHistory` adds significant network latency and database roundtrip overhead.
+**Action:** Consolidate these into a single `prisma.vw_historybalance.findMany` call with an `OR` filter for all three date ranges, and use a shared `Map` for O(1) in-memory data assembly.

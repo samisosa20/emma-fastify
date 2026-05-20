@@ -38,7 +38,7 @@ export class UserRepositoryPrismaPostgres implements IUserRepository {
       },
     });
 
-    const { password: _, ...userWithoutPassword } = newUser as any;
+    const { password: _, tokenRecoveryPassword: __, ...userWithoutPassword } = newUser as any;
     return userWithoutPassword;
   }
   public async listUser(
@@ -58,7 +58,7 @@ export class UserRepositoryPrismaPostgres implements IUserRepository {
 
     return {
       content: content.map((user) => {
-        const { password: _, ...userWithoutPassword } = user as any;
+        const { password: _, tokenRecoveryPassword: __, ...userWithoutPassword } = user as any;
         return userWithoutPassword;
       }),
       meta,
@@ -107,7 +107,7 @@ export class UserRepositoryPrismaPostgres implements IUserRepository {
         },
       });
 
-      const { password: _, ...userWithoutPassword } = updatedUser as any;
+      const { password: _, tokenRecoveryPassword: __, ...userWithoutPassword } = updatedUser as any;
       return userWithoutPassword;
     } catch (error: any) {
       throw Object.assign(new Error("Validation Error"), {
@@ -125,7 +125,7 @@ export class UserRepositoryPrismaPostgres implements IUserRepository {
 
       if (!user) return null;
 
-      const { password: _, ...userWithoutPassword } = user as any;
+      const { password: _, tokenRecoveryPassword: __, ...userWithoutPassword } = user as any;
       return userWithoutPassword;
     } catch (error: any) {
       throw Object.assign(new Error("Validation Error"), {
@@ -141,7 +141,7 @@ export class UserRepositoryPrismaPostgres implements IUserRepository {
         where: { id },
       });
 
-      const { password: _, ...userWithoutPassword } = deletedUser as any;
+      const { password: _, tokenRecoveryPassword: __, ...userWithoutPassword } = deletedUser as any;
       return userWithoutPassword;
     } catch (error: any) {
       throw Object.assign(new Error("Validation Error"), {

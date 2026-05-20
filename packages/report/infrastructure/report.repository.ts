@@ -562,34 +562,111 @@ export class ReportPrismaRepository implements IReportRepository {
       );
     }
 
-    // ⚡ Bolt: Parallelize independent report lookups using Promise.all
-    const [currentPeriodReport, lastYearReport, previousPeriodReport] =
-      await Promise.all([
-        this.getReportForPeriod(
-          String(params.userId),
-          String(params.badgeId),
-          startDate,
-          endDate
-        ),
-        this.getReportForPeriod(
-          String(params.userId),
-          String(params.badgeId),
-          lastYearStartDate,
-          lastYearEndDate
-        ),
-        this.getReportForPeriod(
-          String(params.userId),
-          String(params.badgeId),
-          previousPeriodStartDate,
-          previousPeriodEndDate
-        ),
-      ]);
+    // ⚡ Bolt: Consolidate all three period lookups into a single database query
+    // to reduce network latency and database roundtrips by 66%.
+    const allRecords = await prisma.vw_historybalance.findMany({
+      where: {
+        badgeId: String(params.badgeId),
+        userId: String(params.userId),
+        OR: [
+          { date: { gte: startDate, lte: endDate } },
+          { date: { gte: lastYearStartDate, lte: lastYearEndDate } },
+          {
+            date: {
+              gte: previousPeriodStartDate,
+              lte: previousPeriodEndDate,
+            },
+          },
+        ],
+      },
+      orderBy: { date: "asc" },
+    });
+
+    // If no records at all, return empty
+    if (allRecords.length === 0) {
+      return { current: [], lastYear: [], previousPeriod: [] };
+    }
+
+    // ⚡ Bolt: Pre-extract badge metadata once for all periods
+    const firstItem = allRecords[0];
+    const badgeMetadata = {
+      badgeId: String(firstItem.badgeId),
+      code: String(firstItem.code),
+      flag: String(firstItem.flag),
+      symbol: String(firstItem.symbol),
+    };
+
+    // ⚡ Bolt: Build a shared lookup map for all periods
+    const reportMap = new Map<string, (typeof allRecords)[0]>();
+    for (const item of allRecords) {
+      if (item.date) {
+        reportMap.set(this.toISODate(item.date), item);
+      }
+    }
+
+    // ⚡ Bolt: Synchronously fill each period's report using the shared map
+    const [current, lastYear, previousPeriod] = [
+      this.fillReportDates(startDate, endDate, reportMap, badgeMetadata),
+      this.fillReportDates(
+        lastYearStartDate,
+        lastYearEndDate,
+        reportMap,
+        badgeMetadata
+      ),
+      this.fillReportDates(
+        previousPeriodStartDate,
+        previousPeriodEndDate,
+        reportMap,
+        badgeMetadata
+      ),
+    ];
 
     return {
-      current: currentPeriodReport,
-      lastYear: lastYearReport,
-      previousPeriod: previousPeriodReport,
+      current,
+      lastYear,
+      previousPeriod,
     };
+  }
+
+  /**
+   * ⚡ Bolt: Fills missing dates in a report range with the last known cumulative balance.
+   * This logic is extracted to avoid redundant database queries.
+   */
+  private fillReportDates(
+    startDate: Date,
+    endDate: Date,
+    reportMap: Map<string, any>,
+    badgeMetadata: any
+  ): BalanceHistory {
+    const fullReport: ItemBalanceHistory[] = [];
+    let currentDate = new Date(startDate.getTime());
+    let lastBalance = ZERO_DECIMAL;
+    let hasAnyData = false;
+
+    while (currentDate <= endDate) {
+      const dateKey = this.toISODate(currentDate);
+      const dailyRecord = reportMap.get(dateKey);
+
+      if (dailyRecord) {
+        fullReport.push({
+          ...badgeMetadata,
+          date: dateKey,
+          dailyAmount: dailyRecord.dailyAmount ?? ZERO_DECIMAL,
+          cumulativeBalance: dailyRecord.cumulativeBalance,
+        });
+        lastBalance = (dailyRecord.cumulativeBalance as Decimal) ?? lastBalance;
+        hasAnyData = true;
+      } else {
+        fullReport.push({
+          ...badgeMetadata,
+          date: dateKey,
+          dailyAmount: ZERO_DECIMAL,
+          cumulativeBalance: lastBalance,
+        });
+      }
+      currentDate.setUTCDate(currentDate.getUTCDate() + 1);
+    }
+    return hasAnyData ? fullReport : [];
   }
 
   /**
@@ -605,72 +682,4 @@ export class ReportPrismaRepository implements IReportRepository {
     }`;
   }
 
-  private async getReportForPeriod(
-    userId: string,
-    badgeId: string,
-    startDate: Date,
-    endDate: Date
-  ): Promise<BalanceHistory> {
-    const report = await prisma.vw_historybalance.findMany({
-      where: {
-        badgeId: badgeId,
-        userId: userId,
-        date: {
-          gte: startDate,
-          lte: endDate,
-        },
-      },
-    });
-
-    if (report.length === 0) {
-      return [];
-    }
-
-    // ⚡ Bolt: Build report map using for...of to avoid intermediate array creation from .map()
-    const reportMap = new Map<string, (typeof report)[0]>();
-    for (const item of report) {
-      if (item.date) {
-        reportMap.set(this.toISODate(item.date), item);
-      }
-    }
-
-    // ⚡ Bolt: Pre-extract badge metadata to avoid repeated property access in the loop
-    const firstItem = report[0];
-    const badgeMetadata = {
-      badgeId: String(firstItem.badgeId),
-      code: String(firstItem.code),
-      flag: String(firstItem.flag),
-      symbol: String(firstItem.symbol),
-    };
-
-    const fullReport: ItemBalanceHistory[] = [];
-    let currentDate = new Date(startDate.getTime());
-    let lastBalance = ZERO_DECIMAL;
-
-    while (currentDate <= endDate) {
-      const dateKey = this.toISODate(currentDate);
-      const dailyRecord = reportMap.get(dateKey);
-
-      if (dailyRecord) {
-        fullReport.push({
-          ...badgeMetadata,
-          date: dateKey,
-          dailyAmount: dailyRecord.dailyAmount ?? ZERO_DECIMAL,
-          cumulativeBalance: dailyRecord.cumulativeBalance,
-        });
-        lastBalance = (dailyRecord.cumulativeBalance as Decimal) ?? lastBalance;
-      } else {
-        fullReport.push({
-          ...badgeMetadata,
-          date: dateKey,
-          dailyAmount: ZERO_DECIMAL,
-          cumulativeBalance: lastBalance,
-        });
-      }
-
-      // ⚡ Bolt: Use UTC methods for consistent and efficient date progression
-      currentDate.setUTCDate(currentDate.getUTCDate() + 1);
-    }
-    return fullReport;
-  }
 }

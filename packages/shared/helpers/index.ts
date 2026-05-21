@@ -39,7 +39,9 @@ export async function sendEmail(to: string, subject: string, html: string) {
 
 export async function sendEmailConfirmation(email: string, token: string) {
   // Create a confirmation URL
-  const confirmationUrl = `${process.env.APP_URL}/confirm-email?token=${token}&email=${email}`;
+  const encodedEmail = encodeURIComponent(email);
+  const encodedToken = encodeURIComponent(token);
+  const confirmationUrl = `${process.env.APP_URL}/confirm-email?token=${encodedToken}&email=${encodedEmail}`;
   // Send the confirmation email
   await sendEmail(
     email,

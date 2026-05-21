@@ -58,6 +58,7 @@ export const auth = betterAuth({
         user: {
           ...user,
           isConfirmed: !!userFromDb?.confirmedEmailAt,
+          confirmedEmailAt: userFromDb?.confirmedEmailAt,
           badgeId: userFromDb?.badgeId,
         },
         session: {

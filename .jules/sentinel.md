@@ -55,3 +55,8 @@
 **Vulnerability:** Hashed passwords were leaked in API responses because repositories returned full Prisma objects despite TypeScript `Omit` signatures. Also, internal lookups for common resources (like the "Transferencia" category) lacked `userId` scoping, leading to IDOR.
 **Learning:** TypeScript's `Omit` and `Pick` types only provide compile-time safety; they do not remove fields from the runtime object, which Prisma returns in full. Furthermore, even "standard" resources must be explicitly scoped to the user to maintain multi-tenant isolation.
 **Prevention:** Explicitly destructure and remove sensitive fields from database results before they leave the repository. Always include `userId` in Prisma `where` clauses, even when searching for resources by unique names or types.
+
+## 2026-05-20 - [Administrative Privilege Escalation via Unconfirmed Email]
+**Vulnerability:** The `isAdmin` helper only checked the user's email against an environment variable, allowing any unconfirmed account with the administrator's email to gain full administrative access.
+**Learning:** Authentication (identity) and verification (proof of ownership) are distinct. Role-based access control (RBAC) must depend on verified identities to prevent spoofing or account pre-claiming attacks.
+**Prevention:** Always verify that an account is confirmed (`confirmedEmailAt` is not null) before granting administrative or elevated privileges.

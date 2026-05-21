@@ -88,19 +88,13 @@ export class AuthController {
       expiresIn: `${process.env.JWT_EXPIRES_IN}`,
     });
 
-    const badges = await badgeUseCase.listBadge({
-      page: 0,
-    });
-
-    const accountsType = await accountTypeUseCase.listAccountType({
-      page: 0,
-    });
-    const periods = await periodUseCase.listPeriod({
-      page: 0,
-    });
-    const groupsCategory = await groupCategoryUseCase.listGroupCategory({
-      page: 0,
-    });
+    // ⚡ Bolt: Parallelize metadata fetching to reduce login latency.
+    const [badges, accountsType, periods, groupsCategory] = await Promise.all([
+      badgeUseCase.listBadge({ page: 0 }),
+      accountTypeUseCase.listAccountType({ page: 0 }),
+      periodUseCase.listPeriod({ page: 0 }),
+      groupCategoryUseCase.listGroupCategory({ page: 0 }),
+    ]);
 
     const { id, ...data } = login;
 

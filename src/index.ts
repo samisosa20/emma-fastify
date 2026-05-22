@@ -16,6 +16,15 @@ import "./jobs/insertMovements.jobs";
 // Start the server
 const bootstrap = async () => {
   const fastify = Fastify({ logger: true, disableRequestLogging: true });
+
+  // Security Headers: Implement standard protection against common web attacks.
+  fastify.addHook("onSend", async (_request, reply, _payload) => {
+    reply.header("X-Content-Type-Options", "nosniff");
+    reply.header("X-Frame-Options", "DENY");
+    reply.header("X-XSS-Protection", "1; mode=block");
+    reply.header("Strict-Transport-Security", "max-age=31536000; includeSubDomains");
+  });
+
   try {
     await registerDecorators(fastify);
 

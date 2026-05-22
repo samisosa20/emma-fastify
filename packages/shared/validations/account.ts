@@ -5,6 +5,7 @@ export const AccountCreateInput = z.object({
   name: z.string({ message: "name is required" }).min(1).max(100),
   description: z
     .string({ message: "description is required" })
+    .max(500)
     .nullable()
     .optional(),
   badgeId: z.uuid({ message: "badgeId is required" }),

@@ -4,7 +4,7 @@ import { z } from "zod";
 export const MovementCreateInput = z.object({
   description: z
     .string({ message: "description is required" })
-    .max(255)
+    .max(500)
     .nullable()
     .optional(),
   amount: z.number({ message: "amount is required" }),

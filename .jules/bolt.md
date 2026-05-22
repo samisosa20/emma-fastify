@@ -65,3 +65,7 @@
 ## 2026-05-31 - [Database Query Consolidation in Balance History]
 **Learning:** Making three independent database queries for different periods (current, last year, previous) in `reportBalanceHistory` adds significant network latency and database roundtrip overhead.
 **Action:** Consolidate these into a single `prisma.vw_historybalance.findMany` call with an `OR` filter for all three date ranges, and use a shared `Map` for O(1) in-memory data assembly.
+
+## 2026-05-21 - [Parallelize Login Metadata Fetching]
+**Learning:** Fetching multiple independent metadata collections (Badges, AccountTypes, Periods, GroupCategories) sequentially during login increases response latency.
+**Action:** Use `Promise.all` to fetch all required metadata in parallel to minimize the total wait time for the client.

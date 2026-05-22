@@ -155,6 +155,7 @@ export class UserRepositoryPrismaPostgres implements IUserRepository {
     email: string,
     password: string
   ): Promise<UserLogin | ErrorMessage> {
+    // ⚡ Bolt: Consolidate user and "Transferencia" category lookup into a single query to reduce database roundtrips.
     const user = await prisma.user.findFirst({
       where: {
         email,
@@ -171,22 +172,17 @@ export class UserRepositoryPrismaPostgres implements IUserRepository {
         phone: true,
         phoneCode: true,
         badgeId: true,
-      },
-    });
-
-    const transferId = await prisma.category.findFirst({
-      where: {
-        name: "Transferencia",
-        userId: user?.id,
-      },
-      select: {
-        id: true,
+        Category: {
+          where: { name: "Transferencia" },
+          select: { id: true },
+          take: 1,
+        },
       },
     });
 
     if (
-      !transferId ||
       !user ||
+      user.Category.length === 0 ||
       !user.password ||
       !(await verifyPassword(password, user.password))
     ) {
@@ -197,9 +193,9 @@ export class UserRepositoryPrismaPostgres implements IUserRepository {
       };
     }
 
-    const { password: pssd, ...userWithOutPassword } = user;
+    const { password: pssd, Category, ...userWithOutPassword } = user;
 
-    return { ...userWithOutPassword, transferId: transferId.id };
+    return { ...userWithOutPassword, transferId: Category[0].id };
   }
 
   public async emailConfirmation(
@@ -220,6 +216,7 @@ export class UserRepositoryPrismaPostgres implements IUserRepository {
     }
 
     // Mark the user's email as confirmed
+    // ⚡ Bolt: Consolidate user and "Transferencia" category lookup into a single query to reduce database roundtrips.
     const user = await prisma.user.findFirst({
       where: { email },
       select: {
@@ -231,20 +228,15 @@ export class UserRepositoryPrismaPostgres implements IUserRepository {
         phone: true,
         phoneCode: true,
         badgeId: true,
+        Category: {
+          where: { name: "Transferencia" },
+          select: { id: true },
+          take: 1,
+        },
       },
     });
 
-    const transferId = await prisma.category.findFirst({
-      where: {
-        name: "Transferencia",
-        userId: user?.id,
-      },
-      select: {
-        id: true,
-      },
-    });
-
-    if (!transferId || !user) {
+    if (!user || user.Category.length === 0) {
       return {
         statusCode: 401,
         message: "Invalid user",
@@ -262,9 +254,9 @@ export class UserRepositoryPrismaPostgres implements IUserRepository {
       where: { id: storedToken.id },
     });
 
-    const { password: pssd, ...userWithOutPassword } = user;
+    const { password: pssd, Category, ...userWithOutPassword } = user;
 
-    return { ...userWithOutPassword, transferId: transferId.id };
+    return { ...userWithOutPassword, transferId: Category[0].id };
   }
 
   public async sendEmailConfirmation(

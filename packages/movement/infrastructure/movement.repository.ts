@@ -14,7 +14,7 @@ import {
   handleShowDeleteData,
 } from "packages/shared";
 import { APIResponse } from "packages/badge/infrastructure/badge.repository"; // Asumiendo APIResponse para el token
-import { includes } from "zod";
+import { randomUUID } from "node:crypto";
 
 // Define el tipo para un solo objeto de movimiento de la API externa
 interface APIMovementsResponse {
@@ -600,16 +600,33 @@ export class MovementPrismaRepository implements IMovementRepository {
       const categoriesMap = new Map(userCategories.map((c) => [c.name, c]));
       const eventsMap = new Map(userEvents.map((e) => [e.name, e]));
       const investmentsMap = new Map(userInvestments.map((i) => [i.name, i]));
-      // ⚡ Bolt: Use a Map to cache newly created movements to eliminate N+1 database calls during transfer pairing.
-      const importedMovementsMap = new Map<string, string>();
 
-      // 3. Procesar los movimientos y prepararlos para la inserción masiva
+      // ⚡ Bolt: Use createMany for bulk insertion. Pre-generate UUIDs to handle transfer pairing in-memory.
+      // This reduces database roundtrips from N to 1, significantly improving import performance.
+      const movementsToCreate: any[] = [];
+      const fingerprintsMap = new Map<string, string>(); // fingerprint -> generated ID
+
+      // Pass 1: Pre-generate IDs and map fingerprints for all movements to enable pairing.
+      for (const movement of oldMovements) {
+        const account = accountsMap.get(movement.account.name);
+        const category = categoriesMap.get(movement.category.name);
+        if (!account || !category) continue;
+
+        const id = randomUUID();
+        const fingerprint = `${account.id}-${new Date(
+          movement.date_purchase
+        ).getTime()}-${movement.amount}-${category.id}`;
+        fingerprintsMap.set(fingerprint, id);
+        (movement as any).generatedId = id;
+      }
+
+      // Pass 2: Build creation objects with paired transfer IDs in-memory.
       for (const movement of oldMovements) {
         // Lookup Account by name
         const account = accountsMap.get(movement.account.name);
         if (!account) {
           console.warn(
-            `Account '${movement.account.name}' not found for movement '${movement.description}'. Skipping this movement.`
+            `Account '${movement.account.name}' not found for movement '${movement.description}'. Skipping.`
           );
           continue;
         }
@@ -618,7 +635,7 @@ export class MovementPrismaRepository implements IMovementRepository {
         const category = categoriesMap.get(movement.category.name);
         if (!category) {
           console.warn(
-            `Category '${movement.category.name}' not found for movement '${movement.description}'. Skipping this movement.`
+            `Category '${movement.category.name}' not found for movement '${movement.description}'. Skipping.`
           );
           continue;
         }
@@ -633,7 +650,6 @@ export class MovementPrismaRepository implements IMovementRepository {
             console.warn(
               `Event '${movement.event.name}' not found for movement '${movement.description}'. Skipping event association.`
             );
-            continue;
           }
         }
 
@@ -647,38 +663,26 @@ export class MovementPrismaRepository implements IMovementRepository {
             console.warn(
               `Investment '${movement.investment.name}' not found for movement '${movement.description}'. Skipping investment association.`
             );
-            continue;
           }
         }
 
         // Lookup TransferIn (optional)
-        let transferInId: string | null = null;
+        let transferId: string | null = null;
         if (movement.transfer_out) {
           const accountTransfer = accountsMap.get(
             movement.transfer_out.account.name
           );
-          if (!accountTransfer) {
-            console.warn(
-              `Account '${movement.transfer_out.account.name}' not found for transfer movement. Skipping transfer association.`
-            );
-          } else {
-            // ⚡ Bolt: Optimized transfer pairing using O(1) in-memory lookup instead of O(N) database roundtrips.
+          if (accountTransfer) {
+            // ⚡ Bolt: Link paired transfer movements in-memory using pre-generated UUIDs.
             const searchKey = `${accountTransfer.id}-${new Date(
               movement.transfer_out.date_purchase
             ).getTime()}-${movement.transfer_out.amount}-${category.id}`;
-            const transferInMovementId = importedMovementsMap.get(searchKey);
-
-            if (transferInMovementId) {
-              transferInId = transferInMovementId;
-            } else {
-              console.warn(
-                `TransferIn movement '${movement.id}' on '${movement.transfer_out.date_purchase}' not found in cache. Skipping transferIn association.`
-              );
-            }
+            transferId = fingerprintsMap.get(searchKey) || null;
           }
         }
 
-        const data = {
+        movementsToCreate.push({
+          id: (movement as any).generatedId,
           description: movement.description,
           amount: movement.amount,
           datePurchase: new Date(movement.date_purchase),
@@ -686,28 +690,22 @@ export class MovementPrismaRepository implements IMovementRepository {
           addWithdrawal: movement.add_withdrawal,
           accountId: account.id,
           categoryId: category.id,
-          eventId: eventId,
-          transferId: transferInId,
-          userId: userId,
-          investmentId: investmentId,
+          eventId,
+          transferId,
+          userId,
+          investmentId,
           createdAt: new Date(movement.created_at),
           updatedAt: new Date(movement.updated_at),
-        } as Omit<CreateMovement, "type">;
-
-        const move = await prisma.movement.create({
-          data,
         });
-        if (move) {
-          // ⚡ Bolt: Cache the created movement to enable O(1) pairing for subsequent transfer movements.
-          const cacheKey = `${data.accountId}-${data.datePurchase.getTime()}-${
-            data.amount
-          }-${data.categoryId}`;
-          importedMovementsMap.set(cacheKey, move.id);
-          count++;
-        }
       }
+
+      const result = await prisma.movement.createMany({
+        data: movementsToCreate,
+        skipDuplicates: true,
+      });
+
       return {
-        movementCount: count,
+        movementCount: result.count,
       };
     } catch (error: unknown) {
       console.error("Error importing movements:", error);

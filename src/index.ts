@@ -15,6 +15,14 @@ import "./jobs/insertMovements.jobs";
 
 // Start the server
 const bootstrap = async () => {
+  // Security: Enforce required environment variables at startup
+  const requiredEnv = ["JWT_SECRET", "BETTER_AUTH_SECRET", "APP_URL"];
+  for (const env of requiredEnv) {
+    if (!process.env[env]) {
+      throw new Error(`Environment variable ${env} is not defined`);
+    }
+  }
+
   const fastify = Fastify({ logger: true, disableRequestLogging: true });
 
   // Security Headers: Implement standard protection against common web attacks.
@@ -22,7 +30,17 @@ const bootstrap = async () => {
     reply.header("X-Content-Type-Options", "nosniff");
     reply.header("X-Frame-Options", "DENY");
     reply.header("X-XSS-Protection", "1; mode=block");
-    reply.header("Strict-Transport-Security", "max-age=31536000; includeSubDomains");
+    reply.header(
+      "Strict-Transport-Security",
+      "max-age=31536000; includeSubDomains"
+    );
+    reply.header("Content-Security-Policy", "default-src 'self'");
+    reply.header("Referrer-Policy", "no-referrer");
+    reply.header(
+      "Permissions-Policy",
+      "geolocation=(), microphone=(), camera=()"
+    );
+    reply.header("X-Permitted-Cross-Domain-Policies", "none");
   });
 
   try {
@@ -56,12 +74,8 @@ const bootstrap = async () => {
     });
     await fastify.after();
 
-    if (!process.env.JWT_SECRET) {
-      throw new Error("JWT_SECRET is not defined");
-    }
-
     fastify.register(fastifyJwt, {
-      secret: process.env.JWT_SECRET,
+      secret: process.env.JWT_SECRET!,
     });
     await fastify.listen({
       port: Number(process.env.PORT) || 8010,

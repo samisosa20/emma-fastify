@@ -60,3 +60,13 @@
 **Vulnerability:** The `isAdmin` helper only checked the user's email against an environment variable, allowing any unconfirmed account with the administrator's email to gain full administrative access.
 **Learning:** Authentication (identity) and verification (proof of ownership) are distinct. Role-based access control (RBAC) must depend on verified identities to prevent spoofing or account pre-claiming attacks.
 **Prevention:** Always verify that an account is confirmed (`confirmedEmailAt` is not null) before granting administrative or elevated privileges.
+
+## 2026-05-21 - [Host Header Injection in Auth Proxy]
+**Vulnerability:** The authentication proxy route was using the untrusted `Host` header to construct URLs for Better-Auth, making the application vulnerable to Host Header Injection attacks.
+**Learning:** Even when using well-known libraries like Better-Auth, manually proxying requests to their handlers can introduce common web vulnerabilities if untrusted headers are used for URL construction.
+**Prevention:** Always use a trusted `APP_URL` from the environment for constructing internal or external absolute URLs instead of relying on client-provided headers like `Host`.
+
+## 2026-05-21 - [Invalid Zod Method in Validation Schema]
+**Vulnerability:** The movement validation schema was using `z.iso.datetime`, which is not a standard Zod method, leading to potential silent validation failures or runtime errors.
+**Learning:** Relying on non-existent or non-standard validation methods can leave critical data ingestion paths unprotected. TypeScript might not always catch these errors depending on how the types are defined or if they are cast to `any`.
+**Prevention:** Strictly use standard, well-documented validation methods (e.g., `z.string().datetime()`) and always verify schema correctness through automated builds and functional tests.

@@ -16,7 +16,9 @@ const authRoutes: FastifyPluginAsync = async (fastify) => {
   const authController = new AuthController(fastify);
 
   fastify.all("/*", async (request, reply) => {
-    const url = new URL(request.url, `http://${request.headers.host}`);
+    // Security: Use the trusted APP_URL environment variable for constructing the URL
+    // instead of the potentially spoofed Host header to prevent Host Header Injection.
+    const url = new URL(request.url, process.env.APP_URL);
     const headers = fromNodeHeaders(request.headers);
 
     const req = new Request(url.toString(), {

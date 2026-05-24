@@ -70,3 +70,8 @@
 **Vulnerability:** The movement validation schema was using `z.iso.datetime`, which is not a standard Zod method, leading to potential silent validation failures or runtime errors.
 **Learning:** Relying on non-existent or non-standard validation methods can leave critical data ingestion paths unprotected. TypeScript might not always catch these errors depending on how the types are defined or if they are cast to `any`.
 **Prevention:** Strictly use standard, well-documented validation methods (e.g., `z.string().datetime()`) and always verify schema correctness through automated builds and functional tests.
+
+## 2026-05-22 - [IDOR in Account Detail and Balance Aggregation]
+**Vulnerability:** `AccountPrismaRepository.detailAccount` failed to include the `userId` filter in its Prisma queries, allowing any authenticated user to view metadata and calculated balances for any account by guessing its UUID.
+**Learning:** Method signatures that accept security context (like `userId`) are "security theater" if those parameters aren't explicitly passed into every database operation within the method, including secondary operations like aggregations.
+**Prevention:** Always scope all Prisma operations (find, aggregate, update, delete) by the authenticated `userId` in multi-tenant environments.

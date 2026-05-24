@@ -228,14 +228,14 @@ export class AccountPrismaRepository implements IAccountRepository {
       // We remove 'movements' include to avoid fetching all records in-memory.
       const [accountData, movementSum] = await Promise.all([
         prisma.account.findFirst({
-          where: { id },
+          where: { id, userId },
           include: {
             badge: true,
             type: true,
           },
         }),
         prisma.movement.aggregate({
-          where: { accountId: id },
+          where: { accountId: id, userId },
           _sum: {
             amount: true,
           },

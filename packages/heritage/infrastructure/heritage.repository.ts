@@ -1,4 +1,5 @@
 import { Decimal } from "@prisma/client/runtime/library";
+const ZERO_DECIMAL = new Decimal(0); // ⚡ Bolt: Global constant to avoid redundant object allocations
 import {
   Heritage,
   CreateHeritage,
@@ -517,41 +518,48 @@ export class HeritagePrismaRepository implements IHeritageRepository {
       }
     }
 
-    // 2. Fetch data compartida una sola vez
-    const [accounts, badges] = await Promise.all([
+    // 2. ⚡ Bolt: Hoist independent data fetching outside the loop and parallelize retrieval.
+    // Fetching all heritages and appreciations once for the user reduces database roundtrips.
+    const [accounts, badges, allHeritages, allAppreciations] = await Promise.all([
       prisma.account.findMany({
         where: { userId },
         select: { id: true, badgeId: true, initAmount: true, createdAt: true },
       }),
       prisma.badge.findMany(),
+      prisma.heritage.findMany({
+        where: { userId, ...(year && { year: Number(year) }) },
+        select: { badgeId: true, comercialAmount: true, year: true },
+      }),
+      prisma.investmentAppreciation.findMany({
+        where: { userId },
+        include: { investment: { select: { badgeId: true } } },
+        orderBy: { dateAppreciation: "desc" }, // Sorting desc allows O(N) latest-find in-memory
+      }),
     ]);
 
     const badgesMap = new Map(badges.map((b) => [b.id, b]));
     const reports: HeritageReport[] = [];
 
-    // 3. Calcular el reporte para cada año
-    for (const yearNum of targetYears) {
-      const limitDate = new Date(`${yearNum}-12-31T23:59:59.999Z`);
-
-      const [movements, heritages, appreciations] = await Promise.all([
-        prisma.movement.groupBy({
+    // 3. ⚡ Bolt: Parallelize movement aggregations across all target years to eliminate sequential loops.
+    const movementsByYear = await Promise.all(
+      targetYears.map((yearNum) => {
+        const limitDate = new Date(`${yearNum}-12-31T23:59:59.999Z`);
+        return prisma.movement.groupBy({
           by: ["accountId"],
           where: { userId, datePurchase: { lte: limitDate } },
           _sum: { amount: true },
-        }),
-        prisma.heritage.findMany({
-          where: { userId, year: yearNum },
-          select: { badgeId: true, comercialAmount: true },
-        }),
-        prisma.investmentAppreciation.groupBy({
-          by: ["investmentId"],
-          where: { userId, dateAppreciation: { lte: limitDate } },
-          _max: { dateAppreciation: true },
-        }),
-      ]);
+        });
+      })
+    );
+
+    // 4. Calcular el reporte para cada año utilizando datos en memoria
+    for (let i = 0; i < targetYears.length; i++) {
+      const yearNum = targetYears[i];
+      const limitDate = new Date(`${yearNum}-12-31T23:59:59.999Z`);
+      const movements = movementsByYear[i];
 
       const movementMap = new Map(
-        movements.map((m) => [m.accountId, m._sum.amount || new Decimal(0)])
+        movements.map((m) => [m.accountId, m._sum.amount || ZERO_DECIMAL])
       );
       const totalsByBadge = new Map<string, Decimal>();
 
@@ -565,38 +573,33 @@ export class HeritagePrismaRepository implements IHeritageRepository {
         }
       });
 
-      // B. Valores comerciales de Patrimonios del año
-      heritages.forEach((h) => {
-        const current = totalsByBadge.get(h.badgeId) || new Decimal(0);
-        totalsByBadge.set(
-          h.badgeId,
-          current.plus(new Decimal(h.comercialAmount.toString()))
-        );
-      });
-
-      // C. Valoraciones de inversiones (última de cada una hasta final de año)
-      const cleanedAppreciations = appreciations.filter(
-        (a) => a._max.dateAppreciation !== null
-      );
-      if (cleanedAppreciations.length > 0) {
-        const latestAppreciations = await prisma.investmentAppreciation.findMany({
-          where: {
-            OR: cleanedAppreciations.map((a) => ({
-              investmentId: a.investmentId,
-              dateAppreciation: a._max.dateAppreciation!,
-            })),
-          },
-          include: { investment: { select: { badgeId: true } } },
-        });
-
-        latestAppreciations.forEach((la) => {
-          const current = totalsByBadge.get(la.investment.badgeId) || new Decimal(0);
+      // B. ⚡ Bolt: Use pre-fetched heritages to avoid database calls in the loop (O(N) in-memory filter).
+      allHeritages
+        .filter((h) => h.year === yearNum)
+        .forEach((h) => {
+          const current = totalsByBadge.get(h.badgeId) || ZERO_DECIMAL;
           totalsByBadge.set(
-            la.investment.badgeId,
-            current.plus(new Decimal(la.amount.toString()))
+            h.badgeId,
+            current.plus(new Decimal(h.comercialAmount.toString()))
           );
         });
-      }
+
+      // C. ⚡ Bolt: Find latest investment valuations for the year in-memory (O(N) using sorted list).
+      const investmentProcessed = new Set<string>();
+      allAppreciations.forEach((app) => {
+        if (
+          app.dateAppreciation <= limitDate &&
+          !investmentProcessed.has(app.investmentId)
+        ) {
+          investmentProcessed.add(app.investmentId);
+          const current =
+            totalsByBadge.get(app.investment.badgeId) || ZERO_DECIMAL;
+          totalsByBadge.set(
+            app.investment.badgeId,
+            current.plus(new Decimal(app.amount.toString()))
+          );
+        }
+      });
 
       // Formatear resultados para este año
       const balancesArray = Array.from(totalsByBadge.entries()).map(

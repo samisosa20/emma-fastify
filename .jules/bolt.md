@@ -69,3 +69,7 @@
 ## 2026-05-21 - [Parallelize Login Metadata Fetching]
 **Learning:** Fetching multiple independent metadata collections (Badges, AccountTypes, Periods, GroupCategories) sequentially during login increases response latency.
 **Action:** Use `Promise.all` to fetch all required metadata in parallel to minimize the total wait time for the client.
+
+## 2026-06-05 - [Eliminating Sequential N+1 Queries in Heritage Reporting]
+**Learning:** Performing multiple independent database queries (aggregations, findMany, and latest-record lookups) inside a loop for year-over-year heritage reporting causes severe latency as the number of years grows.
+**Action:** Hoist all data retrieval outside the loop using `Promise.all`, and use sorted lists with `Set` tracking for O(N) in-memory "latest-record" lookups to replicate database logic without roundtrips.

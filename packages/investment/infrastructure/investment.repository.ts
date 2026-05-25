@@ -17,6 +17,8 @@ import {
 } from "packages/shared";
 import { APIResponse } from "packages/badge/infrastructure/badge.repository"; // Asumiendo APIResponse para el token
 
+const ZERO_DECIMAL = new Decimal(0); // ⚡ Bolt: Global constant to avoid redundant object allocations
+
 type APIInvesmentResponse = {
   investments: APIInvestmentItem[];
 };
@@ -177,7 +179,7 @@ export class InvestmentPrismaRepository implements IInvestmentRepository {
     for (const sum of movementSums) {
       if (sum.investmentId) {
         const targetMap = sum.addWithdrawal ? withdrawalsMap : returnsMap;
-        targetMap.set(sum.investmentId, sum._sum.amount || new Decimal(0));
+        targetMap.set(sum.investmentId, sum._sum.amount || ZERO_DECIMAL);
       }
     }
 
@@ -186,20 +188,21 @@ export class InvestmentPrismaRepository implements IInvestmentRepository {
     );
 
     const indicatorsInvestment = content.map((investment) => {
-      const totalReturnsDecimal = returnsMap.get(investment.id) || new Decimal(0);
+      const totalReturnsDecimal = returnsMap.get(investment.id) || ZERO_DECIMAL;
 
-      // ⚡ Bolt: Handle potential null/undefined for initAmount safely before converting to String/Decimal.
+      // ⚡ Bolt: Use a consistent way to handle Prisma's Decimal vs runtime number/Decimal types.
+      // We convert to Decimal object once if it's not already, ensuring method availability without unsafe casting.
       const initialAmountDecimal = new Decimal((investment.initAmount ?? 0).toString());
-      const movementsWithdrawalSum = withdrawalsMap.get(investment.id) || new Decimal(0);
+      const movementsWithdrawalSum = withdrawalsMap.get(investment.id) || ZERO_DECIMAL;
 
       // totalWithdrawal calculated with Decimal precision.
       // Withdrawals decrease the total net invested capital.
       const totalWithdrawalDecimal = initialAmountDecimal.minus(movementsWithdrawalSum);
 
       const lastAppreciationAmount = appreciationMap.get(investment.id);
-      const endAmountDecimal = new Decimal(
-        (lastAppreciationAmount ?? investment.initAmount ?? 0).toString()
-      );
+      const endAmountDecimal = lastAppreciationAmount
+        ? new Decimal(lastAppreciationAmount.toString())
+        : initialAmountDecimal;
 
       let valorization = "0.00%";
       if (!totalWithdrawalDecimal.isZero()) {
@@ -403,21 +406,21 @@ export class InvestmentPrismaRepository implements IInvestmentRepository {
     const movements = investment.movements || [];
     const appreciations = investment.appreciations || [];
 
-    const totalReturns = movements
+    const totalReturnsDecimal = movements
       .filter((m) => !m.addWithdrawal)
       .reduce(
-        (acc, movement) => acc.plus(new Decimal(movement.amount || 0)),
-        new Decimal(0)
-      )
-      .toNumber();
+        (acc, movement) => acc.plus(new Decimal((movement.amount || 0).toString())),
+        ZERO_DECIMAL
+      );
+    const totalReturns = totalReturnsDecimal.toNumber();
 
-    const initialAmountDecimal = new Decimal(investment.initAmount || 0);
+    const initialAmountDecimal = new Decimal((investment.initAmount || 0).toString());
     const movementsWithdrawalSum = movements
       .filter((m) => m.addWithdrawal)
       .reduce(
         (acc, movement) =>
-          acc.plus(new Decimal(movement.amount || 0).times(-1)),
-        new Decimal(0)
+          acc.plus(new Decimal((movement.amount || 0).toString()).times(-1)),
+        ZERO_DECIMAL
       );
 
     // totalWithdrawal como número (pero calculado con Decimal.js para precisión)
@@ -427,17 +430,16 @@ export class InvestmentPrismaRepository implements IInvestmentRepository {
 
     const lastAppreciation =
       appreciations.length > 0 ? appreciations[appreciations.length - 1] : null;
-    const endAmountDecimal = new Decimal(
-      lastAppreciation?.amount ?? investment.initAmount ?? 0
-    );
+    const endAmountDecimal = lastAppreciation?.amount
+      ? new Decimal(lastAppreciation.amount.toString())
+      : initialAmountDecimal;
     const endAmount = endAmountDecimal.toNumber();
 
     // --- Cálculos de Porcentajes con Dos Decimales ---
 
-    // Aquí, convertimos totalWithdrawal a Decimal para los cálculos,
-    // si es que 'totalWithdrawal' es un número
-    const totalWithdrawalForCalculations = new Decimal(totalWithdrawal);
-    const totalReturnsForCalculations = new Decimal(totalReturns);
+    // ⚡ Bolt: Avoid redundant Decimal allocations for values that can be derived from existing Decimal objects.
+    const totalWithdrawalForCalculations = initialAmountDecimal.plus(movementsWithdrawalSum);
+    const totalReturnsForCalculations = totalReturnsDecimal;
 
     let valorization = "0.00%";
     if (totalWithdrawalForCalculations.isZero()) {

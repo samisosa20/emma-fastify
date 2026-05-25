@@ -46,6 +46,11 @@ export class ReportPrismaRepository implements IReportRepository {
       ZERO_DECIMAL
     );
 
+    // ⚡ Bolt: Hoist badge metadata to avoid repeated property access in the loop.
+    const badgeCode = badge?.code;
+    const badgeSymbol = badge?.symbol;
+    const badgeFlag = badge?.flag;
+
     // 2. Agregar % de participación
     const reportWithPercentage = report.map((item) => {
       // Asegúrate de que los cálculos se hacen con Decimal
@@ -59,12 +64,12 @@ export class ReportPrismaRepository implements IReportRepository {
 
       return {
         ...item,
-        amount: (item.amount ?? new Decimal(0)).abs(),
+        amount: itemAmountAbsoluto,
         // Asegúrate de que `participation` sea un tipo `Decimal` o conviértelo a `string`
         participation: participation.toFixed(1),
-        code: badge?.code,
-        symbol: badge?.symbol,
-        flag: badge?.flag,
+        code: badgeCode,
+        symbol: badgeSymbol,
+        flag: badgeFlag,
       };
     });
 
@@ -98,6 +103,11 @@ export class ReportPrismaRepository implements IReportRepository {
       ZERO_DECIMAL
     );
 
+    // ⚡ Bolt: Hoist badge metadata to avoid repeated property access in the loop.
+    const badgeCode = badge?.code;
+    const badgeSymbol = badge?.symbol;
+    const badgeFlag = badge?.flag;
+
     // 2. Agregar % de participación
     const reportWithPercentage = report.map((item) => {
       // Asegúrate de que los cálculos se hacen con Decimal
@@ -111,12 +121,12 @@ export class ReportPrismaRepository implements IReportRepository {
 
       return {
         ...item,
-        amount: (item.amount ?? new Decimal(0)).abs(),
+        amount: itemAmountAbsoluto,
         // Asegúrate de que `participation` sea un tipo `Decimal` o conviértelo a `string`
         participation: participation.toFixed(1),
-        code: badge?.code,
-        symbol: badge?.symbol,
-        flag: badge?.flag,
+        code: badgeCode,
+        symbol: badgeSymbol,
+        flag: badgeFlag,
       };
     });
 
@@ -150,6 +160,11 @@ export class ReportPrismaRepository implements IReportRepository {
       ZERO_DECIMAL
     );
 
+    // ⚡ Bolt: Hoist badge metadata to avoid repeated property access in the loop.
+    const badgeCode = badge?.code;
+    const badgeSymbol = badge?.symbol;
+    const badgeFlag = badge?.flag;
+
     // 2. Agregar % de participación
     const reportWithPercentage = report.map((item) => {
       // Asegúrate de que los cálculos se hacen con Decimal
@@ -163,12 +178,12 @@ export class ReportPrismaRepository implements IReportRepository {
 
       return {
         ...item,
-        amount: (item.amount ?? new Decimal(0)).abs(),
+        amount: itemAmountAbsoluto,
         // Asegúrate de que `participation` sea un tipo `Decimal` o conviértelo a `string`
         participation: participation.toFixed(1),
-        code: badge?.code,
-        symbol: badge?.symbol,
-        flag: badge?.flag,
+        code: badgeCode,
+        symbol: badgeSymbol,
+        flag: badgeFlag,
       };
     });
 
@@ -202,6 +217,11 @@ export class ReportPrismaRepository implements IReportRepository {
       ZERO_DECIMAL
     );
 
+    // ⚡ Bolt: Hoist badge metadata to avoid repeated property access in the loop.
+    const badgeCode = badge?.code;
+    const badgeSymbol = badge?.symbol;
+    const badgeFlag = badge?.flag;
+
     // 2. Agregar % de participación
     const reportWithPercentage = report.map((item) => {
       // Asegúrate de que los cálculos se hacen con Decimal
@@ -215,12 +235,12 @@ export class ReportPrismaRepository implements IReportRepository {
 
       return {
         ...item,
-        amount: (item.amount ?? new Decimal(0)).abs(),
+        amount: itemAmountAbsoluto,
         // Asegúrate de que `participation` sea un tipo `Decimal` o conviértelo a `string`
         participation: participation.toFixed(1),
-        code: badge?.code,
-        symbol: badge?.symbol,
-        flag: badge?.flag,
+        code: badgeCode,
+        symbol: badgeSymbol,
+        flag: badgeFlag,
       };
     });
 
@@ -253,6 +273,11 @@ export class ReportPrismaRepository implements IReportRepository {
       ZERO_DECIMAL
     );
 
+    // ⚡ Bolt: Hoist badge metadata to avoid repeated property access in the loop.
+    const badgeCode = badge?.code;
+    const badgeSymbol = badge?.symbol;
+    const badgeFlag = badge?.flag;
+
     // 2. Agregar % de participación
     const reportWithPercentage = report.map((item) => {
       // Asegúrate de que los cálculos se hacen con Decimal
@@ -266,12 +291,12 @@ export class ReportPrismaRepository implements IReportRepository {
 
       return {
         ...item,
-        amount: (item.amount ?? new Decimal(0)).abs(),
+        amount: itemAmountAbsoluto,
         // Asegúrate de que `participation` sea un tipo `Decimal` o conviértelo a `string`
         participation: participation.toFixed(1),
-        code: badge?.code,
-        symbol: badge?.symbol,
-        flag: badge?.flag,
+        code: badgeCode,
+        symbol: badgeSymbol,
+        flag: badgeFlag,
       };
     });
 
@@ -304,6 +329,11 @@ export class ReportPrismaRepository implements IReportRepository {
       ZERO_DECIMAL
     );
 
+    // ⚡ Bolt: Hoist badge metadata to avoid repeated property access in the loop.
+    const badgeCode = badge?.code;
+    const badgeSymbol = badge?.symbol;
+    const badgeFlag = badge?.flag;
+
     // 2. Agregar % de participación
     const reportWithPercentage = report.map((item) => {
       // Asegúrate de que los cálculos se hacen con Decimal
@@ -317,12 +347,12 @@ export class ReportPrismaRepository implements IReportRepository {
 
       return {
         ...item,
-        amount: (item.amount ?? new Decimal(0)).abs(),
+        amount: itemAmountAbsoluto,
         // Asegúrate de que `participation` sea un tipo `Decimal` o conviértelo a `string`
         participation: participation.toFixed(1),
-        code: badge?.code,
-        symbol: badge?.symbol,
-        flag: badge?.flag,
+        code: badgeCode,
+        symbol: badgeSymbol,
+        flag: badgeFlag,
       };
     });
 
@@ -355,6 +385,11 @@ export class ReportPrismaRepository implements IReportRepository {
       ZERO_DECIMAL
     );
 
+    // ⚡ Bolt: Hoist badge metadata to avoid repeated property access in the loop.
+    const badgeCode = badge?.code;
+    const badgeSymbol = badge?.symbol;
+    const badgeFlag = badge?.flag;
+
     // 2. Agregar % de participación
     const reportWithPercentage = report.map((item) => {
       // Asegúrate de que los cálculos se hacen con Decimal
@@ -368,12 +403,12 @@ export class ReportPrismaRepository implements IReportRepository {
 
       return {
         ...item,
-        amount: (item.amount ?? new Decimal(0)).abs(),
+        amount: itemAmountAbsoluto,
         // Asegúrate de que `participation` sea un tipo `Decimal` o conviértelo a `string`
         participation: participation.toFixed(1),
-        code: badge?.code,
-        symbol: badge?.symbol,
-        flag: badge?.flag,
+        code: badgeCode,
+        symbol: badgeSymbol,
+        flag: badgeFlag,
       };
     });
 
@@ -406,6 +441,11 @@ export class ReportPrismaRepository implements IReportRepository {
       ZERO_DECIMAL
     );
 
+    // ⚡ Bolt: Hoist badge metadata to avoid repeated property access in the loop.
+    const badgeCode = badge?.code;
+    const badgeSymbol = badge?.symbol;
+    const badgeFlag = badge?.flag;
+
     // 2. Agregar % de participación
     const reportWithPercentage = report.map((item) => {
       // Asegúrate de que los cálculos se hacen con Decimal
@@ -419,12 +459,12 @@ export class ReportPrismaRepository implements IReportRepository {
 
       return {
         ...item,
-        amount: (item.amount ?? new Decimal(0)).abs(),
+        amount: itemAmountAbsoluto,
         // Asegúrate de que `participation` sea un tipo `Decimal` o conviértelo a `string`
         participation: participation.toFixed(1),
-        code: badge?.code,
-        symbol: badge?.symbol,
-        flag: badge?.flag,
+        code: badgeCode,
+        symbol: badgeSymbol,
+        flag: badgeFlag,
       };
     });
 

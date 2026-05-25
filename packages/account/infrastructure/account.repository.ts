@@ -13,6 +13,8 @@ import {
 import { APIResponse } from "packages/badge/infrastructure/badge.repository";
 import { Prisma } from "@prisma/client";
 
+const ZERO_DECIMAL = new Decimal(0); // ⚡ Bolt: Global constant to avoid redundant object allocations
+
 // Definimos un tipo que extiende Account para incluir la suma de los movimientos
 export type AccountWithTotalMovements = Account & {
   balance: number;
@@ -156,10 +158,10 @@ export class AccountPrismaRepository implements IAccountRepository {
 
     const processedContent: AccountWithTotalMovements[] = rawContent.map(
       (account) => {
-        const sum = sumsMap.get(account.id) || new Decimal(0);
-        const balance = new Decimal(account.initAmount.toString())
-          .plus(sum)
-          .toNumber();
+        const sum = sumsMap.get(account.id) || ZERO_DECIMAL;
+        // ⚡ Bolt: Avoid redundant Decimal instantiation and string conversion.
+        // account.initAmount is already a Decimal object from Prisma.
+        const balance = account.initAmount.plus(sum).toNumber();
         return { ...account, balance };
       }
     );
@@ -246,10 +248,10 @@ export class AccountPrismaRepository implements IAccountRepository {
         return null;
       }
 
-      const sum = movementSum._sum.amount || new Decimal(0);
-      const balance = new Decimal(accountData.initAmount.toString())
-        .plus(sum)
-        .toNumber();
+      const sum = movementSum._sum.amount || ZERO_DECIMAL;
+      // ⚡ Bolt: Avoid redundant Decimal instantiation and string conversion.
+      // accountData.initAmount is already a Decimal object from Prisma.
+      const balance = accountData.initAmount.plus(sum).toNumber();
 
       const accountWithBalance: AccountWithTotalMovements = {
         ...accountData,

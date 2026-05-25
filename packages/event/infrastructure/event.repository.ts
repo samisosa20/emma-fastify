@@ -6,6 +6,8 @@ import { CommonParamsPaginate, Paginate, ErrorMessage } from "packages/shared";
 import { APIResponse } from "packages/badge/infrastructure/badge.repository";
 import { Decimal } from "@prisma/client/runtime/library";
 
+const ZERO_DECIMAL = new Decimal(0); // ⚡ Bolt: Global constant to avoid redundant object allocations
+
 type APIEventResponse = {
   name: string;
   end_event: string;
@@ -163,11 +165,11 @@ export class EventPrismaRepository implements IEventRepository {
       const badgeBalances = eventBalancesMap.get(sum.eventId)!;
       const currentBalance = badgeBalances.get(badgeInfo.code) || {
         ...badgeInfo,
-        balance: new Decimal(0),
+        balance: ZERO_DECIMAL,
       };
 
       currentBalance.balance = currentBalance.balance.add(
-        sum._sum.amount || new Decimal(0)
+        sum._sum.amount || ZERO_DECIMAL
       );
       badgeBalances.set(badgeInfo.code, currentBalance);
     }
@@ -304,7 +306,7 @@ export class EventPrismaRepository implements IEventRepository {
             groupedByBadge.set(badgeCode, {
               symbol: String(movement.account?.badge?.symbol),
               flag: String(movement.account?.badge?.flag),
-              total_amount: new Decimal(0),
+              total_amount: ZERO_DECIMAL,
               categories: new Map<
                 string,
                 {
@@ -331,7 +333,7 @@ export class EventPrismaRepository implements IEventRepository {
               name: movement.category.name,
               color: movement.category.color,
               icon: movement.category.icon,
-              amount: new Decimal(0),
+              amount: ZERO_DECIMAL,
             };
             existing.amount = existing.amount.add(amount);
             badgeGroup.categories.set(categoryId, existing);

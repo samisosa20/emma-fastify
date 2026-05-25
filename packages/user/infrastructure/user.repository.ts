@@ -33,7 +33,11 @@ export class UserRepositoryPrismaPostgres implements IUserRepository {
 
     const newUser = await prisma.user.create({
       data: {
-        ...user,
+        name: user.name,
+        email: user.email,
+        phone: user.phone,
+        phoneCode: user.phoneCode,
+        badgeId: user.badgeId,
         password: user.password ? await hashPassword(user.password) : null,
       },
     });
@@ -102,7 +106,10 @@ export class UserRepositoryPrismaPostgres implements IUserRepository {
           id,
         },
         data: {
-          ...userWithoutPasswordValid,
+          name: userWithoutPasswordValid.name,
+          phone: userWithoutPasswordValid.phone,
+          phoneCode: userWithoutPasswordValid.phoneCode,
+          badgeId: userWithoutPasswordValid.badgeId,
           ...(user.password && { password: await hashPassword(user.password) }),
         },
       });

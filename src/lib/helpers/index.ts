@@ -9,6 +9,7 @@ export const formatErrorMessage = (error: any) => {
   if (error.code) {
     return error.code;
   }
+  return error.message || "An unexpected error occurred";
 };
 
 /**

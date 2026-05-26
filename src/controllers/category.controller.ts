@@ -1,4 +1,5 @@
 import { FastifyRequest, FastifyReply } from "fastify";
+import { z } from "zod";
 
 import { formatErrorMessage } from "@lib";
 
@@ -67,7 +68,22 @@ export class CategoryController {
     return result;
   };
   importCategories = async (request: FastifyRequest, reply: FastifyReply) => {
-    const { id } = request.query as { id: string };
+    const { id } = request.query as { id?: string };
+
+    // Security: Validate the 'id' parameter to prevent SSRF or Path Traversal
+    // by ensuring it only contains alphanumeric characters or is a valid UUID.
+    if (id) {
+      const idSchema = z.string().regex(/^[a-zA-Z0-9-]+$/);
+      const validation = idSchema.safeParse(id);
+      if (!validation.success) {
+        return reply.status(400).send({
+          statusCode: 400,
+          error: "Bad Request",
+          message: "Invalid ID format for category import",
+        });
+      }
+    }
+
     const result = await categoryUseCase.importCategories(request.user.id, id);
     if (result === null) {
       return reply.status(404).send({ message: "Category not found" });

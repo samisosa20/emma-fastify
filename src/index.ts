@@ -63,9 +63,10 @@ const bootstrap = async () => {
     });
 
     fastify.register(cors, {
-      origin: "*",
+      origin: process.env.APP_URL,
       methods: ["GET", "POST", "PUT", "DELETE", "PATCH"],
-      allowedHeaders: "*",
+      allowedHeaders: ["Content-Type", "Authorization"],
+      credentials: true,
     });
 
     fastify.register(rateLimit, {

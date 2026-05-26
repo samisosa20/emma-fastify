@@ -202,25 +202,26 @@ export class BadgePrismaRepository implements IBadgeRepository {
           flag: "",
         }));
 
-      const result = await prisma.badge.createMany({
-        data: badgesToCreate,
-        skipDuplicates: true,
-      });
-
-      const accountTypeResult = await prisma.accountType.createMany({
-        data: accountTypeCreate,
-        skipDuplicates: true,
-      });
-
-      const periodResult = await prisma.period.createMany({
-        data: periodCreate,
-        skipDuplicates: true,
-      });
-
-      const groupCategoryResult = await prisma.groupCategory.createMany({
-        data: groupCategoryCreate,
-        skipDuplicates: true,
-      });
+      // ⚡ Bolt: Parallelize independent metadata imports to reduce database roundtrip latency.
+      const [result, accountTypeResult, periodResult, groupCategoryResult] =
+        await Promise.all([
+          prisma.badge.createMany({
+            data: badgesToCreate,
+            skipDuplicates: true,
+          }),
+          prisma.accountType.createMany({
+            data: accountTypeCreate,
+            skipDuplicates: true,
+          }),
+          prisma.period.createMany({
+            data: periodCreate,
+            skipDuplicates: true,
+          }),
+          prisma.groupCategory.createMany({
+            data: groupCategoryCreate,
+            skipDuplicates: true,
+          }),
+        ]);
 
       return {
         badgeCount: result.count,

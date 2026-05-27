@@ -566,9 +566,11 @@ export class HeritagePrismaRepository implements IHeritageRepository {
       // A. Balances de cuentas (Init + Movements)
       accounts.forEach((acc) => {
         if (acc.createdAt <= limitDate) {
-          const movementSum = movementMap.get(acc.id) || new Decimal(0);
-          const total = new Decimal(acc.initAmount.toString()).plus(movementSum);
-          const current = totalsByBadge.get(acc.badgeId) || new Decimal(0);
+          const movementSum = movementMap.get(acc.id) || ZERO_DECIMAL;
+          const total = (acc.initAmount as unknown as Decimal).plus(
+            movementSum
+          );
+          const current = totalsByBadge.get(acc.badgeId) || ZERO_DECIMAL;
           totalsByBadge.set(acc.badgeId, current.plus(total));
         }
       });
@@ -580,7 +582,7 @@ export class HeritagePrismaRepository implements IHeritageRepository {
           const current = totalsByBadge.get(h.badgeId) || ZERO_DECIMAL;
           totalsByBadge.set(
             h.badgeId,
-            current.plus(new Decimal(h.comercialAmount.toString()))
+            current.plus(h.comercialAmount as unknown as Decimal)
           );
         });
 
@@ -596,7 +598,7 @@ export class HeritagePrismaRepository implements IHeritageRepository {
             totalsByBadge.get(app.investment.badgeId) || ZERO_DECIMAL;
           totalsByBadge.set(
             app.investment.badgeId,
-            current.plus(new Decimal(app.amount.toString()))
+            current.plus(app.amount as unknown as Decimal)
           );
         }
       });

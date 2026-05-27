@@ -192,16 +192,20 @@ export class InvestmentPrismaRepository implements IInvestmentRepository {
 
       // ⚡ Bolt: Use a consistent way to handle Prisma's Decimal vs runtime number/Decimal types.
       // We convert to Decimal object once if it's not already, ensuring method availability without unsafe casting.
-      const initialAmountDecimal = new Decimal((investment.initAmount ?? 0).toString());
-      const movementsWithdrawalSum = withdrawalsMap.get(investment.id) || ZERO_DECIMAL;
+      const initialAmountDecimal = (investment.initAmount ??
+        ZERO_DECIMAL) as unknown as Decimal;
+      const movementsWithdrawalSum =
+        withdrawalsMap.get(investment.id) || ZERO_DECIMAL;
 
       // totalWithdrawal calculated with Decimal precision.
       // Withdrawals decrease the total net invested capital.
-      const totalWithdrawalDecimal = initialAmountDecimal.minus(movementsWithdrawalSum);
+      const totalWithdrawalDecimal = initialAmountDecimal.minus(
+        movementsWithdrawalSum
+      );
 
       const lastAppreciationAmount = appreciationMap.get(investment.id);
       const endAmountDecimal = lastAppreciationAmount
-        ? new Decimal(lastAppreciationAmount.toString())
+        ? (lastAppreciationAmount as unknown as Decimal)
         : initialAmountDecimal;
 
       let valorization = "0.00%";
@@ -409,17 +413,21 @@ export class InvestmentPrismaRepository implements IInvestmentRepository {
     const totalReturnsDecimal = movements
       .filter((m) => !m.addWithdrawal)
       .reduce(
-        (acc, movement) => acc.plus(new Decimal((movement.amount || 0).toString())),
+        (acc, movement) =>
+          acc.plus((movement.amount || ZERO_DECIMAL) as unknown as Decimal),
         ZERO_DECIMAL
       );
     const totalReturns = totalReturnsDecimal.toNumber();
 
-    const initialAmountDecimal = new Decimal((investment.initAmount || 0).toString());
+    const initialAmountDecimal = (investment.initAmount ||
+      ZERO_DECIMAL) as unknown as Decimal;
     const movementsWithdrawalSum = movements
       .filter((m) => m.addWithdrawal)
       .reduce(
         (acc, movement) =>
-          acc.plus(new Decimal((movement.amount || 0).toString()).times(-1)),
+          acc.plus(
+            ((movement.amount || ZERO_DECIMAL) as unknown as Decimal).times(-1)
+          ),
         ZERO_DECIMAL
       );
 
@@ -431,7 +439,7 @@ export class InvestmentPrismaRepository implements IInvestmentRepository {
     const lastAppreciation =
       appreciations.length > 0 ? appreciations[appreciations.length - 1] : null;
     const endAmountDecimal = lastAppreciation?.amount
-      ? new Decimal(lastAppreciation.amount.toString())
+      ? (lastAppreciation.amount as unknown as Decimal)
       : initialAmountDecimal;
     const endAmount = endAmountDecimal.toNumber();
 

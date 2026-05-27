@@ -75,3 +75,8 @@
 **Vulnerability:** `AccountPrismaRepository.detailAccount` failed to include the `userId` filter in its Prisma queries, allowing any authenticated user to view metadata and calculated balances for any account by guessing its UUID.
 **Learning:** Method signatures that accept security context (like `userId`) are "security theater" if those parameters aren't explicitly passed into every database operation within the method, including secondary operations like aggregations.
 **Prevention:** Always scope all Prisma operations (find, aggregate, update, delete) by the authenticated `userId` in multi-tenant environments.
+
+## 2025-06-10 - [IDOR in Budget Category Association]
+**Vulnerability:** Budget entries could be associated with categories belonging to other users.
+**Learning:** Even if the primary resource (Budget) is ownership-verified, related resources (CategoryId) must also be checked against the authenticated user's ID to prevent cross-user data leakage or unauthorized associations.
+**Prevention:** Always verify ownership of related entities (foreign keys) before creating or updating records in a multi-tenant environment.

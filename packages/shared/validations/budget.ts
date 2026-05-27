@@ -5,8 +5,8 @@ export const BudgetCreateInput = z.object({
   amount: z.number({ message: "amount is required" }),
   year: z.number({ message: "year is required" }).min(2000),
   categoryId: z.uuid({ message: "categoryId is required" }),
-  badgeId: z.uuid({ message: "categoryId is required" }),
-  periodId: z.uuid({ message: "categoryId is required" }),
+  badgeId: z.uuid({ message: "badgeId is required" }),
+  periodId: z.uuid({ message: "periodId is required" }),
 }) satisfies z.Schema<Omit<Prisma.BudgetUncheckedCreateInput, "userId">>;
 
 export const BudgetUpdateInput = BudgetCreateInput.partial();

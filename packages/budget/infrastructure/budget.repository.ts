@@ -36,6 +36,19 @@ type APIBudgetResponse = APIBudgetItem[];
 export class BudgetPrismaRepository implements IBudgetRepository {
   public async addBudget(data: CreateBudget): Promise<Budget | ErrorMessage> {
     try {
+      // Security: Verify that the category belongs to the user
+      const category = await prisma.category.findFirst({
+        where: { id: data.categoryId, userId: data.userId },
+      });
+
+      if (!category) {
+        throw Object.assign(new Error("Invalid category ownership"), {
+          statusCode: 403,
+          error: "Forbidden",
+          message: "Category does not belong to the user.",
+        });
+      }
+
       const { periodId, badgeId, categoryId, userId, ...restData } = data;
       const newBudget = await prisma.budget.create({
         data: {
@@ -53,6 +66,7 @@ export class BudgetPrismaRepository implements IBudgetRepository {
       });
       return newBudget;
     } catch (error: any) {
+      if (error.statusCode) throw error;
       throw Object.assign(new Error("Validation Error"), {
         statusCode: 400,
         error: "Bad Request",
@@ -171,6 +185,21 @@ export class BudgetPrismaRepository implements IBudgetRepository {
         });
       }
 
+      // Security: Verify that the category belongs to the user if it is being updated
+      if (data.categoryId) {
+        const category = await prisma.category.findFirst({
+          where: { id: data.categoryId, userId },
+        });
+
+        if (!category) {
+          throw Object.assign(new Error("Invalid category ownership"), {
+            statusCode: 403,
+            error: "Forbidden",
+            message: "Category does not belong to the user.",
+          });
+        }
+      }
+
       const { periodId, badgeId, categoryId, userId: _, ...restData } = data;
       const updatedBudget = await prisma.budget.update({
         where: {
@@ -191,6 +220,7 @@ export class BudgetPrismaRepository implements IBudgetRepository {
       });
       return updatedBudget;
     } catch (error: any) {
+      if (error.statusCode) throw error;
       throw Object.assign(new Error("Validation Error"), {
         statusCode: 400,
         error: "Bad Request",

@@ -13,6 +13,8 @@ import { CommonParamsPaginate, Paginate, ErrorMessage } from "packages/shared";
 import { APIResponse } from "packages/badge/infrastructure/badge.repository";
 import { Decimal } from "@prisma/client/runtime/library";
 
+const ZERO_DECIMAL = new Decimal(0); // ⚡ Bolt: Global constant to avoid redundant object allocations
+
 // Define el tipo para un solo objeto de presupuesto de la API externa
 type APIBudgetItem = {
   amount: number;
@@ -138,17 +140,17 @@ export class BudgetPrismaRepository implements IBudgetRepository {
       if (!bId) continue;
 
       const key = `${stat.categoryId}-${bId}`;
-      const sum = stat._sum.amount || new Decimal(0);
+      const sum = (stat._sum.amount as unknown as Decimal) || ZERO_DECIMAL;
 
-      executedMap.set(key, (executedMap.get(key) || new Decimal(0)).add(sum));
+      executedMap.set(key, (executedMap.get(key) || ZERO_DECIMAL).add(sum));
     }
 
     // ⚡ Bolt: Map budgets to executed amounts using O(1) Map lookups instead of O(N*M) .find().
     const compared = budgets.map((b) => {
       const key = `${b.categoryId}-${b.badgeId}`;
-      const executed = executedMap.get(key) || new Decimal(0);
+      const executed = executedMap.get(key) || ZERO_DECIMAL;
 
-      const amountDecimal = new Decimal(b.amount as any);
+      const amountDecimal = b.amount as unknown as Decimal;
       const planned =
         b.period.name === "Monthly" ? amountDecimal.mul(12) : amountDecimal;
       const difference = planned.sub(executed.abs());
@@ -440,7 +442,7 @@ export class BudgetPrismaRepository implements IBudgetRepository {
     for (const budget of budgets) {
       const { year, amount, badge, period } = budget;
       const badgeCode = badge.code;
-      const amountDecimal = new Decimal(amount as any);
+      const amountDecimal = amount as unknown as Decimal;
       const yearlyAmount =
         period.name === "Monthly" ? amountDecimal.mul(12) : amountDecimal;
 
@@ -457,9 +459,9 @@ export class BudgetPrismaRepository implements IBudgetRepository {
       if (!yearGroup) {
         yearGroup = {
           year,
-          incomes: new Decimal(0),
-          expenses: new Decimal(0),
-          utility: new Decimal(0),
+          incomes: ZERO_DECIMAL,
+          expenses: ZERO_DECIMAL,
+          utility: ZERO_DECIMAL,
           badge,
         };
         badgeGroup.yearsMap.set(year, yearGroup);

@@ -73,3 +73,7 @@
 ## 2026-06-05 - [Eliminating Sequential N+1 Queries in Heritage Reporting]
 **Learning:** Performing multiple independent database queries (aggregations, findMany, and latest-record lookups) inside a loop for year-over-year heritage reporting causes severe latency as the number of years grows.
 **Action:** Hoist all data retrieval outside the loop using `Promise.all`, and use sorted lists with `Set` tracking for O(N) in-memory "latest-record" lookups to replicate database logic without roundtrips.
+
+## 2026-06-10 - [Parallelizing Account List and Balance Aggregation]
+**Learning:** Sequentially fetching an account list (paginated or full) and then its movement aggregations adds unnecessary latency. Using a user-wide aggregation allows these queries to run concurrently.
+**Action:** Use `Promise.all` to fetch accounts and user-level movement `groupBy` sums in parallel. Use a Hash Map for O(1) balance lookups to avoid O(N*M) processing.

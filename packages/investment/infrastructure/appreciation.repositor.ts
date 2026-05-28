@@ -109,11 +109,12 @@ export class AppreciationPrismaRepository implements IAppreciationRepository {
         throw new Error("Appreciation not found");
       }
 
+      const { userId: _, ...dataToUpdate } = data;
       const updatedAppreciation = await prisma.investmentAppreciation.update({
         where: {
           id: appreciationId,
         },
-        data,
+        data: dataToUpdate,
       });
       return updatedAppreciation;
     } catch (error: any) {

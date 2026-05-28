@@ -261,11 +261,12 @@ export class InvestmentPrismaRepository implements IInvestmentRepository {
         });
       }
 
+      const { userId: _, ...dataToUpdate } = data;
       const updatedInvestment = await prisma.investment.update({
         where: {
           id,
         },
-        data,
+        data: dataToUpdate,
         include: {
           movements: {
             select: {

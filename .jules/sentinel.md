@@ -80,3 +80,8 @@
 **Vulnerability:** Budget entries could be associated with categories belonging to other users.
 **Learning:** Even if the primary resource (Budget) is ownership-verified, related resources (CategoryId) must also be checked against the authenticated user's ID to prevent cross-user data leakage or unauthorized associations.
 **Prevention:** Always verify ownership of related entities (foreign keys) before creating or updating records in a multi-tenant environment.
+
+## 2025-06-25 - [Mass Assignment in Resource Ownership]
+**Vulnerability:** Update operations for Planned Payments, Heritages, Investments, and Appreciations were vulnerable to mass assignment, potentially allowing users to change the `userId` (ownership) of a record.
+**Learning:** Even with ownership checks in place, spreading unvalidated or semi-validated request bodies directly into database update calls can lead to parameter pollution where internal fields like `userId` are overwritten.
+**Prevention:** Always explicitly destructure and exclude sensitive or immutable fields (especially `userId`) from input payloads before passing them to Prisma `update` or `create` calls.

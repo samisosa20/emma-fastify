@@ -82,85 +82,92 @@ export class AccountPrismaRepository implements IAccountRepository {
     params: CommonParamsPaginate,
     userId: string
   ): Promise<{ content: AccountWithTotalMovements[]; meta: Paginate }> {
-    const { size, page: pageParam, deleted, userId: _userIdFromParams } = params;
+    const { size, page: pageParam, deleted } = params;
 
     const shouldPaginate = pageParam && Number(pageParam) > 0;
-
-    let rawContent: Prisma.AccountGetPayload<{
-      include: { badge: true; type: true };
-    }>[];
-    let metaResult: Paginate;
 
     const where = {
       ...(userId && { userId }),
       OR: handleShowDeleteData(deleted === "1"),
     };
 
-    if (shouldPaginate) {
-      const currentPage = Number(pageParam);
-      const effectiveSize = size && Number(size) > 0 ? Number(size) : 10;
+    // ⚡ Bolt: Parallelize independent data fetching to minimize total latency.
+    // We concurrently fetch the accounts (paginated or not) and the movement aggregations for all user accounts.
+    const [accountsData, movementSums] = await Promise.all([
+      (async () => {
+        if (shouldPaginate) {
+          const currentPage = Number(pageParam);
+          const effectiveSize = size && Number(size) > 0 ? Number(size) : 10;
 
-      const [content, metaFromPrisma] = await prisma.account
-        .paginate({
-          where,
-          include: {
-            badge: true,
-            type: true,
-          },
-        })
-        .withPages({
-          limit: effectiveSize,
-          page: currentPage,
-        });
+          const [content, metaFromPrisma] = await prisma.account
+            .paginate({
+              where,
+              include: {
+                badge: true,
+                type: true,
+              },
+            })
+            .withPages({
+              limit: effectiveSize,
+              page: currentPage,
+            });
 
-      rawContent = content as any[];
-      metaResult = metaFromPrisma;
-    } else {
-      rawContent = (await prisma.account.findMany({
-        where,
-        include: {
-          badge: true,
-          type: true,
+          return {
+            rawContent: content as any[],
+            metaResult: metaFromPrisma,
+          };
+        } else {
+          const content = (await prisma.account.findMany({
+            where,
+            include: {
+              badge: true,
+              type: true,
+            },
+          })) as any[];
+
+          const totalCount = content.length;
+          const meta: Paginate = {
+            isFirstPage: totalCount > 0,
+            isLastPage: totalCount > 0,
+            currentPage: totalCount > 0 ? 1 : 0,
+            previousPage: null,
+            nextPage: null,
+            pageCount: totalCount > 0 ? 1 : 0,
+            totalCount: totalCount,
+          };
+
+          return {
+            rawContent: content,
+            metaResult: meta,
+          };
+        }
+      })(),
+      // ⚡ Bolt: Fetch movement sums grouped by account in parallel.
+      // Filtering by userId allows this query to run concurrently without waiting for account list.
+      prisma.movement.groupBy({
+        by: ["accountId"],
+        where: { userId },
+        _sum: {
+          amount: true,
         },
-      })) as any[];
+      }),
+    ]);
 
-      const totalCount = rawContent.length;
-      const meta: Paginate = {
-        isFirstPage: totalCount > 0,
-        isLastPage: totalCount > 0,
-        currentPage: totalCount > 0 ? 1 : 0,
-        previousPage: null,
-        nextPage: null,
-        pageCount: totalCount > 0 ? 1 : 0,
-        totalCount: totalCount,
-      };
+    const { rawContent, metaResult } = accountsData;
 
-      metaResult = meta;
+    // ⚡ Bolt: Build a lookup map for O(1) balance retrieval using a for...of loop to avoid intermediate array overhead.
+    const sumsMap = new Map<string, Decimal>();
+    for (const sum of movementSums) {
+      sumsMap.set(
+        sum.accountId,
+        (sum._sum.amount as unknown as Decimal) || ZERO_DECIMAL
+      );
     }
-
-    // ⚡ Bolt: Optimize account balance calculation using database-level aggregation.
-    // Instead of fetching all movements for all accounts (N+1-like issue), we use a single groupBy query.
-    const accountIds = rawContent.map((account) => account.id);
-    const movementSums = await prisma.movement.groupBy({
-      by: ["accountId"],
-      where: {
-        accountId: { in: accountIds },
-      },
-      _sum: {
-        amount: true,
-      },
-    });
-
-    // Create a lookup map for faster balance calculation
-    const sumsMap = new Map(
-      movementSums.map((sum) => [sum.accountId, sum._sum.amount])
-    );
 
     const processedContent: AccountWithTotalMovements[] = rawContent.map(
       (account) => {
         const sum = sumsMap.get(account.id) || ZERO_DECIMAL;
-        // ⚡ Bolt: Avoid redundant Decimal instantiation and string conversion.
-        // account.initAmount is already a Decimal object from Prisma.
+        // ⚡ Bolt: account.initAmount is already a Decimal object from Prisma, avoiding redundant allocations.
         const balance = account.initAmount.plus(sum).toNumber();
         return { ...account, balance };
       }

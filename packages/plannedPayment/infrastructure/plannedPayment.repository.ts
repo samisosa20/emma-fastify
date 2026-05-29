@@ -237,6 +237,7 @@ export class PlannedPaymentPrismaRepository
         }
       }
 
+      const { userId: _, ...dataToUpdate } = data;
       const updatedPlannedPayment = await prisma.plannedPayment.update({
         where: {
           id,
@@ -258,7 +259,7 @@ export class PlannedPaymentPrismaRepository
             },
           },
         },
-        data,
+        data: dataToUpdate,
       });
       return updatedPlannedPayment;
     } catch (error: any) {

@@ -44,9 +44,13 @@ export class HeritagePrismaRepository implements IHeritageRepository {
   public async addHeritage(
     data: CreateHeritage
   ): Promise<Heritage | ErrorMessage> {
+    const { userId, ...rest } = data;
     try {
       const newHeritage = await prisma.heritage.create({
-        data,
+        data: {
+          ...rest,
+          userId,
+        },
         include: {
           badge: true,
         },
@@ -297,11 +301,13 @@ export class HeritagePrismaRepository implements IHeritageRepository {
         };
       }
 
+      const { userId: _, ...dataToUpdate } = data;
+
       const updatedHeritage = await prisma.heritage.update({
         where: {
           id,
         },
-        data,
+        data: dataToUpdate,
         include: {
           badge: true,
         },

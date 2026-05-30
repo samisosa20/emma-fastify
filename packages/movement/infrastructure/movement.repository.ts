@@ -68,37 +68,48 @@ export class MovementPrismaRepository implements IMovementRepository {
     try {
       // ⚡ Bolt: Parallelize all prerequisite lookups (ownership checks and transfer metadata)
       // to reduce database roundtrips and minimize latency during movement creation.
-      const [account, event, investment, accountEnd, transferCategory] =
-        await Promise.all([
-          prisma.account.findFirst({
-            where: { id: data.accountId, userId: data.userId },
-          }),
-          data.eventId
-            ? prisma.event.findFirst({
-                where: { id: data.eventId, userId: data.userId },
-              })
-            : Promise.resolve(true),
-          data.investmentId
-            ? prisma.investment.findFirst({
-                where: { id: data.investmentId, userId: data.userId },
-              })
-            : Promise.resolve(true),
-          data.type === "transfer" && data.accountEndId
-            ? prisma.account.findFirst({
-                where: { id: data.accountEndId, userId: data.userId },
-              })
-            : Promise.resolve(true),
-          data.type === "transfer"
-            ? prisma.category.findFirst({
-                where: {
-                  GroupCategory: { name: "Transferencia" },
-                  userId: data.userId,
-                },
-              })
-            : Promise.resolve(null),
-        ]);
+      const [
+        account,
+        category,
+        event,
+        investment,
+        accountEnd,
+        transferCategory,
+      ] = await Promise.all([
+        prisma.account.findFirst({
+          where: { id: data.accountId, userId: data.userId },
+        }),
+        data.categoryId
+          ? prisma.category.findFirst({
+              where: { id: data.categoryId, userId: data.userId },
+            })
+          : Promise.resolve(true),
+        data.eventId
+          ? prisma.event.findFirst({
+              where: { id: data.eventId, userId: data.userId },
+            })
+          : Promise.resolve(true),
+        data.investmentId
+          ? prisma.investment.findFirst({
+              where: { id: data.investmentId, userId: data.userId },
+            })
+          : Promise.resolve(true),
+        data.type === "transfer" && data.accountEndId
+          ? prisma.account.findFirst({
+              where: { id: data.accountEndId, userId: data.userId },
+            })
+          : Promise.resolve(true),
+        data.type === "transfer"
+          ? prisma.category.findFirst({
+              where: {
+                GroupCategory: { name: "Transferencia" },
+                userId: data.userId,
+              },
+            })
+          : Promise.resolve(null),
+      ]);
 
-      if (!account || !event || !investment || !accountEnd) {
+      if (!account || !category || !event || !investment || !accountEnd) {
         return {
           statusCode: 403,
           error: "Forbidden",
@@ -323,6 +334,15 @@ export class MovementPrismaRepository implements IMovementRepository {
       if (data.type === "transfer") {
         if (transferCategory) {
           categoryId = transferCategory.id;
+        } else if (data.categoryId) {
+          categoryId = data.categoryId;
+        } else {
+          // Fail secure: if it's a transfer and no transfer category or provided category exists, throw error
+          throw Object.assign(new Error("Transfer category not found"), {
+            statusCode: 400,
+            error: "Bad Request",
+            message: "A category is required for transfers.",
+          });
         }
         trm = isTransferOut
           ? Math.abs(Number(data.amount) / Number(data.amountEnd))

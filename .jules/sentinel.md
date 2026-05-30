@@ -81,6 +81,11 @@
 **Learning:** Even if the primary resource (Budget) is ownership-verified, related resources (CategoryId) must also be checked against the authenticated user's ID to prevent cross-user data leakage or unauthorized associations.
 **Prevention:** Always verify ownership of related entities (foreign keys) before creating or updating records in a multi-tenant environment.
 
+## 2025-07-01 - [IDOR in Movement Category Association and Fail-Secure Fallbacks]
+**Vulnerability:** Movement creation and updates lacked ownership verification for `categoryId`, and the system's "transfer" logic could potentially use unverified IDs if the default category was missing.
+**Learning:** Security enforcement must be granular; every foreign key in a request is a potential IDOR vector. Furthermore, fallback logic must be "fail-secure"—throwing an error instead of using unverified data when a required resource cannot be found.
+**Prevention:** Implement parallelized ownership lookups for all related resources in repository methods and ensure strict error handling for missing critical metadata in complex operations like transfers.
+
 ## 2025-06-25 - [Mass Assignment in Resource Ownership]
 **Vulnerability:** Update operations for Planned Payments, Heritages, Investments, and Appreciations were vulnerable to mass assignment, potentially allowing users to change the `userId` (ownership) of a record.
 **Learning:** Even with ownership checks in place, spreading unvalidated or semi-validated request bodies directly into database update calls can lead to parameter pollution where internal fields like `userId` are overwritten.

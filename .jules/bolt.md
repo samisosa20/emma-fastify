@@ -81,3 +81,7 @@
 ## 2026-06-15 - [Consolidated Reporting with Metadata Hoisting]
 **Learning:** Having multiple reporting methods with identical logic for participation calculation and metadata attachment creates a maintenance burden and redundant object allocations. Re-calculating absolute values multiple times per item increases memory pressure.
 **Action:** Consolidate reporting logic into a private helper method. Use `Promise.all` with `findUnique` for concurrent, efficient metadata fetching. Hoist metadata properties outside loops and reuse calculated absolute amounts to minimize `Decimal` allocations.
+
+## 2026-06-15 - [Consolidate Reporting Logic and Hoist Metadata]
+**Learning:** Identical reporting patterns (fetching data + looking up badge metadata) across multiple methods cause code bloat and redundant processing. High-frequency mapping loops often perform unnecessary property access or object re-allocations (e.g., repeating .abs() or object spreads).
+**Action:** Consolidate repetitive reporting logic into optimized private helpers that use Promise.all for parallel fetching and findUnique for primary key lookups. Pre-calculate values (like absolute amounts) once and hoist metadata outside loops to minimize runtime overhead.

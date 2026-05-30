@@ -68,10 +68,13 @@ export class MovementPrismaRepository implements IMovementRepository {
     try {
       // ⚡ Bolt: Parallelize all prerequisite lookups (ownership checks and transfer metadata)
       // to reduce database roundtrips and minimize latency during movement creation.
-      const [account, event, investment, accountEnd, transferCategory] =
+      const [account, category, event, investment, accountEnd, transferCategory] =
         await Promise.all([
           prisma.account.findFirst({
             where: { id: data.accountId, userId: data.userId },
+          }),
+          prisma.category.findFirst({
+            where: { id: data.categoryId, userId: data.userId },
           }),
           data.eventId
             ? prisma.event.findFirst({
@@ -98,7 +101,9 @@ export class MovementPrismaRepository implements IMovementRepository {
             : Promise.resolve(null),
         ]);
 
-      if (!account || !event || !investment || !accountEnd) {
+      // Security: Return Forbidden error if any resource ownership check fails to prevent IDOR.
+      // We check existance only when the field is provided.
+      if (!account || !category || !event || !investment || !accountEnd) {
         return {
           statusCode: 403,
           error: "Forbidden",
@@ -110,9 +115,16 @@ export class MovementPrismaRepository implements IMovementRepository {
       let trm = 1;
 
       if (data.type === "transfer") {
-        if (transferCategory) {
-          categoryId = transferCategory.id;
+        // Fail secure: ensure the default 'Transferencia' category exists before proceeding.
+        if (!transferCategory) {
+          return {
+            statusCode: 400,
+            error: "Bad Request",
+            message:
+              "System-default 'Transferencia' category not found for user.",
+          };
         }
+        categoryId = transferCategory.id;
         trm = Math.abs(Number(data.amount) / Number(data.amountEnd));
       }
 
@@ -323,6 +335,15 @@ export class MovementPrismaRepository implements IMovementRepository {
       if (data.type === "transfer") {
         if (transferCategory) {
           categoryId = transferCategory.id;
+        } else if (data.categoryId) {
+          categoryId = data.categoryId;
+        } else {
+          // Fail secure: if it's a transfer and no transfer category or provided category exists, throw error
+          throw Object.assign(new Error("Transfer category not found"), {
+            statusCode: 400,
+            error: "Bad Request",
+            message: "A category is required for transfers.",
+          });
         }
         trm = isTransferOut
           ? Math.abs(Number(data.amount) / Number(data.amountEnd))

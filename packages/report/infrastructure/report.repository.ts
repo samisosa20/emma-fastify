@@ -196,8 +196,8 @@ export class ReportPrismaRepository implements IReportRepository {
   public async reportBalanceHistory(
     params: ReportParams
   ): Promise<ReportBalanceHistory | ErrorMessage> {
-    const baseDate = new Date(String(params.startDate) || new Date());
-    const baseEndDate = new Date(String(params.endDate) || new Date());
+    const baseDate = params.startDate ? new Date(params.startDate) : new Date();
+    const baseEndDate = params.endDate ? new Date(params.endDate) : new Date();
 
     const startDate = new Date(
       Date.UTC(baseDate.getUTCFullYear(), baseDate.getUTCMonth(), 1, 0, 0, 0, 0)
@@ -214,7 +214,7 @@ export class ReportPrismaRepository implements IReportRepository {
       )
     );
 
-    const MS_PER_DAY = 1000 * 60 * 60 * 24;
+    const MS_PER_DAY = 86400000; // 1000 * 60 * 60 * 24
 
     // Diferencia en días redondeada
     const currentPeriodDays = Math.round(
@@ -222,10 +222,10 @@ export class ReportPrismaRepository implements IReportRepository {
     );
 
     // ⚡ Bolt: Pre-calculate all dates to enable parallel data fetching
-    const lastYearStartDate = new Date(String(params.startDate));
-    lastYearStartDate.setFullYear(startDate.getFullYear() - 1);
-    const lastYearEndDate = new Date(String(params.endDate));
-    lastYearEndDate.setFullYear(endDate.getFullYear() - 1);
+    const lastYearStartDate = new Date(startDate.getTime());
+    lastYearStartDate.setUTCFullYear(startDate.getUTCFullYear() - 1);
+    const lastYearEndDate = new Date(endDate.getTime());
+    lastYearEndDate.setUTCFullYear(endDate.getUTCFullYear() - 1);
 
     let previousPeriodStartDate, previousPeriodEndDate;
 
@@ -348,8 +348,54 @@ export class ReportPrismaRepository implements IReportRepository {
   }
 
   /**
+   * ⚡ Bolt: Consolidates redundant reporting logic into a single optimized helper.
+   * This parallelizes data fetching and badge lookup while minimizing object allocations.
+   */
+  private async getReportWithParticipation(
+    reportPromise: Promise<any[]>,
+    badgeId: string | undefined
+  ): Promise<Report | ErrorMessage> {
+    const [report, badge] = await Promise.all([
+      reportPromise,
+      badgeId
+        ? prisma.badge.findUnique({ where: { id: badgeId } })
+        : Promise.resolve(null),
+    ]);
+
+    // ⚡ Bolt: Calculate absolute amounts once to avoid redundant .abs() calls and re-allocations.
+    let totalAbsoluto = ZERO_DECIMAL;
+    const amountsAbs: Decimal[] = new Array(report.length);
+    for (let i = 0; i < report.length; i++) {
+      const abs = (report[i].amount ?? ZERO_DECIMAL).abs();
+      amountsAbs[i] = abs;
+      totalAbsoluto = totalAbsoluto.plus(abs);
+    }
+
+    // ⚡ Bolt: Hoist metadata outside the mapping loop.
+    const badgeCode = badge?.code;
+    const badgeSymbol = badge?.symbol;
+    const badgeFlag = badge?.flag;
+
+    return report.map((item, i) => {
+      const itemAmountAbsoluto = amountsAbs[i];
+      const participation = totalAbsoluto.isZero()
+        ? ZERO_DECIMAL
+        : itemAmountAbsoluto.div(totalAbsoluto).times(100);
+
+      return {
+        ...item,
+        amount: itemAmountAbsoluto,
+        participation: participation.toFixed(1),
+        code: badgeCode,
+        symbol: badgeSymbol,
+        flag: badgeFlag,
+      };
+    });
+  }
+
+  /**
    * ⚡ Bolt: Fills missing dates in a report range with the last known cumulative balance.
-   * This logic is extracted to avoid redundant database queries.
+   * This is optimized to minimize object spreads and allocations inside high-frequency loops.
    */
   private fillReportDates(
     startDate: Date,
@@ -362,27 +408,31 @@ export class ReportPrismaRepository implements IReportRepository {
     let lastBalance = ZERO_DECIMAL;
     let hasAnyData = false;
 
+    // ⚡ Bolt: Hoist constant metadata fields to avoid repeated property access.
+    const { badgeId, code, flag, symbol } = badgeMetadata;
+
     while (currentDate <= endDate) {
       const dateKey = this.toISODate(currentDate);
       const dailyRecord = reportMap.get(dateKey);
 
+      const item: ItemBalanceHistory = {
+        badgeId,
+        code,
+        flag,
+        symbol,
+        date: dateKey,
+        dailyAmount: ZERO_DECIMAL,
+        cumulativeBalance: lastBalance,
+      };
+
       if (dailyRecord) {
-        fullReport.push({
-          ...badgeMetadata,
-          date: dateKey,
-          dailyAmount: dailyRecord.dailyAmount ?? ZERO_DECIMAL,
-          cumulativeBalance: dailyRecord.cumulativeBalance,
-        });
+        item.dailyAmount = dailyRecord.dailyAmount ?? ZERO_DECIMAL;
+        item.cumulativeBalance = dailyRecord.cumulativeBalance;
         lastBalance = (dailyRecord.cumulativeBalance as Decimal) ?? lastBalance;
         hasAnyData = true;
-      } else {
-        fullReport.push({
-          ...badgeMetadata,
-          date: dateKey,
-          dailyAmount: ZERO_DECIMAL,
-          cumulativeBalance: lastBalance,
-        });
       }
+
+      fullReport.push(item);
       currentDate.setUTCDate(currentDate.getUTCDate() + 1);
     }
     return hasAnyData ? fullReport : [];

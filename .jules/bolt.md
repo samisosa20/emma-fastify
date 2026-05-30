@@ -77,3 +77,7 @@
 ## 2026-06-10 - [Parallelizing Account List and Balance Aggregation]
 **Learning:** Sequentially fetching an account list (paginated or full) and then its movement aggregations adds unnecessary latency. Using a user-wide aggregation allows these queries to run concurrently.
 **Action:** Use `Promise.all` to fetch accounts and user-level movement `groupBy` sums in parallel. Use a Hash Map for O(1) balance lookups to avoid O(N*M) processing.
+
+## 2026-06-15 - [Consolidate Reporting Logic and Hoist Metadata]
+**Learning:** Identical reporting patterns (fetching data + looking up badge metadata) across multiple methods cause code bloat and redundant processing. High-frequency mapping loops often perform unnecessary property access or object re-allocations (e.g., repeating .abs() or object spreads).
+**Action:** Consolidate repetitive reporting logic into optimized private helpers that use Promise.all for parallel fetching and findUnique for primary key lookups. Pre-calculate values (like absolute amounts) once and hoist metadata outside loops to minimize runtime overhead.

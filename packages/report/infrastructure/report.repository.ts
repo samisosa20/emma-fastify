@@ -21,8 +21,7 @@ export class ReportPrismaRepository implements IReportRepository {
   public async weeklyExpensive(
     params: ReportParams
   ): Promise<Report | ErrorMessage> {
-    // ⚡ Bolt: Fetch report data and badge info in parallel
-    const [report, badge] = await Promise.all([
+    return this.getReportWithParticipation(
       prisma.vw_weeklyexpensive.findMany({
         where: {
           weekNumber: params.weekNumber,
@@ -32,54 +31,14 @@ export class ReportPrismaRepository implements IReportRepository {
         },
         orderBy: [{ year: "desc" }, { weekNumber: "desc" }, { amount: "asc" }],
       }),
-      prisma.badge.findFirst({
-        where: {
-          id: params.badgeId,
-        },
-      }),
-    ]);
-
-    // 1. Total de gastos (usando el valor absoluto para la participación)
-    // Se inicializa con un objeto Decimal para mantener la precisión
-    const totalAbsoluto = report.reduce(
-      (sum, item) => sum.plus((item.amount ?? ZERO_DECIMAL).abs()), // <-- Usamos .abs() para sumar el valor absoluto
-      ZERO_DECIMAL
+      params.badgeId
     );
-
-    // ⚡ Bolt: Hoist badge metadata to avoid repeated property access in the loop.
-    const badgeCode = badge?.code;
-    const badgeSymbol = badge?.symbol;
-    const badgeFlag = badge?.flag;
-
-    // 2. Agregar % de participación
-    const reportWithPercentage = report.map((item) => {
-      // Asegúrate de que los cálculos se hacen con Decimal
-      const itemAmountAbsoluto = (item.amount ?? ZERO_DECIMAL).abs();
-
-      // Calcula la participación.
-      // Evitamos la división por cero y usamos el total absoluto.
-      const participation = totalAbsoluto.isZero()
-        ? ZERO_DECIMAL
-        : itemAmountAbsoluto.div(totalAbsoluto).times(100);
-
-      return {
-        ...item,
-        amount: itemAmountAbsoluto,
-        // Asegúrate de que `participation` sea un tipo `Decimal` o conviértelo a `string`
-        participation: participation.toFixed(1),
-        code: badgeCode,
-        symbol: badgeSymbol,
-        flag: badgeFlag,
-      };
-    });
-
-    return reportWithPercentage;
   }
+
   public async weeklyIncome(
     params: ReportParams
   ): Promise<Report | ErrorMessage> {
-    // ⚡ Bolt: Fetch report data and badge info in parallel
-    const [report, badge] = await Promise.all([
+    return this.getReportWithParticipation(
       prisma.vw_weeklyincome.findMany({
         where: {
           weekNumber: params.weekNumber,
@@ -89,54 +48,14 @@ export class ReportPrismaRepository implements IReportRepository {
         },
         orderBy: [{ year: "desc" }, { weekNumber: "desc" }, { amount: "desc" }],
       }),
-      prisma.badge.findFirst({
-        where: {
-          id: params.badgeId,
-        },
-      }),
-    ]);
-
-    // 1. Total de gastos (usando el valor absoluto para la participación)
-    // Se inicializa con un objeto Decimal para mantener la precisión
-    const totalAbsoluto = report.reduce(
-      (sum, item) => sum.plus((item.amount ?? ZERO_DECIMAL).abs()), // <-- Usamos .abs() para sumar el valor absoluto
-      ZERO_DECIMAL
+      params.badgeId
     );
-
-    // ⚡ Bolt: Hoist badge metadata to avoid repeated property access in the loop.
-    const badgeCode = badge?.code;
-    const badgeSymbol = badge?.symbol;
-    const badgeFlag = badge?.flag;
-
-    // 2. Agregar % de participación
-    const reportWithPercentage = report.map((item) => {
-      // Asegúrate de que los cálculos se hacen con Decimal
-      const itemAmountAbsoluto = (item.amount ?? ZERO_DECIMAL).abs();
-
-      // Calcula la participación.
-      // Evitamos la división por cero y usamos el total absoluto.
-      const participation = totalAbsoluto.isZero()
-        ? ZERO_DECIMAL
-        : itemAmountAbsoluto.div(totalAbsoluto).times(100);
-
-      return {
-        ...item,
-        amount: itemAmountAbsoluto,
-        // Asegúrate de que `participation` sea un tipo `Decimal` o conviértelo a `string`
-        participation: participation.toFixed(1),
-        code: badgeCode,
-        symbol: badgeSymbol,
-        flag: badgeFlag,
-      };
-    });
-
-    return reportWithPercentage;
   }
+
   public async monthlyExpensive(
     params: ReportParams
   ): Promise<Report | ErrorMessage> {
-    // ⚡ Bolt: Fetch report data and badge info in parallel
-    const [report, badge] = await Promise.all([
+    return this.getReportWithParticipation(
       prisma.vw_monthlyexpensive.findMany({
         where: {
           month: params.month,
@@ -146,54 +65,14 @@ export class ReportPrismaRepository implements IReportRepository {
         },
         orderBy: [{ year: "desc" }, { month: "desc" }, { amount: "asc" }],
       }),
-      prisma.badge.findFirst({
-        where: {
-          id: params.badgeId,
-        },
-      }),
-    ]);
-
-    // 1. Total de gastos (usando el valor absoluto para la participación)
-    // Se inicializa con un objeto Decimal para mantener la precisión
-    const totalAbsoluto = report.reduce(
-      (sum, item) => sum.plus((item.amount ?? ZERO_DECIMAL).abs()), // <-- Usamos .abs() para sumar el valor absoluto
-      ZERO_DECIMAL
+      params.badgeId
     );
-
-    // ⚡ Bolt: Hoist badge metadata to avoid repeated property access in the loop.
-    const badgeCode = badge?.code;
-    const badgeSymbol = badge?.symbol;
-    const badgeFlag = badge?.flag;
-
-    // 2. Agregar % de participación
-    const reportWithPercentage = report.map((item) => {
-      // Asegúrate de que los cálculos se hacen con Decimal
-      const itemAmountAbsoluto = (item.amount ?? ZERO_DECIMAL).abs();
-
-      // Calcula la participación.
-      // Evitamos la división por cero y usamos el total absoluto.
-      const participation = totalAbsoluto.isZero()
-        ? ZERO_DECIMAL
-        : itemAmountAbsoluto.div(totalAbsoluto).times(100);
-
-      return {
-        ...item,
-        amount: itemAmountAbsoluto,
-        // Asegúrate de que `participation` sea un tipo `Decimal` o conviértelo a `string`
-        participation: participation.toFixed(1),
-        code: badgeCode,
-        symbol: badgeSymbol,
-        flag: badgeFlag,
-      };
-    });
-
-    return reportWithPercentage;
   }
+
   public async monthlyIncome(
     params: ReportParams
   ): Promise<Report | ErrorMessage> {
-    // ⚡ Bolt: Fetch report data and badge info in parallel
-    const [report, badge] = await Promise.all([
+    return this.getReportWithParticipation(
       prisma.vw_monthlyincome.findMany({
         where: {
           month: params.month,
@@ -203,54 +82,14 @@ export class ReportPrismaRepository implements IReportRepository {
         },
         orderBy: [{ year: "desc" }, { month: "desc" }, { amount: "desc" }],
       }),
-      prisma.badge.findFirst({
-        where: {
-          id: params.badgeId,
-        },
-      }),
-    ]);
-
-    // 1. Total de gastos (usando el valor absoluto para la participación)
-    // Se inicializa con un objeto Decimal para mantener la precisión
-    const totalAbsoluto = report.reduce(
-      (sum, item) => sum.plus((item.amount ?? ZERO_DECIMAL).abs()), // <-- Usamos .abs() para sumar el valor absoluto
-      ZERO_DECIMAL
+      params.badgeId
     );
-
-    // ⚡ Bolt: Hoist badge metadata to avoid repeated property access in the loop.
-    const badgeCode = badge?.code;
-    const badgeSymbol = badge?.symbol;
-    const badgeFlag = badge?.flag;
-
-    // 2. Agregar % de participación
-    const reportWithPercentage = report.map((item) => {
-      // Asegúrate de que los cálculos se hacen con Decimal
-      const itemAmountAbsoluto = (item.amount ?? ZERO_DECIMAL).abs();
-
-      // Calcula la participación.
-      // Evitamos la división por cero y usamos el total absoluto.
-      const participation = totalAbsoluto.isZero()
-        ? ZERO_DECIMAL
-        : itemAmountAbsoluto.div(totalAbsoluto).times(100);
-
-      return {
-        ...item,
-        amount: itemAmountAbsoluto,
-        // Asegúrate de que `participation` sea un tipo `Decimal` o conviértelo a `string`
-        participation: participation.toFixed(1),
-        code: badgeCode,
-        symbol: badgeSymbol,
-        flag: badgeFlag,
-      };
-    });
-
-    return reportWithPercentage;
   }
+
   public async yearlyExpensive(
     params: ReportParams
   ): Promise<Report | ErrorMessage> {
-    // ⚡ Bolt: Fetch report data and badge info in parallel
-    const [report, badge] = await Promise.all([
+    return this.getReportWithParticipation(
       prisma.vw_yearlyexpensive.findMany({
         where: {
           year: params.year,
@@ -259,54 +98,14 @@ export class ReportPrismaRepository implements IReportRepository {
         },
         orderBy: [{ year: "desc" }, { amount: "asc" }],
       }),
-      prisma.badge.findFirst({
-        where: {
-          id: params.badgeId,
-        },
-      }),
-    ]);
-
-    // 1. Total de gastos (usando el valor absoluto para la participación)
-    // Se inicializa con un objeto Decimal para mantener la precisión
-    const totalAbsoluto = report.reduce(
-      (sum, item) => sum.plus((item.amount ?? ZERO_DECIMAL).abs()), // <-- Usamos .abs() para sumar el valor absoluto
-      ZERO_DECIMAL
+      params.badgeId
     );
-
-    // ⚡ Bolt: Hoist badge metadata to avoid repeated property access in the loop.
-    const badgeCode = badge?.code;
-    const badgeSymbol = badge?.symbol;
-    const badgeFlag = badge?.flag;
-
-    // 2. Agregar % de participación
-    const reportWithPercentage = report.map((item) => {
-      // Asegúrate de que los cálculos se hacen con Decimal
-      const itemAmountAbsoluto = (item.amount ?? ZERO_DECIMAL).abs();
-
-      // Calcula la participación.
-      // Evitamos la división por cero y usamos el total absoluto.
-      const participation = totalAbsoluto.isZero()
-        ? ZERO_DECIMAL
-        : itemAmountAbsoluto.div(totalAbsoluto).times(100);
-
-      return {
-        ...item,
-        amount: itemAmountAbsoluto,
-        // Asegúrate de que `participation` sea un tipo `Decimal` o conviértelo a `string`
-        participation: participation.toFixed(1),
-        code: badgeCode,
-        symbol: badgeSymbol,
-        flag: badgeFlag,
-      };
-    });
-
-    return reportWithPercentage;
   }
+
   public async yearlyIncome(
     params: ReportParams
   ): Promise<Report | ErrorMessage> {
-    // ⚡ Bolt: Fetch report data and badge info in parallel
-    const [report, badge] = await Promise.all([
+    return this.getReportWithParticipation(
       prisma.vw_yearlyincome.findMany({
         where: {
           year: params.year,
@@ -315,54 +114,14 @@ export class ReportPrismaRepository implements IReportRepository {
         },
         orderBy: [{ year: "desc" }, { amount: "desc" }],
       }),
-      prisma.badge.findFirst({
-        where: {
-          id: params.badgeId,
-        },
-      }),
-    ]);
-
-    // 1. Total de gastos (usando el valor absoluto para la participación)
-    // Se inicializa con un objeto Decimal para mantener la precisión
-    const totalAbsoluto = report.reduce(
-      (sum, item) => sum.plus((item.amount ?? ZERO_DECIMAL).abs()), // <-- Usamos .abs() para sumar el valor absoluto
-      ZERO_DECIMAL
+      params.badgeId
     );
-
-    // ⚡ Bolt: Hoist badge metadata to avoid repeated property access in the loop.
-    const badgeCode = badge?.code;
-    const badgeSymbol = badge?.symbol;
-    const badgeFlag = badge?.flag;
-
-    // 2. Agregar % de participación
-    const reportWithPercentage = report.map((item) => {
-      // Asegúrate de que los cálculos se hacen con Decimal
-      const itemAmountAbsoluto = (item.amount ?? ZERO_DECIMAL).abs();
-
-      // Calcula la participación.
-      // Evitamos la división por cero y usamos el total absoluto.
-      const participation = totalAbsoluto.isZero()
-        ? ZERO_DECIMAL
-        : itemAmountAbsoluto.div(totalAbsoluto).times(100);
-
-      return {
-        ...item,
-        amount: itemAmountAbsoluto,
-        // Asegúrate de que `participation` sea un tipo `Decimal` o conviértelo a `string`
-        participation: participation.toFixed(1),
-        code: badgeCode,
-        symbol: badgeSymbol,
-        flag: badgeFlag,
-      };
-    });
-
-    return reportWithPercentage;
   }
+
   public async dailyExpensive(
     params: ReportParams
   ): Promise<Report | ErrorMessage> {
-    // ⚡ Bolt: Fetch report data and badge info in parallel
-    const [report, badge] = await Promise.all([
+    return this.getReportWithParticipation(
       prisma.vw_dailyexpensive.findMany({
         where: {
           datePurchase: params.date,
@@ -371,54 +130,14 @@ export class ReportPrismaRepository implements IReportRepository {
         },
         orderBy: [{ amount: "asc" }],
       }),
-      prisma.badge.findFirst({
-        where: {
-          id: params.badgeId,
-        },
-      }),
-    ]);
-
-    // 1. Total de gastos (usando el valor absoluto para la participación)
-    // Se inicializa con un objeto Decimal para mantener la precisión
-    const totalAbsoluto = report.reduce(
-      (sum, item) => sum.plus((item.amount ?? ZERO_DECIMAL).abs()), // <-- Usamos .abs() para sumar el valor absoluto
-      ZERO_DECIMAL
+      params.badgeId
     );
-
-    // ⚡ Bolt: Hoist badge metadata to avoid repeated property access in the loop.
-    const badgeCode = badge?.code;
-    const badgeSymbol = badge?.symbol;
-    const badgeFlag = badge?.flag;
-
-    // 2. Agregar % de participación
-    const reportWithPercentage = report.map((item) => {
-      // Asegúrate de que los cálculos se hacen con Decimal
-      const itemAmountAbsoluto = (item.amount ?? ZERO_DECIMAL).abs();
-
-      // Calcula la participación.
-      // Evitamos la división por cero y usamos el total absoluto.
-      const participation = totalAbsoluto.isZero()
-        ? ZERO_DECIMAL
-        : itemAmountAbsoluto.div(totalAbsoluto).times(100);
-
-      return {
-        ...item,
-        amount: itemAmountAbsoluto,
-        // Asegúrate de que `participation` sea un tipo `Decimal` o conviértelo a `string`
-        participation: participation.toFixed(1),
-        code: badgeCode,
-        symbol: badgeSymbol,
-        flag: badgeFlag,
-      };
-    });
-
-    return reportWithPercentage;
   }
+
   public async dailyIncome(
     params: ReportParams
   ): Promise<Report | ErrorMessage> {
-    // ⚡ Bolt: Fetch report data and badge info in parallel
-    const [report, badge] = await Promise.all([
+    return this.getReportWithParticipation(
       prisma.vw_dailyincome.findMany({
         where: {
           datePurchase: params.date,
@@ -427,48 +146,8 @@ export class ReportPrismaRepository implements IReportRepository {
         },
         orderBy: [{ amount: "desc" }],
       }),
-      prisma.badge.findFirst({
-        where: {
-          id: params.badgeId,
-        },
-      }),
-    ]);
-
-    // 1. Total de gastos (usando el valor absoluto para la participación)
-    // Se inicializa con un objeto Decimal para mantener la precisión
-    const totalAbsoluto = report.reduce(
-      (sum, item) => sum.plus((item.amount ?? ZERO_DECIMAL).abs()), // <-- Usamos .abs() para sumar el valor absoluto
-      ZERO_DECIMAL
+      params.badgeId
     );
-
-    // ⚡ Bolt: Hoist badge metadata to avoid repeated property access in the loop.
-    const badgeCode = badge?.code;
-    const badgeSymbol = badge?.symbol;
-    const badgeFlag = badge?.flag;
-
-    // 2. Agregar % de participación
-    const reportWithPercentage = report.map((item) => {
-      // Asegúrate de que los cálculos se hacen con Decimal
-      const itemAmountAbsoluto = (item.amount ?? ZERO_DECIMAL).abs();
-
-      // Calcula la participación.
-      // Evitamos la división por cero y usamos el total absoluto.
-      const participation = totalAbsoluto.isZero()
-        ? ZERO_DECIMAL
-        : itemAmountAbsoluto.div(totalAbsoluto).times(100);
-
-      return {
-        ...item,
-        amount: itemAmountAbsoluto,
-        // Asegúrate de que `participation` sea un tipo `Decimal` o conviértelo a `string`
-        participation: participation.toFixed(1),
-        code: badgeCode,
-        symbol: badgeSymbol,
-        flag: badgeFlag,
-      };
-    });
-
-    return reportWithPercentage;
   }
   public async reportBalance(
     params: ReportParams
@@ -517,8 +196,8 @@ export class ReportPrismaRepository implements IReportRepository {
   public async reportBalanceHistory(
     params: ReportParams
   ): Promise<ReportBalanceHistory | ErrorMessage> {
-    const baseDate = new Date(String(params.startDate) || new Date());
-    const baseEndDate = new Date(String(params.endDate) || new Date());
+    const baseDate = params.startDate ? new Date(params.startDate) : new Date();
+    const baseEndDate = params.endDate ? new Date(params.endDate) : new Date();
 
     const startDate = new Date(
       Date.UTC(baseDate.getUTCFullYear(), baseDate.getUTCMonth(), 1, 0, 0, 0, 0)
@@ -535,7 +214,7 @@ export class ReportPrismaRepository implements IReportRepository {
       )
     );
 
-    const MS_PER_DAY = 1000 * 60 * 60 * 24;
+    const MS_PER_DAY = 86400000; // 1000 * 60 * 60 * 24
 
     // Diferencia en días redondeada
     const currentPeriodDays = Math.round(
@@ -543,10 +222,10 @@ export class ReportPrismaRepository implements IReportRepository {
     );
 
     // ⚡ Bolt: Pre-calculate all dates to enable parallel data fetching
-    const lastYearStartDate = new Date(String(params.startDate));
-    lastYearStartDate.setFullYear(startDate.getFullYear() - 1);
-    const lastYearEndDate = new Date(String(params.endDate));
-    lastYearEndDate.setFullYear(endDate.getFullYear() - 1);
+    const lastYearStartDate = new Date(startDate.getTime());
+    lastYearStartDate.setUTCFullYear(startDate.getUTCFullYear() - 1);
+    const lastYearEndDate = new Date(endDate.getTime());
+    lastYearEndDate.setUTCFullYear(endDate.getUTCFullYear() - 1);
 
     let previousPeriodStartDate, previousPeriodEndDate;
 
@@ -669,8 +348,54 @@ export class ReportPrismaRepository implements IReportRepository {
   }
 
   /**
+   * ⚡ Bolt: Consolidates redundant reporting logic into a single optimized helper.
+   * This parallelizes data fetching and badge lookup while minimizing object allocations.
+   */
+  private async getReportWithParticipation(
+    reportPromise: Promise<any[]>,
+    badgeId: string | undefined
+  ): Promise<Report | ErrorMessage> {
+    const [report, badge] = await Promise.all([
+      reportPromise,
+      badgeId
+        ? prisma.badge.findUnique({ where: { id: badgeId } })
+        : Promise.resolve(null),
+    ]);
+
+    // ⚡ Bolt: Calculate absolute amounts once to avoid redundant .abs() calls and re-allocations.
+    let totalAbsoluto = ZERO_DECIMAL;
+    const amountsAbs: Decimal[] = new Array(report.length);
+    for (let i = 0; i < report.length; i++) {
+      const abs = (report[i].amount ?? ZERO_DECIMAL).abs();
+      amountsAbs[i] = abs;
+      totalAbsoluto = totalAbsoluto.plus(abs);
+    }
+
+    // ⚡ Bolt: Hoist metadata outside the mapping loop.
+    const badgeCode = badge?.code;
+    const badgeSymbol = badge?.symbol;
+    const badgeFlag = badge?.flag;
+
+    return report.map((item, i) => {
+      const itemAmountAbsoluto = amountsAbs[i];
+      const participation = totalAbsoluto.isZero()
+        ? ZERO_DECIMAL
+        : itemAmountAbsoluto.div(totalAbsoluto).times(100);
+
+      return {
+        ...item,
+        amount: itemAmountAbsoluto,
+        participation: participation.toFixed(1),
+        code: badgeCode,
+        symbol: badgeSymbol,
+        flag: badgeFlag,
+      };
+    });
+  }
+
+  /**
    * ⚡ Bolt: Fills missing dates in a report range with the last known cumulative balance.
-   * This logic is extracted to avoid redundant database queries.
+   * This is optimized to minimize object spreads and allocations inside high-frequency loops.
    */
   private fillReportDates(
     startDate: Date,
@@ -683,27 +408,31 @@ export class ReportPrismaRepository implements IReportRepository {
     let lastBalance = ZERO_DECIMAL;
     let hasAnyData = false;
 
+    // ⚡ Bolt: Hoist constant metadata fields to avoid repeated property access.
+    const { badgeId, code, flag, symbol } = badgeMetadata;
+
     while (currentDate <= endDate) {
       const dateKey = this.toISODate(currentDate);
       const dailyRecord = reportMap.get(dateKey);
 
+      const item: ItemBalanceHistory = {
+        badgeId,
+        code,
+        flag,
+        symbol,
+        date: dateKey,
+        dailyAmount: ZERO_DECIMAL,
+        cumulativeBalance: lastBalance,
+      };
+
       if (dailyRecord) {
-        fullReport.push({
-          ...badgeMetadata,
-          date: dateKey,
-          dailyAmount: dailyRecord.dailyAmount ?? ZERO_DECIMAL,
-          cumulativeBalance: dailyRecord.cumulativeBalance,
-        });
+        item.dailyAmount = dailyRecord.dailyAmount ?? ZERO_DECIMAL;
+        item.cumulativeBalance = dailyRecord.cumulativeBalance;
         lastBalance = (dailyRecord.cumulativeBalance as Decimal) ?? lastBalance;
         hasAnyData = true;
-      } else {
-        fullReport.push({
-          ...badgeMetadata,
-          date: dateKey,
-          dailyAmount: ZERO_DECIMAL,
-          cumulativeBalance: lastBalance,
-        });
       }
+
+      fullReport.push(item);
       currentDate.setUTCDate(currentDate.getUTCDate() + 1);
     }
     return hasAnyData ? fullReport : [];
@@ -721,5 +450,4 @@ export class ReportPrismaRepository implements IReportRepository {
       day < 10 ? "0" + day : day
     }`;
   }
-
 }

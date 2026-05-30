@@ -335,6 +335,15 @@ export class MovementPrismaRepository implements IMovementRepository {
       if (data.type === "transfer") {
         if (transferCategory) {
           categoryId = transferCategory.id;
+        } else if (data.categoryId) {
+          categoryId = data.categoryId;
+        } else {
+          // Fail secure: if it's a transfer and no transfer category or provided category exists, throw error
+          throw Object.assign(new Error("Transfer category not found"), {
+            statusCode: 400,
+            error: "Bad Request",
+            message: "A category is required for transfers.",
+          });
         }
         trm = isTransferOut
           ? Math.abs(Number(data.amount) / Number(data.amountEnd))

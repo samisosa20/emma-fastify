@@ -30,10 +30,16 @@ export class MovementController {
     const dataMovement = request.body as CreateMovement;
 
     try {
-      return await movementUseCase.addMovement({
+      const result = await movementUseCase.addMovement({
         ...dataMovement,
         userId: request.user.id,
       });
+
+      if (result && "statusCode" in result) {
+        return reply.status(Number(result.statusCode)).send(result);
+      }
+
+      return result;
     } catch (error: any) {
       const detail = formatErrorMessage(error);
       return reply.status(400).send({

@@ -85,3 +85,7 @@
 ## 2026-06-15 - [Consolidate Reporting Logic and Hoist Metadata]
 **Learning:** Identical reporting patterns (fetching data + looking up badge metadata) across multiple methods cause code bloat and redundant processing. High-frequency mapping loops often perform unnecessary property access or object re-allocations (e.g., repeating .abs() or object spreads).
 **Action:** Consolidate repetitive reporting logic into optimized private helpers that use Promise.all for parallel fetching and findUnique for primary key lookups. Pre-calculate values (like absolute amounts) once and hoist metadata outside loops to minimize runtime overhead.
+
+## 2026-06-20 - [Single-Pass Aggregation for Decimal Reports]
+**Learning:** Calculating absolute values and sums separately for `Decimal` objects in report aggregation loops leads to redundant allocations and method calls. Multi-pass mapping over the same dataset can be optimized by caching intermediate `Decimal` results (like absolute amounts) in a typed array.
+**Action:** Use a single loop to pre-calculate absolute values and totals, then reuse these cached values in the final mapping pass to reduce `Decimal` overhead by ~50%.

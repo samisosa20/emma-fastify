@@ -277,6 +277,8 @@ export class EventPrismaRepository implements IEventRepository {
       if (!movements || movements.length === 0) {
         return { ...restOfEvent, categories: [], movements: [] };
       }
+      // ⚡ Bolt: Optimize in-memory movement grouping by reducing redundant Map lookups,
+      // hoisting nested property access, and using a more efficient single-pass transformation.
       const groupedByBadge = new Map<
         string,
         {
@@ -296,78 +298,76 @@ export class EventPrismaRepository implements IEventRepository {
         }
       >();
 
-      for (const movement of movements) {
-        const badgeCode = movement.account?.badge?.code;
-        const categoryName = movement.category?.name;
-        const amount = movement.amount;
+      for (let i = 0; i < movements.length; i++) {
+        const movement = movements[i];
+        const badgeInfo = movement.account?.badge;
+        const badgeCode = badgeInfo?.code;
+        const movCategory = movement.category;
+        const categoryName = movCategory?.name;
 
         if (badgeCode && categoryName) {
-          if (!groupedByBadge.has(badgeCode)) {
-            groupedByBadge.set(badgeCode, {
-              symbol: String(movement.account?.badge?.symbol),
-              flag: String(movement.account?.badge?.flag),
+          let badgeGroup = groupedByBadge.get(badgeCode);
+          if (!badgeGroup) {
+            badgeGroup = {
+              symbol: String(badgeInfo.symbol ?? ""),
+              flag: String(badgeInfo.flag ?? ""),
               total_amount: ZERO_DECIMAL,
-              categories: new Map<
-                string,
-                {
-                  id: string;
-                  name: string;
-                  color: string | null;
-                  icon: string | null;
-                  amount: Decimal;
-                }
-              >(),
-            });
+              categories: new Map(),
+            };
+            groupedByBadge.set(badgeCode, badgeGroup);
           }
 
-          const badgeGroup = groupedByBadge.get(badgeCode)!;
-
-          // Sumar al total de la moneda
+          const amount = movement.amount as unknown as Decimal;
           badgeGroup.total_amount = badgeGroup.total_amount.add(amount);
 
-          // Sumar a la categoría específica dentro de la moneda
-          const categoryId = movement.category?.id;
+          const categoryId = movCategory.id;
           if (categoryId) {
-            const existing = badgeGroup.categories.get(categoryId) || {
-              id: categoryId,
-              name: movement.category.name,
-              color: movement.category.color,
-              icon: movement.category.icon,
-              amount: ZERO_DECIMAL,
-            };
-            existing.amount = existing.amount.add(amount);
-            badgeGroup.categories.set(categoryId, existing);
+            let catData = badgeGroup.categories.get(categoryId);
+            if (!catData) {
+              catData = {
+                id: categoryId,
+                name: categoryName,
+                color: movCategory.color,
+                icon: movCategory.icon,
+                amount: ZERO_DECIMAL,
+              };
+              badgeGroup.categories.set(categoryId, catData);
+            }
+            catData.amount = catData.amount.add(amount);
           }
         }
       }
 
-      const categories = Array.from(groupedByBadge.entries()).map(
-        ([badgeCode, data]) => {
-          const categoriesList = Array.from(data.categories.values()).map(
-            (cat) => ({
-              id: cat.id,
-              name: cat.name,
-              color: cat.color,
-              icon: cat.icon,
-              amount: cat.amount.toNumber(),
-              percentage: data.total_amount.isZero()
-                ? 0
-                : cat.amount
-                    .div(data.total_amount)
-                    .mul(100)
-                    .toDecimalPlaces(2)
-                    .toNumber(),
-            })
-          );
+      const categories = [];
+      for (const [badgeCode, data] of groupedByBadge) {
+        const categoriesList = [];
+        const totalAmount = data.total_amount;
+        const isTotalZero = totalAmount.isZero();
 
-          return {
-            code: badgeCode,
-            flag: data.flag,
-            symbol: data.symbol,
-            categories: categoriesList,
-          };
+        for (const cat of data.categories.values()) {
+          categoriesList.push({
+            id: cat.id,
+            name: cat.name,
+            color: cat.color,
+            icon: cat.icon,
+            amount: cat.amount.toNumber(),
+            percentage: isTotalZero
+              ? 0
+              : cat.amount
+                  .div(totalAmount)
+                  .mul(100)
+                  .toDecimalPlaces(2)
+                  .toNumber(),
+          });
         }
-      );
+
+        categories.push({
+          code: badgeCode,
+          flag: data.flag,
+          symbol: data.symbol,
+          categories: categoriesList,
+        });
+      }
 
       return { ...restOfEvent, categories, movements };
     } catch (error: any) {

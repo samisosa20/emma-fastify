@@ -348,52 +348,6 @@ export class ReportPrismaRepository implements IReportRepository {
   }
 
   /**
-   * ⚡ Bolt: Consolidates redundant reporting logic into a single optimized helper.
-   * This parallelizes data fetching and badge lookup while minimizing object allocations.
-   */
-  private async getReportWithParticipation(
-    reportPromise: Promise<any[]>,
-    badgeId: string | undefined
-  ): Promise<Report | ErrorMessage> {
-    const [report, badge] = await Promise.all([
-      reportPromise,
-      badgeId
-        ? prisma.badge.findUnique({ where: { id: badgeId } })
-        : Promise.resolve(null),
-    ]);
-
-    // ⚡ Bolt: Calculate absolute amounts once to avoid redundant .abs() calls and re-allocations.
-    let totalAbsoluto = ZERO_DECIMAL;
-    const amountsAbs: Decimal[] = new Array(report.length);
-    for (let i = 0; i < report.length; i++) {
-      const abs = (report[i].amount ?? ZERO_DECIMAL).abs();
-      amountsAbs[i] = abs;
-      totalAbsoluto = totalAbsoluto.plus(abs);
-    }
-
-    // ⚡ Bolt: Hoist metadata outside the mapping loop.
-    const badgeCode = badge?.code;
-    const badgeSymbol = badge?.symbol;
-    const badgeFlag = badge?.flag;
-
-    return report.map((item, i) => {
-      const itemAmountAbsoluto = amountsAbs[i];
-      const participation = totalAbsoluto.isZero()
-        ? ZERO_DECIMAL
-        : itemAmountAbsoluto.div(totalAbsoluto).times(100);
-
-      return {
-        ...item,
-        amount: itemAmountAbsoluto,
-        participation: participation.toFixed(1),
-        code: badgeCode,
-        symbol: badgeSymbol,
-        flag: badgeFlag,
-      };
-    });
-  }
-
-  /**
    * ⚡ Bolt: Fills missing dates in a report range with the last known cumulative balance.
    * This is optimized to minimize object spreads and allocations inside high-frequency loops.
    */
@@ -454,6 +408,7 @@ export class ReportPrismaRepository implements IReportRepository {
   /**
    * ⚡ Bolt: Consolidated helper to fetch report data and calculate participation percentages.
    * Parallelizes data fetching and optimizes calculations to minimize object allocations.
+   * This reduces .abs() calls and Decimal allocations by 50% compared to sequential processing.
    */
   private async getReportWithParticipation(
     queryPromise: Promise<any[]>,
@@ -469,21 +424,24 @@ export class ReportPrismaRepository implements IReportRepository {
         : Promise.resolve(null),
     ]);
 
-    // 1. Total (using absolute value for participation)
-    const totalAbsoluto = report.reduce(
-      (sum, item) => sum.plus((item.amount ?? ZERO_DECIMAL).abs()),
-      ZERO_DECIMAL
-    );
+    let totalAbsoluto = ZERO_DECIMAL;
+    const amountsAbs: Decimal[] = new Array(report.length);
+
+    // ⚡ Bolt: Calculate absolute amounts once to avoid redundant .abs() calls and re-allocations.
+    for (let i = 0; i < report.length; i++) {
+      const abs = (report[i].amount ?? ZERO_DECIMAL).abs();
+      amountsAbs[i] = abs;
+      totalAbsoluto = totalAbsoluto.plus(abs);
+    }
 
     // ⚡ Bolt: Hoist badge metadata to avoid repeated property access in the loop.
     const badgeCode = badge?.code;
     const badgeSymbol = badge?.symbol;
     const badgeFlag = badge?.flag;
 
-    // 2. Add participation percentage
-    return report.map((item) => {
-      // ⚡ Bolt: Reuse itemAmountAbsoluto to avoid redundant .abs() calls and Decimal allocations.
-      const itemAmountAbsoluto = (item.amount ?? ZERO_DECIMAL).abs();
+    // 2. Add participation percentage reusing stored absolute amounts.
+    return report.map((item, i) => {
+      const itemAmountAbsoluto = amountsAbs[i];
 
       const participation = totalAbsoluto.isZero()
         ? ZERO_DECIMAL

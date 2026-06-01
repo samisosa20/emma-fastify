@@ -17,12 +17,12 @@ type APIEventResponse = {
 
 export class EventPrismaRepository implements IEventRepository {
   public async addEvent(data: CreateEvent): Promise<Event | ErrorMessage> {
-    const { userId, ...rest } = data;
     try {
       const newEvent = await prisma.event.create({
         data: {
-          ...rest,
-          userId,
+          name: data.name,
+          type: data.type,
+          userId: data.userId,
           endEvent: new Date(data.endEvent),
         },
       });
@@ -200,7 +200,6 @@ export class EventPrismaRepository implements IEventRepository {
     userId: string,
     data: Partial<CreateEvent>
   ): Promise<Event | ErrorMessage> {
-    const { userId: _, ...rest } = data;
     try {
       const event = await prisma.event.findFirst({
         where: { id, userId },
@@ -219,7 +218,8 @@ export class EventPrismaRepository implements IEventRepository {
           id,
         },
         data: {
-          ...rest,
+          name: data.name,
+          type: data.type,
           ...(data.endEvent && { endEvent: new Date(data.endEvent) }),
         },
       });
@@ -418,6 +418,7 @@ export class EventPrismaRepository implements IEventRepository {
         headers: {
           "Content-Type": "application/json",
         },
+        signal: AbortSignal.timeout(5000), // Security: Prevent hanging process
       });
 
       if (!loginResponse.ok) {
@@ -448,6 +449,7 @@ export class EventPrismaRepository implements IEventRepository {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
+        signal: AbortSignal.timeout(5000), // Security: Prevent hanging process
       });
 
       if (!eventsResponse.ok) {

@@ -15,27 +15,6 @@ import { validateUserLogin, validateUserRegister } from "packages/shared";
 const authRoutes: FastifyPluginAsync = async (fastify) => {
   const authController = new AuthController(fastify);
 
-  fastify.all("/*", async (request, reply) => {
-    // Security: Use the trusted APP_URL environment variable for constructing the URL
-    // instead of the potentially spoofed Host header to prevent Host Header Injection.
-    const url = new URL(request.url, process.env.APP_URL);
-    const headers = fromNodeHeaders(request.headers);
-
-    const req = new Request(url.toString(), {
-      method: request.method,
-      headers,
-      ...(request.body ? { body: JSON.stringify(request.body) } : {}),
-    });
-
-    const response = await auth.handler(req);
-
-    reply.status(response.status);
-    response.headers.forEach((value: string, key: string) =>
-      reply.header(key, value)
-    );
-    return reply.send(response.body ? await response.text() : null);
-  });
-
   fastify.post(
     "/login",
     {
@@ -97,6 +76,27 @@ const authRoutes: FastifyPluginAsync = async (fastify) => {
     },
     authController.recoveryPassword
   );
+
+  fastify.all("/*", async (request, reply) => {
+    // Security: Use the trusted APP_URL environment variable for constructing the URL
+    // instead of the potentially spoofed Host header to prevent Host Header Injection.
+    const url = new URL(request.url, process.env.APP_URL);
+    const headers = fromNodeHeaders(request.headers);
+
+    const req = new Request(url.toString(), {
+      method: request.method,
+      headers,
+      ...(request.body ? { body: JSON.stringify(request.body) } : {}),
+    });
+
+    const response = await auth.handler(req);
+
+    reply.status(response.status);
+    response.headers.forEach((value: string, key: string) =>
+      reply.header(key, value)
+    );
+    return reply.send(response.body ? await response.text() : null);
+  });
   fastify.get(
     "/profile",
     {

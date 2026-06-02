@@ -348,52 +348,6 @@ export class ReportPrismaRepository implements IReportRepository {
   }
 
   /**
-   * ⚡ Bolt: Consolidates redundant reporting logic into a single optimized helper.
-   * This parallelizes data fetching and badge lookup while minimizing object allocations.
-   */
-  private async getReportWithParticipation(
-    reportPromise: Promise<any[]>,
-    badgeId: string | undefined
-  ): Promise<Report | ErrorMessage> {
-    const [report, badge] = await Promise.all([
-      reportPromise,
-      badgeId
-        ? prisma.badge.findUnique({ where: { id: badgeId } })
-        : Promise.resolve(null),
-    ]);
-
-    // ⚡ Bolt: Calculate absolute amounts once to avoid redundant .abs() calls and re-allocations.
-    let totalAbsoluto = ZERO_DECIMAL;
-    const amountsAbs: Decimal[] = new Array(report.length);
-    for (let i = 0; i < report.length; i++) {
-      const abs = (report[i].amount ?? ZERO_DECIMAL).abs();
-      amountsAbs[i] = abs;
-      totalAbsoluto = totalAbsoluto.plus(abs);
-    }
-
-    // ⚡ Bolt: Hoist metadata outside the mapping loop.
-    const badgeCode = badge?.code;
-    const badgeSymbol = badge?.symbol;
-    const badgeFlag = badge?.flag;
-
-    return report.map((item, i) => {
-      const itemAmountAbsoluto = amountsAbs[i];
-      const participation = totalAbsoluto.isZero()
-        ? ZERO_DECIMAL
-        : itemAmountAbsoluto.div(totalAbsoluto).times(100);
-
-      return {
-        ...item,
-        amount: itemAmountAbsoluto,
-        participation: participation.toFixed(1),
-        code: badgeCode,
-        symbol: badgeSymbol,
-        flag: badgeFlag,
-      };
-    });
-  }
-
-  /**
    * ⚡ Bolt: Fills missing dates in a report range with the last known cumulative balance.
    * This is optimized to minimize object spreads and allocations inside high-frequency loops.
    */

@@ -90,3 +90,8 @@
 **Vulnerability:** Update operations for Planned Payments, Heritages, Investments, and Appreciations were vulnerable to mass assignment, potentially allowing users to change the `userId` (ownership) of a record.
 **Learning:** Even with ownership checks in place, spreading unvalidated or semi-validated request bodies directly into database update calls can lead to parameter pollution where internal fields like `userId` are overwritten.
 **Prevention:** Always explicitly destructure and exclude sensitive or immutable fields (especially `userId`) from input payloads before passing them to Prisma `update` or `create` calls.
+
+## 2025-07-10 - [Hanging Processes via External API Imports]
+**Vulnerability:** External data import processes (`importEvents`, `importCategories`, etc.) used `fetch` without timeouts, making the application vulnerable to Denial of Service (DoS) if the upstream API hangs.
+**Learning:** Default `fetch` behavior in Node.js can wait indefinitely for a response. In a single-threaded environment (or one with limited worker pool), this can exhaust resources or hang critical background jobs.
+**Prevention:** Always implement `AbortSignal.timeout()` on all outgoing network requests to external dependencies to ensure the application remains responsive and fails fast.

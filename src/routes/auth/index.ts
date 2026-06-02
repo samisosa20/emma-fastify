@@ -15,6 +15,68 @@ import { validateUserLogin, validateUserRegister } from "packages/shared";
 const authRoutes: FastifyPluginAsync = async (fastify) => {
   const authController = new AuthController(fastify);
 
+  fastify.post(
+    "/login",
+    {
+      preHandler: [validateUserLogin],
+      schema: loginDocumentation,
+      config: {
+        rateLimit: {
+          max: 5,
+          timeWindow: "1 minute",
+        },
+      },
+    },
+    authController.loginUser
+  );
+
+  fastify.post(
+    "/register",
+    {
+      preHandler: [validateUserRegister],
+      schema: registerDocumentation,
+      config: {
+        rateLimit: {
+          max: 5,
+          timeWindow: "1 minute",
+        },
+      },
+    },
+    authController.registerReguralUser
+  );
+
+  fastify.post(
+    "/confirm-email",
+    { schema: confirmEmailDocumentation },
+    authController.emailConfirmation
+  );
+  fastify.post(
+    "/resend-email",
+    {
+      schema: resendEmailDocumentation,
+      config: {
+        rateLimit: {
+          max: 5,
+          timeWindow: "1 minute",
+        },
+      },
+    },
+    authController.sendEmailConfirmation
+  );
+  fastify.post(
+    "/recovery-password",
+    {
+      schema: recoveryPasswordDocumentation,
+      config: {
+        rateLimit: {
+          max: 5,
+          timeWindow: "1 minute",
+        },
+      },
+    },
+    authController.recoveryPassword
+  );
+
   fastify.all("/*", async (request, reply) => {
     // Security: Use the trusted APP_URL environment variable for constructing the URL
     // instead of the potentially spoofed Host header to prevent Host Header Injection.
@@ -35,34 +97,6 @@ const authRoutes: FastifyPluginAsync = async (fastify) => {
     );
     return reply.send(response.body ? await response.text() : null);
   });
-
-  fastify.post(
-    "/login",
-    { preHandler: [validateUserLogin], schema: loginDocumentation },
-    authController.loginUser
-  );
-
-  fastify.post(
-    "/register",
-    { preHandler: [validateUserRegister], schema: registerDocumentation },
-    authController.registerReguralUser
-  );
-
-  fastify.post(
-    "/confirm-email",
-    { schema: confirmEmailDocumentation },
-    authController.emailConfirmation
-  );
-  fastify.post(
-    "/resend-email",
-    { schema: resendEmailDocumentation },
-    authController.sendEmailConfirmation
-  );
-  fastify.post(
-    "/recovery-password",
-    { schema: recoveryPasswordDocumentation },
-    authController.recoveryPassword
-  );
   fastify.get(
     "/profile",
     {

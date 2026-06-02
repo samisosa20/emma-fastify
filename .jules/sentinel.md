@@ -95,3 +95,8 @@
 **Vulnerability:** External data import processes (`importEvents`, `importCategories`, etc.) used `fetch` without timeouts, making the application vulnerable to Denial of Service (DoS) if the upstream API hangs.
 **Learning:** Default `fetch` behavior in Node.js can wait indefinitely for a response. In a single-threaded environment (or one with limited worker pool), this can exhaust resources or hang critical background jobs.
 **Prevention:** Always implement `AbortSignal.timeout()` on all outgoing network requests to external dependencies to ensure the application remains responsive and fails fast.
+
+## 2026-05-23 - [Rate Limiting and Proxy Route Ordering]
+**Vulnerability:** Sensitive authentication endpoints lacked rate limiting, and a wildcard proxy route could potentially capture requests intended for specific routes if misconfigured.
+**Learning:** Global rate limits can be too restrictive for normal API usage while being too permissive for sensitive auth actions. Furthermore, when using wildcard routes in Fastify (especially when proxying to other handlers), their placement is crucial to ensure that more specific routes with dedicated security logic (like validation and custom rate limits) are matched first.
+**Prevention:** Implement granular rate limits on sensitive endpoints (e.g., login, register) and always place wildcard or catch-all routes at the very end of route definitions to maintain intended matching priority.

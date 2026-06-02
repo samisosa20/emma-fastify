@@ -70,7 +70,7 @@ const bootstrap = async () => {
     });
 
     fastify.register(rateLimit, {
-      max: 10,
+      max: 60,
       timeWindow: "1 minute",
     });
     await fastify.after();

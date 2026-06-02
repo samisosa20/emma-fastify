@@ -38,13 +38,31 @@ const authRoutes: FastifyPluginAsync = async (fastify) => {
 
   fastify.post(
     "/login",
-    { preHandler: [validateUserLogin], schema: loginDocumentation },
+    {
+      preHandler: [validateUserLogin],
+      schema: loginDocumentation,
+      config: {
+        rateLimit: {
+          max: 5,
+          timeWindow: "1 minute",
+        },
+      },
+    },
     authController.loginUser
   );
 
   fastify.post(
     "/register",
-    { preHandler: [validateUserRegister], schema: registerDocumentation },
+    {
+      preHandler: [validateUserRegister],
+      schema: registerDocumentation,
+      config: {
+        rateLimit: {
+          max: 5,
+          timeWindow: "1 minute",
+        },
+      },
+    },
     authController.registerReguralUser
   );
 
@@ -55,12 +73,28 @@ const authRoutes: FastifyPluginAsync = async (fastify) => {
   );
   fastify.post(
     "/resend-email",
-    { schema: resendEmailDocumentation },
+    {
+      schema: resendEmailDocumentation,
+      config: {
+        rateLimit: {
+          max: 5,
+          timeWindow: "1 minute",
+        },
+      },
+    },
     authController.sendEmailConfirmation
   );
   fastify.post(
     "/recovery-password",
-    { schema: recoveryPasswordDocumentation },
+    {
+      schema: recoveryPasswordDocumentation,
+      config: {
+        rateLimit: {
+          max: 5,
+          timeWindow: "1 minute",
+        },
+      },
+    },
     authController.recoveryPassword
   );
   fastify.get(

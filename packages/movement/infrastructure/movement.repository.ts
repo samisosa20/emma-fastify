@@ -200,10 +200,6 @@ export class MovementPrismaRepository implements IMovementRepository {
             },
             trm: Math.abs(Number(data.amountEnd) / Number(data.amount)),
           },
-          include: {
-            account: true,
-            category: true,
-          },
         });
       }
 
@@ -491,15 +487,31 @@ export class MovementPrismaRepository implements IMovementRepository {
     id: string,
     userId: string
   ): Promise<Movement | null> {
+    // ⚡ Bolt: Use a targeted select instead of heavy includes to avoid 4 unnecessary joins
+    // and reduce database load when deleting a movement.
     const movement = await prisma.movement.findFirst({
       where: { id, userId },
-      include: {
-        account: true,
-        category: true,
-        event: true,
-        investment: true,
-        originalOrPairedMovement: true,
-        relatedTransferMovements: true,
+      select: {
+        id: true,
+        accountId: true,
+        categoryId: true,
+        description: true,
+        amount: true,
+        trm: true,
+        datePurchase: true,
+        transferId: true,
+        eventId: true,
+        investmentId: true,
+        userId: true,
+        createdAt: true,
+        updatedAt: true,
+        addWithdrawal: true,
+        originalOrPairedMovement: {
+          select: { id: true },
+        },
+        relatedTransferMovements: {
+          select: { id: true },
+        },
       },
     });
     if (!movement) {
@@ -627,22 +639,37 @@ export class MovementPrismaRepository implements IMovementRepository {
       const movementsToCreate: any[] = [];
       const fingerprintsMap = new Map<string, string>(); // fingerprint -> generated ID
 
-      // Pass 1: Pre-generate IDs and map fingerprints for all movements to enable pairing.
+      // ⚡ Bolt: Pass 1: Pre-parse dates and generate fingerprints using pre-calculated timestamps.
+      // This eliminates redundant parsing and object allocations in the subsequent loop.
       for (const movement of oldMovements) {
         const account = accountsMap.get(movement.account.name);
         const category = categoriesMap.get(movement.category.name);
         if (!account || !category) continue;
 
+        const datePurchase = new Date(movement.date_purchase);
         const id = randomUUID();
-        const fingerprint = `${account.id}-${new Date(
-          movement.date_purchase
-        ).getTime()}-${movement.amount}-${category.id}`;
+        const fingerprint = `${account.id}-${datePurchase.getTime()}-${
+          movement.amount
+        }-${category.id}`;
         fingerprintsMap.set(fingerprint, id);
-        (movement as any).generatedId = id;
+
+        // Cache parsed dates and pre-generated ID on the object to reuse them in Pass 2.
+        const movementAny = movement as any;
+        movementAny.generatedId = id;
+        movementAny.parsedDatePurchase = datePurchase;
+        movementAny.parsedCreatedAt = new Date(movement.created_at);
+        movementAny.parsedUpdatedAt = new Date(movement.updated_at);
+
+        if (movement.transfer_out) {
+          movementAny.parsedTransferOutDate = new Date(
+            movement.transfer_out.date_purchase
+          );
+        }
       }
 
       // Pass 2: Build creation objects with paired transfer IDs in-memory.
       for (const movement of oldMovements) {
+        const movementAny = movement as any;
         // Lookup Account by name
         const account = accountsMap.get(movement.account.name);
         if (!account) {
@@ -694,19 +721,19 @@ export class MovementPrismaRepository implements IMovementRepository {
             movement.transfer_out.account.name
           );
           if (accountTransfer) {
-            // ⚡ Bolt: Link paired transfer movements in-memory using pre-generated UUIDs.
-            const searchKey = `${accountTransfer.id}-${new Date(
-              movement.transfer_out.date_purchase
-            ).getTime()}-${movement.transfer_out.amount}-${category.id}`;
+            // ⚡ Bolt: Link paired transfer movements in-memory using pre-generated UUIDs and cached dates.
+            const searchKey = `${accountTransfer.id}-${movementAny.parsedTransferOutDate.getTime()}-${
+              movement.transfer_out.amount
+            }-${category.id}`;
             transferId = fingerprintsMap.get(searchKey) || null;
           }
         }
 
         movementsToCreate.push({
-          id: (movement as any).generatedId,
+          id: movementAny.generatedId,
           description: movement.description,
           amount: movement.amount,
-          datePurchase: new Date(movement.date_purchase),
+          datePurchase: movementAny.parsedDatePurchase,
           trm: movement.trm,
           addWithdrawal: movement.add_withdrawal,
           accountId: account.id,
@@ -715,8 +742,8 @@ export class MovementPrismaRepository implements IMovementRepository {
           transferId,
           userId,
           investmentId,
-          createdAt: new Date(movement.created_at),
-          updatedAt: new Date(movement.updated_at),
+          createdAt: movementAny.parsedCreatedAt,
+          updatedAt: movementAny.parsedUpdatedAt,
         });
       }
 

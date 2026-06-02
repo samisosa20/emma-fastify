@@ -89,3 +89,11 @@
 ## 2026-06-20 - [Single-Pass Aggregation for Decimal Reports]
 **Learning:** Calculating absolute values and sums separately for `Decimal` objects in report aggregation loops leads to redundant allocations and method calls. Multi-pass mapping over the same dataset can be optimized by caching intermediate `Decimal` results (like absolute amounts) in a typed array.
 **Action:** Use a single loop to pre-calculate absolute values and totals, then reuse these cached values in the final mapping pass to reduce `Decimal` overhead by ~50%.
+
+## 2026-06-25 - [Repository Data Access and Bulk Import Optimization]
+**Learning:**  performed heavy `include` with 6 joins, mostly unused. `addMovement` for transfers also had redundant `include` on paired records. `importMovements` repeatedly parsed date strings in nested loops (O(N) redundant work).
+**Action:** Use targeted `select` in `deleteMovement` to avoid joins. Remove redundant `include` in creation paths. Pre-parse dates and cache them in bulk processing loops to eliminate redundant object allocations.
+
+## 2026-06-25 - [Repository Data Access and Bulk Import Optimization]
+**Learning:** `deleteMovement` performed heavy `include` with 6 joins, mostly unused. `addMovement` for transfers also had redundant `include` on paired records. `importMovements` repeatedly parsed date strings in nested loops (O(N) redundant work).
+**Action:** Use targeted `select` in `deleteMovement` to avoid joins. Remove redundant `include` in creation paths. Pre-parse dates and cache them in bulk processing loops to eliminate redundant object allocations.

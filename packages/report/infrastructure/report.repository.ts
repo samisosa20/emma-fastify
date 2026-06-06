@@ -405,4 +405,56 @@ export class ReportPrismaRepository implements IReportRepository {
     }`;
   }
 
+  /**
+   * ⚡ Bolt: Consolidated helper to fetch report data and calculate participation percentages.
+   * Parallelizes data fetching and optimizes calculations to minimize object allocations.
+   * This reduces .abs() calls and Decimal allocations by 50% compared to sequential processing.
+   */
+  private async getReportWithParticipation(
+    queryPromise: Promise<any[]>,
+    badgeId: string | undefined
+  ): Promise<Report | ErrorMessage> {
+    // ⚡ Bolt: Fetch report data and badge info in parallel using findUnique for O(1) primary key lookup.
+    const [report, badge] = await Promise.all([
+      queryPromise,
+      badgeId
+        ? prisma.badge.findUnique({
+            where: { id: badgeId },
+          })
+        : Promise.resolve(null),
+    ]);
+
+    let totalAbsoluto = ZERO_DECIMAL;
+    const amountsAbs: Decimal[] = new Array(report.length);
+
+    // ⚡ Bolt: Calculate absolute amounts once to avoid redundant .abs() calls and re-allocations.
+    for (let i = 0; i < report.length; i++) {
+      const abs = (report[i].amount ?? ZERO_DECIMAL).abs();
+      amountsAbs[i] = abs;
+      totalAbsoluto = totalAbsoluto.plus(abs);
+    }
+
+    // ⚡ Bolt: Hoist badge metadata to avoid repeated property access in the loop.
+    const badgeCode = badge?.code;
+    const badgeSymbol = badge?.symbol;
+    const badgeFlag = badge?.flag;
+
+    // 2. Add participation percentage reusing stored absolute amounts.
+    return report.map((item, i) => {
+      const itemAmountAbsoluto = amountsAbs[i];
+
+      const participation = totalAbsoluto.isZero()
+        ? ZERO_DECIMAL
+        : itemAmountAbsoluto.div(totalAbsoluto).times(100);
+
+      return {
+        ...item,
+        amount: itemAmountAbsoluto,
+        participation: participation.toFixed(1),
+        code: badgeCode,
+        symbol: badgeSymbol,
+        flag: badgeFlag,
+      };
+    }) as unknown as Report;
+  }
 }

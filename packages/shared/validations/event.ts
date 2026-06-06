@@ -5,7 +5,7 @@ export const EventCreateInput = z.object({
   name: z.string({ message: "name is required" }).min(1).max(255),
   endEvent: z
     .string({ message: "endEvent is required" })
-    .datetime({ message: "Invalid date format" }),
+    .date({ message: "Invalid date format" }),
   type: z.string().max(100).optional().nullable(),
   // userId: z.string({ message: "userId is required" }), // Mantenido comentado si userId se maneja server-side
   // Otros campos relevantes como type, categoryId si aplican

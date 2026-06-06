@@ -187,6 +187,7 @@ export class AppreciationPrismaRepository implements IAppreciationRepository {
         headers: {
           "Content-Type": "application/json",
         },
+        signal: AbortSignal.timeout(5000), // Security: Prevent hanging process
       });
 
       if (!loginResponse.ok) {
@@ -213,6 +214,7 @@ export class AppreciationPrismaRepository implements IAppreciationRepository {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
+        signal: AbortSignal.timeout(5000), // Security: Prevent hanging process
       });
 
       if (!appreciationsResponse.ok) {

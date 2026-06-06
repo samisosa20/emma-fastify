@@ -202,6 +202,7 @@ export class CategoryPrismaRepository implements ICategoryRepository {
         headers: {
           "Content-Type": "application/json",
         },
+        signal: AbortSignal.timeout(5000), // Security: Prevent hanging process
       });
 
       if (!loginResponse.ok) {
@@ -234,6 +235,7 @@ export class CategoryPrismaRepository implements ICategoryRepository {
             "Content-Type": "application/json",
             Authorization: `Bearer ${token}`,
           },
+          signal: AbortSignal.timeout(5000), // Security: Prevent hanging process
         }
       );
 

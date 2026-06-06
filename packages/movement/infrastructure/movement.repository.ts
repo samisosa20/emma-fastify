@@ -562,6 +562,7 @@ export class MovementPrismaRepository implements IMovementRepository {
         headers: {
           "Content-Type": "application/json",
         },
+        signal: AbortSignal.timeout(5000), // Security: Prevent hanging process
       });
 
       if (!loginResponse.ok) {
@@ -592,6 +593,7 @@ export class MovementPrismaRepository implements IMovementRepository {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
+        signal: AbortSignal.timeout(5000), // Security: Prevent hanging process
       });
 
       if (!movementsResponse.ok) {

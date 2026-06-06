@@ -146,6 +146,7 @@ export class BadgePrismaRepository implements IBadgeRepository {
         headers: {
           "Content-Type": "application/json",
         },
+        signal: AbortSignal.timeout(5000), // Security: Prevent hanging process
       });
 
       if (!response.ok) {

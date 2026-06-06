@@ -7,6 +7,22 @@ import { ReportPrismaRepository } from "packages/report/infrastructure/report.re
 const reportRepository = new ReportPrismaRepository();
 const reportUseCase = new ReportUseCase(reportRepository);
 
+// ⚡ Bolt: Hoist mapping object to avoid re-allocating it on every request.
+const REPORT_USE_CASE_MAP: Record<string, Record<string, string>> = {
+  expensive: {
+    weekly: "weeklyExpensive",
+    monthly: "monthlyExpensive",
+    yearly: "yearlyExpensive",
+    daily: "dailyExpensive",
+  },
+  income: {
+    weekly: "weeklyIncome",
+    monthly: "monthlyIncome",
+    yearly: "yearlyIncome",
+    daily: "dailyIncome",
+  },
+};
+
 export class ReportController {
   reportMovements = async (request: FastifyRequest, reply: FastifyReply) => {
     type ReportType = "expensive" | "income";
@@ -18,28 +34,13 @@ export class ReportController {
     const query = request.query as ReportParams;
     const user = request.user;
 
-    const useCase = {
-      expensive: {
-        weekly: "weeklyExpensive",
-        monthly: "monthlyExpensive",
-        yearly: "yearlyExpensive",
-        daily: "dailyExpensive",
-      },
-      income: {
-        weekly: "weeklyIncome",
-        monthly: "monthlyIncome",
-        yearly: "yearlyIncome",
-        daily: "dailyIncome",
-      },
-    };
-
-    if (!(type in useCase)) {
+    if (!(type in REPORT_USE_CASE_MAP)) {
       return reply.status(400).send({ error: "Invalid report type" });
     }
-    if (!(period in useCase[type])) {
+    if (!(period in REPORT_USE_CASE_MAP[type])) {
       return reply.status(400).send({ error: "Invalid report period" });
     }
-    const selectedHandler = useCase[type]?.[period];
+    const selectedHandler = REPORT_USE_CASE_MAP[type]?.[period];
 
     if (!selectedHandler) {
       return reply.status(400).send({

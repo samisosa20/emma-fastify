@@ -411,26 +411,22 @@ export class InvestmentPrismaRepository implements IInvestmentRepository {
     const movements = investment.movements || [];
     const appreciations = investment.appreciations || [];
 
-    const totalReturnsDecimal = movements
-      .filter((m) => !m.addWithdrawal)
-      .reduce(
-        (acc, movement) =>
-          acc.plus((movement.amount || ZERO_DECIMAL) as unknown as Decimal),
-        ZERO_DECIMAL
-      );
-    const totalReturns = totalReturnsDecimal.toNumber();
+    let totalReturnsDecimal = ZERO_DECIMAL;
+    let movementsWithdrawalSum = ZERO_DECIMAL;
 
+    // ⚡ Bolt: Consolidate movement aggregation into a single pass to eliminate O(N) redundant iterations.
+    for (const movement of movements) {
+      const amount = (movement.amount || ZERO_DECIMAL) as unknown as Decimal;
+      if (movement.addWithdrawal) {
+        movementsWithdrawalSum = movementsWithdrawalSum.minus(amount);
+      } else {
+        totalReturnsDecimal = totalReturnsDecimal.plus(amount);
+      }
+    }
+
+    const totalReturns = totalReturnsDecimal.toNumber();
     const initialAmountDecimal = (investment.initAmount ||
       ZERO_DECIMAL) as unknown as Decimal;
-    const movementsWithdrawalSum = movements
-      .filter((m) => m.addWithdrawal)
-      .reduce(
-        (acc, movement) =>
-          acc.plus(
-            ((movement.amount || ZERO_DECIMAL) as unknown as Decimal).times(-1)
-          ),
-        ZERO_DECIMAL
-      );
 
     // totalWithdrawal como número (pero calculado con Decimal.js para precisión)
     const totalWithdrawal = initialAmountDecimal

@@ -296,6 +296,7 @@ export class BudgetPrismaRepository implements IBudgetRepository {
         headers: {
           "Content-Type": "application/json",
         },
+        signal: AbortSignal.timeout(5000), // Security: Prevent hanging process
       });
 
       if (!loginResponse.ok) {
@@ -322,6 +323,7 @@ export class BudgetPrismaRepository implements IBudgetRepository {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
+        signal: AbortSignal.timeout(5000), // Security: Prevent hanging process
       });
 
       if (!budgetsResponse.ok) {

@@ -510,6 +510,7 @@ export class InvestmentPrismaRepository implements IInvestmentRepository {
         headers: {
           "Content-Type": "application/json",
         },
+        signal: AbortSignal.timeout(5000), // Security: Prevent hanging process
       });
 
       if (!loginResponse.ok) {
@@ -540,6 +541,7 @@ export class InvestmentPrismaRepository implements IInvestmentRepository {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
+        signal: AbortSignal.timeout(5000), // Security: Prevent hanging process
       });
 
       if (!investmentsResponse.ok) {

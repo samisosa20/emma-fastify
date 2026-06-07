@@ -387,6 +387,7 @@ export class HeritagePrismaRepository implements IHeritageRepository {
         headers: {
           "Content-Type": "application/json",
         },
+        signal: AbortSignal.timeout(5000), // Security: Prevent hanging process
       });
 
       if (!loginResponse.ok) {
@@ -413,6 +414,7 @@ export class HeritagePrismaRepository implements IHeritageRepository {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
+        signal: AbortSignal.timeout(5000), // Security: Prevent hanging process
       });
 
       if (!heritagesResponse.ok) {

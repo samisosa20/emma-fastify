@@ -61,4 +61,7 @@ export const formatErrorMessageMiddleware = (error: any) => {
       error: "Validation Error",
     });
   }
+  // Ensure we always throw if there was an error, even if not ZodError,
+  // to prevent middleware from silently continuing.
+  throw error;
 };

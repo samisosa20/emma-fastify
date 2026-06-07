@@ -10,7 +10,13 @@ import {
 import { FastifyPluginAsync } from "fastify";
 import { auth } from "@lib/auth";
 import { fromNodeHeaders } from "better-auth/node";
-import { validateUserLogin, validateUserRegister } from "packages/shared";
+import {
+  validateUserLogin,
+  validateUserRegister,
+  validateUserConfirmEmail,
+  validateUserResendEmail,
+  validateUserRecoveryPassword,
+} from "packages/shared";
 
 const authRoutes: FastifyPluginAsync = async (fastify) => {
   const authController = new AuthController(fastify);
@@ -47,12 +53,16 @@ const authRoutes: FastifyPluginAsync = async (fastify) => {
 
   fastify.post(
     "/confirm-email",
-    { schema: confirmEmailDocumentation },
+    {
+      preHandler: [validateUserConfirmEmail],
+      schema: confirmEmailDocumentation,
+    },
     authController.emailConfirmation
   );
   fastify.post(
     "/resend-email",
     {
+      preHandler: [validateUserResendEmail],
       schema: resendEmailDocumentation,
       config: {
         rateLimit: {
@@ -66,6 +76,7 @@ const authRoutes: FastifyPluginAsync = async (fastify) => {
   fastify.post(
     "/recovery-password",
     {
+      preHandler: [validateUserRecoveryPassword],
       schema: recoveryPasswordDocumentation,
       config: {
         rateLimit: {

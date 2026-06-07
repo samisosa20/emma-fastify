@@ -17,7 +17,10 @@ export const strongPasswordSchema = z
 
 export const UserCreateInput = z.object({
   name: z.string({ message: "name is required" }).max(100),
-  email: z.string({ message: "email is required" }).email("Invalid email"),
+  email: z
+    .string({ message: "email is required" })
+    .email("Invalid email")
+    .max(255),
   phone: z
     .string({ message: "phone is required" })
     .regex(phoneRegex, "Invalid Phone!")
@@ -26,10 +29,34 @@ export const UserCreateInput = z.object({
   phoneCode: z.string().optional().nullable(),
   password: strongPasswordSchema,
   badgeId: z.string({ message: "badgeId is required" }).uuid(),
-  deletedAt: z.date().nullable().optional(),
-}) satisfies z.Schema<Prisma.UserUncheckedCreateInput>;
+}) satisfies z.Schema<Omit<Prisma.UserUncheckedCreateInput, "deletedAt">>;
 
 export const UserLoginInput = z.object({
-  email: z.string({ message: "email is required" }).email("Invalid email"),
+  email: z
+    .string({ message: "email is required" })
+    .email("Invalid email")
+    .max(255),
   password: z.string({ message: "password is required" }),
+});
+
+export const UserConfirmEmailInput = z.object({
+  email: z
+    .string({ message: "email is required" })
+    .email("Invalid email")
+    .max(255),
+  token: z.string({ message: "token is required" }).uuid("Invalid token format"),
+});
+
+export const UserResendEmailInput = z.object({
+  email: z
+    .string({ message: "email is required" })
+    .email("Invalid email")
+    .max(255),
+});
+
+export const UserRecoveryPasswordInput = z.object({
+  email: z
+    .string({ message: "email is required" })
+    .email("Invalid email")
+    .max(255),
 });

@@ -16,7 +16,12 @@ import "./jobs/insertMovements.jobs";
 // Start the server
 const bootstrap = async () => {
   // Security: Enforce required environment variables at startup
-  const requiredEnv = ["JWT_SECRET", "BETTER_AUTH_SECRET", "APP_URL"];
+  const requiredEnv = [
+    "JWT_SECRET",
+    "BETTER_AUTH_SECRET",
+    "APP_URL",
+    "JWT_EXPIRES_IN",
+  ];
   for (const env of requiredEnv) {
     if (!process.env[env]) {
       throw new Error(`Environment variable ${env} is not defined`);

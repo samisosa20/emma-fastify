@@ -197,10 +197,23 @@ export class PlannedPaymentPrismaRepository
     data: Partial<CreatePlannedPayment>
   ): Promise<PlannedPayment | ErrorMessage> {
     try {
-      // Security: verify ownership first
-      const existing = await prisma.plannedPayment.findFirst({
-        where: { id, userId },
-      });
+      // ⚡ Bolt: Consolidate all prerequisite lookups (existence check and resource ownership)
+      // into a single Promise.all call to minimize total database roundtrips during updates.
+      const [existing, account, category] = await Promise.all([
+        prisma.plannedPayment.findFirst({
+          where: { id, userId },
+        }),
+        data.accountId
+          ? prisma.account.findFirst({
+              where: { id: data.accountId, userId },
+            })
+          : Promise.resolve(true),
+        data.categoryId
+          ? prisma.category.findFirst({
+              where: { id: data.categoryId, userId },
+            })
+          : Promise.resolve(true),
+      ]);
 
       if (!existing) {
         throw Object.assign(new Error("PlannedPayment not found"), {
@@ -210,31 +223,15 @@ export class PlannedPaymentPrismaRepository
         });
       }
 
-      // Security: Verify that the account and category belong to the user if they are being updated
-      if (data.accountId || data.categoryId) {
-        const [account, category] = await Promise.all([
-          data.accountId
-            ? prisma.account.findFirst({
-                where: { id: data.accountId, userId },
-              })
-            : Promise.resolve(true),
-          data.categoryId
-            ? prisma.category.findFirst({
-                where: { id: data.categoryId, userId },
-              })
-            : Promise.resolve(true),
-        ]);
-
-        if (!account || !category) {
-          throw Object.assign(
-            new Error("Invalid account or category ownership"),
-            {
-              statusCode: 403,
-              error: "Forbidden",
-              message: "Account or Category does not belong to the user.",
-            }
-          );
-        }
+      if (!account || !category) {
+        throw Object.assign(
+          new Error("Invalid account or category ownership"),
+          {
+            statusCode: 403,
+            error: "Forbidden",
+            message: "Account or Category does not belong to the user.",
+          }
+        );
       }
 
       const { userId: _, ...dataToUpdate } = data;
@@ -310,12 +307,16 @@ export class PlannedPaymentPrismaRepository
     id: string,
     userId: string
   ): Promise<PlannedPayment | null> {
-    const plannedPayment = await prisma.plannedPayment.findFirst({
+    // ⚡ Bolt: Use a targeted select in the existence check to avoid unnecessary joins.
+    const exists = await prisma.plannedPayment.findFirst({
       where: { id, userId },
+      select: { id: true },
     });
-    if (!plannedPayment) {
+    if (!exists) {
       return null;
     }
+    // We return the full deleted record including associations to maintain compatibility
+    // with callers that expect metadata (e.g. for notifications or audit logs).
     return await prisma.plannedPayment.delete({
       where: { id },
       include: {

@@ -7,6 +7,12 @@ import {
   movementReportDocumentation,
 } from "src/documentation";
 import { FastifyPluginAsync } from "fastify";
+import {
+  validateReportMovements,
+  validateReportAccountBalance,
+  validateReportCategoryStats,
+  validateReportBalanceHistory,
+} from "packages/shared";
 
 const reportsRoutes: FastifyPluginAsync = async (fastify) => {
   const reportController = new ReportController();
@@ -14,7 +20,7 @@ const reportsRoutes: FastifyPluginAsync = async (fastify) => {
   fastify.get(
     "/:type/:period",
     {
-      preHandler: [fastify.authenticate],
+      preHandler: [fastify.authenticate, validateReportMovements],
       schema: movementReportDocumentation,
     },
     reportController.reportMovements
@@ -30,7 +36,7 @@ const reportsRoutes: FastifyPluginAsync = async (fastify) => {
   fastify.get(
     "/account/:id/balance",
     {
-      preHandler: [fastify.authenticate],
+      preHandler: [fastify.authenticate, validateReportAccountBalance],
       schema: accountReportBalanceDocumentation,
     },
     reportController.reportAccountBalance
@@ -38,7 +44,7 @@ const reportsRoutes: FastifyPluginAsync = async (fastify) => {
   fastify.get(
     "/category/:id/stats",
     {
-      preHandler: [fastify.authenticate],
+      preHandler: [fastify.authenticate, validateReportCategoryStats],
       schema: categoryReportDocumentation,
     },
     reportController.reportCategoryStats
@@ -46,7 +52,7 @@ const reportsRoutes: FastifyPluginAsync = async (fastify) => {
   fastify.get(
     "/history",
     {
-      preHandler: [fastify.authenticate],
+      preHandler: [fastify.authenticate, validateReportBalanceHistory],
       schema: historyReportDocumentation,
     },
     reportController.reportBalanceHistory

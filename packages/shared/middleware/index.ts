@@ -11,3 +11,4 @@ export * from "./period.middleware";
 export * from "./accountType.middleware";
 export * from "./groupCategory.middleware";
 export * from "./user.middleware";
+export * from "./report.middleware";

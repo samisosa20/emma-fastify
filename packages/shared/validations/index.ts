@@ -11,3 +11,4 @@ export * from "./movement";
 export * from "./period";
 export * from "./groupCategory";
 export * from "./accountType";
+export * from "./report";

@@ -128,82 +128,50 @@ export class MovementPrismaRepository implements IMovementRepository {
         trm = Math.abs(Number(data.amount) / Number(data.amountEnd));
       }
 
-      const newMovement = await prisma.movement.create({
-        data: {
-          amount: data.amount,
-          datePurchase: data.datePurchase,
-          description: data.description,
-          user: {
-            connect: {
-              id: data.userId,
-            },
-          },
-          account: {
-            connect: {
-              id: data.accountId,
-            },
-          },
-          category: {
-            connect: {
-              id: categoryId,
-            },
-          },
-          ...(data.eventId && {
-            event: {
-              connect: {
-                id: data.eventId,
-              },
-            },
-          }),
-          ...(data.investmentId && {
-            investment: {
-              connect: {
-                id: data.investmentId,
-              },
-            },
-          }),
-          ...(data.type === "transfer" && {
-            trm,
-          }),
-        },
-        include: {
-          account: true,
-          category: true,
-          event: true,
-          investment: true,
-        },
-      });
-
-      if (newMovement && data.type === "transfer") {
-        await prisma.movement.create({
+      // ⚡ Bolt: Use a transaction to ensure atomicity and reduce database roundtrips.
+      // For transfers, we use an interactive transaction to link movements without manual ID generation.
+      const result = await prisma.$transaction(async (tx) => {
+        const newMovement = await tx.movement.create({
           data: {
-            amount: Number(data.amountEnd),
+            amount: data.amount,
             datePurchase: data.datePurchase,
             description: data.description,
-            user: {
-              connect: {
-                id: data.userId,
-              },
-            },
-            account: {
-              connect: {
-                id: data.accountEndId,
-              },
-            },
-            category: {
-              connect: {
-                id: categoryId,
-              },
-            },
-            originalOrPairedMovement: {
-              connect: { id: newMovement.id },
-            },
-            trm: Math.abs(Number(data.amountEnd) / Number(data.amount)),
+            user: { connect: { id: data.userId } },
+            account: { connect: { id: data.accountId } },
+            category: { connect: { id: categoryId } },
+            ...(data.eventId && { event: { connect: { id: data.eventId } } }),
+            ...(data.investmentId && {
+              investment: { connect: { id: data.investmentId } },
+            }),
+            ...(data.type === "transfer" && { trm }),
+          },
+          include: {
+            account: true,
+            category: true,
+            event: true,
+            investment: true,
           },
         });
-      }
 
-      return newMovement;
+        if (data.type === "transfer") {
+          await tx.movement.create({
+            data: {
+              amount: Number(data.amountEnd),
+              datePurchase: data.datePurchase,
+              description: data.description,
+              user: { connect: { id: data.userId } },
+              account: { connect: { id: data.accountEndId } },
+              category: { connect: { id: categoryId } },
+              originalOrPairedMovement: { connect: { id: newMovement.id } },
+              trm: Math.abs(Number(data.amountEnd) / Number(data.amount)),
+            },
+          });
+        }
+
+        return newMovement;
+      });
+
+      return result;
     } catch (error: any) {
       throw Object.assign(new Error("Validation Error"), {
         statusCode: 400,
@@ -346,24 +314,16 @@ export class MovementPrismaRepository implements IMovementRepository {
           : Math.abs(Number(data.amountEnd) / Number(data.amount));
       }
 
-      const updatedMovement = await prisma.movement.update({
-        where: {
-          id,
-        },
+      const primaryUpdate = prisma.movement.update({
+        where: { id },
         data: {
           amount: isTransferOut ? data.amount : data.amountEnd,
           datePurchase: data.datePurchase,
           description: data.description,
           account: {
-            connect: {
-              id: isTransferOut ? data.accountId : data.accountEndId,
-            },
+            connect: { id: isTransferOut ? data.accountId : data.accountEndId },
           },
-          category: {
-            connect: {
-              id: categoryId,
-            },
-          },
+          category: { connect: { id: categoryId } },
           event:
             data.eventId === null
               ? { disconnect: true }
@@ -377,9 +337,7 @@ export class MovementPrismaRepository implements IMovementRepository {
               ? { connect: { id: data.investmentId } }
               : undefined,
           trm,
-          ...(data.addWithdrawal && {
-            addWithdrawal: data.addWithdrawal,
-          }),
+          ...(data.addWithdrawal && { addWithdrawal: data.addWithdrawal }),
         },
         include: {
           account: true,
@@ -389,31 +347,39 @@ export class MovementPrismaRepository implements IMovementRepository {
         },
       });
 
-      if (updatedMovement && data.type === "transfer") {
+      if (data.type === "transfer") {
         let whereClause = undefined;
         if (!isTransferOut && movement.originalOrPairedMovement) {
           whereClause = { id: String(movement.originalOrPairedMovement.id) };
         } else {
           whereClause = { id: String(movement.relatedTransferMovements[0].id) };
         }
-        await prisma.movement.update({
-          where: whereClause,
-          data: {
-            amount: !isTransferOut ? data.amount : data.amountEnd,
-            datePurchase: data.datePurchase,
-            description: data.description,
-            account: {
-              connect: {
-                id: !isTransferOut ? data.accountId : data.accountEndId,
+
+        // ⚡ Bolt: Use a batch transaction to perform both updates in a single roundtrip,
+        // ensuring atomicity and reducing overall latency.
+        const [updatedMovement] = await prisma.$transaction([
+          primaryUpdate,
+          prisma.movement.update({
+            where: whereClause,
+            data: {
+              amount: !isTransferOut ? data.amount : data.amountEnd,
+              datePurchase: data.datePurchase,
+              description: data.description,
+              account: {
+                connect: {
+                  id: !isTransferOut ? data.accountId : data.accountEndId,
+                },
               },
+              trm: !isTransferOut
+                ? Math.abs(Number(data.amountEnd) / Number(data.amount))
+                : Math.abs(Number(data.amount) / Number(data.amountEnd)),
             },
-            trm: !isTransferOut
-              ? Math.abs(Number(data.amountEnd) / Number(data.amount))
-              : Math.abs(Number(data.amount) / Number(data.amountEnd)),
-          },
-        });
+          }),
+        ]);
+        return updatedMovement;
       }
-      return updatedMovement;
+
+      return await primaryUpdate;
     } catch (error: any) {
       throw Object.assign(new Error("Validation Error"), {
         statusCode: 400,

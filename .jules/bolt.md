@@ -97,3 +97,7 @@
 ## 2026-06-25 - [Repository Data Access and Bulk Import Optimization]
 **Learning:** `deleteMovement` performed heavy `include` with 6 joins, mostly unused. `addMovement` for transfers also had redundant `include` on paired records. `importMovements` repeatedly parsed date strings in nested loops (O(N) redundant work).
 **Action:** Use targeted `select` in `deleteMovement` to avoid joins. Remove redundant `include` in creation paths. Pre-parse dates and cache them in bulk processing loops to eliminate redundant object allocations.
+
+## 2026-06-30 - [Targeted Select for Ownership Checks]
+**Learning:** Fetching full metadata objects during prerequisite ownership checks (Account, Category, etc.) increases data transfer and memory overhead. Since these checks only verify existence and ownership, only the ID is needed.
+**Action:** Use `select: { id: true }` in prerequisite `findFirst` calls within `addMovement` and `updateMovement` to minimize database payload and application memory pressure.

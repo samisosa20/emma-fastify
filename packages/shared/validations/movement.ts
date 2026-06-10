@@ -9,7 +9,7 @@ export const MovementCreateInput = z.object({
     .optional(),
   amount: z.number({ message: "amount is required" }),
   datePurchase: z.string().datetime({ message: "Invalid date format" }),
-  categoryId: z.string({ message: "categoryId is required" }),
+  categoryId: z.uuid({ message: "categoryId is required" }),
   accountId: z.uuid({ message: "accountId is required" }),
   transferId: z.union([z.uuid(), z.null()]).optional(),
   eventId: z.union([z.uuid(), z.null()]).optional(),

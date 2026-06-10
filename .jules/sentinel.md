@@ -100,3 +100,8 @@
 **Vulnerability:** Sensitive authentication endpoints lacked rate limiting, and a wildcard proxy route could potentially capture requests intended for specific routes if misconfigured.
 **Learning:** Global rate limits can be too restrictive for normal API usage while being too permissive for sensitive auth actions. Furthermore, when using wildcard routes in Fastify (especially when proxying to other handlers), their placement is crucial to ensure that more specific routes with dedicated security logic (like validation and custom rate limits) are matched first.
 **Prevention:** Implement granular rate limits on sensitive endpoints (e.g., login, register) and always place wildcard or catch-all routes at the very end of route definitions to maintain intended matching priority.
+
+## 2026-05-25 - [Route Shadowing in Catch-all Proxies]
+**Vulnerability:** A wildcard catch-all route registered before specific endpoints in the authentication plugin shadowed the `/profile` route, bypassing its dedicated middleware and controller logic.
+**Learning:** Fastify's route matching is sensitive to registration order within plugins. Catch-all or wildcard routes must always be registered last to prevent them from intercepting requests intended for more specific, potentially more restricted, endpoints.
+**Prevention:** Always place wildcard or generic proxy routes at the very end of route definitions and verify matching priority via automated tests or manual verification of middleware execution.

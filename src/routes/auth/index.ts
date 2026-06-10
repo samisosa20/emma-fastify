@@ -88,6 +88,15 @@ const authRoutes: FastifyPluginAsync = async (fastify) => {
     authController.recoveryPassword
   );
 
+  fastify.get(
+    "/profile",
+    {
+      preHandler: [fastify.authenticate],
+      schema: getProfileDocumentation,
+    },
+    authController.getProfile
+  );
+
   fastify.all("/*", async (request, reply) => {
     // Security: Use the trusted APP_URL environment variable for constructing the URL
     // instead of the potentially spoofed Host header to prevent Host Header Injection.
@@ -108,14 +117,6 @@ const authRoutes: FastifyPluginAsync = async (fastify) => {
     );
     return reply.send(response.body ? await response.text() : null);
   });
-  fastify.get(
-    "/profile",
-    {
-      preHandler: [fastify.authenticate],
-      schema: getProfileDocumentation,
-    },
-    authController.getProfile
-  );
 };
 
 export default authRoutes;

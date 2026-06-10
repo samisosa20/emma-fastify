@@ -67,42 +67,48 @@ export class MovementPrismaRepository implements IMovementRepository {
   ): Promise<Movement | ErrorMessage> {
     try {
       // ⚡ Bolt: Parallelize all prerequisite lookups (ownership checks and transfer metadata)
-      // to reduce database roundtrips and minimize latency during movement creation.
+      // and use targeted 'select' to minimize data transfer from the database.
       const [account, category, event, investment, accountEnd, transferCategory] =
         await Promise.all([
           prisma.account.findFirst({
             where: { id: data.accountId, userId: data.userId },
+            select: { id: true },
           }),
           prisma.category.findFirst({
             where: { id: data.categoryId, userId: data.userId },
+            select: { id: true },
           }),
           data.eventId
             ? prisma.event.findFirst({
                 where: { id: data.eventId, userId: data.userId },
+                select: { id: true },
               })
-            : Promise.resolve(true),
+            : Promise.resolve(true as const),
           data.investmentId
             ? prisma.investment.findFirst({
                 where: { id: data.investmentId, userId: data.userId },
+                select: { id: true },
               })
-            : Promise.resolve(true),
+            : Promise.resolve(true as const),
           data.type === "transfer" && data.accountEndId
             ? prisma.account.findFirst({
                 where: { id: data.accountEndId, userId: data.userId },
+                select: { id: true },
               })
-            : Promise.resolve(true),
+            : Promise.resolve(true as const),
           data.type === "transfer"
             ? prisma.category.findFirst({
                 where: {
                   GroupCategory: { name: "Transferencia" },
                   userId: data.userId,
                 },
+                select: { id: true },
               })
             : Promise.resolve(null),
         ]);
 
       // Security: Return Forbidden error if any resource ownership check fails to prevent IDOR.
-      // We check existance only when the field is provided.
+      // We check existence only when the field is provided.
       if (!account || !category || !event || !investment || !accountEnd) {
         return {
           statusCode: 403,
@@ -252,30 +258,42 @@ export class MovementPrismaRepository implements IMovementRepository {
         transferCategory,
       ] = await Promise.all([
         data.accountId
-          ? prisma.account.findFirst({ where: { id: data.accountId, userId } })
-          : Promise.resolve(true),
+          ? prisma.account.findFirst({
+              where: { id: data.accountId, userId },
+              select: { id: true },
+            })
+          : Promise.resolve(true as const),
         data.categoryId
-          ? prisma.category.findFirst({ where: { id: data.categoryId, userId } })
-          : Promise.resolve(true),
+          ? prisma.category.findFirst({
+              where: { id: data.categoryId, userId },
+              select: { id: true },
+            })
+          : Promise.resolve(true as const),
         data.eventId
-          ? prisma.event.findFirst({ where: { id: data.eventId, userId } })
-          : Promise.resolve(true),
+          ? prisma.event.findFirst({
+              where: { id: data.eventId, userId },
+              select: { id: true },
+            })
+          : Promise.resolve(true as const),
         data.investmentId
           ? prisma.investment.findFirst({
               where: { id: data.investmentId, userId },
+              select: { id: true },
             })
-          : Promise.resolve(true),
+          : Promise.resolve(true as const),
         data.type === "transfer" && data.accountEndId
           ? prisma.account.findFirst({
               where: { id: data.accountEndId, userId },
+              select: { id: true },
             })
-          : Promise.resolve(true),
+          : Promise.resolve(true as const),
         data.type === "transfer"
           ? prisma.category.findFirst({
               where: {
                 GroupCategory: { name: "Transferencia" },
                 userId,
               },
+              select: { id: true },
             })
           : Promise.resolve(null),
       ]);

@@ -15,7 +15,9 @@ export class GroupCategoryPrismaRepository implements IGroupCategoryRepository {
   ): Promise<GroupCategory | ErrorMessage> {
     try {
       const newGroupCategory = await prisma.groupCategory.create({
-        data,
+        data: {
+          name: data.name,
+        },
       });
       return newGroupCategory;
     } catch (error: any) {
@@ -79,7 +81,9 @@ export class GroupCategoryPrismaRepository implements IGroupCategoryRepository {
         where: {
           id,
         },
-        data,
+        data: {
+          ...(data.name && { name: data.name }),
+        },
       });
       return updatedGroupCategory;
     } catch (error: any) {

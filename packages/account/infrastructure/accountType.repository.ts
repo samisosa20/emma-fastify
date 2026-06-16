@@ -15,7 +15,9 @@ export class AccountTypePrismaRepository implements IAccountTypeRepository {
   ): Promise<AccountType | ErrorMessage> {
     try {
       const newAccountType = await prisma.accountType.create({
-        data,
+        data: {
+          name: data.name,
+        },
       });
       return newAccountType;
     } catch (error: any) {
@@ -79,7 +81,9 @@ export class AccountTypePrismaRepository implements IAccountTypeRepository {
         where: {
           id,
         },
-        data,
+        data: {
+          ...(data.name && { name: data.name }),
+        },
       });
       return updatedAccountType;
     } catch (error: any) {

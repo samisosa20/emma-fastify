@@ -105,3 +105,8 @@
 **Vulnerability:** A wildcard catch-all route registered before specific endpoints in the authentication plugin shadowed the `/profile` route, bypassing its dedicated middleware and controller logic.
 **Learning:** Fastify's route matching is sensitive to registration order within plugins. Catch-all or wildcard routes must always be registered last to prevent them from intercepting requests intended for more specific, potentially more restricted, endpoints.
 **Prevention:** Always place wildcard or generic proxy routes at the very end of route definitions and verify matching priority via automated tests or manual verification of middleware execution.
+
+## 2026-06-16 - [Mass Assignment in Global System Resources]
+**Vulnerability:** Mutation operations (add, update) for global system resources (Badge, AccountType, Period, GroupCategory) used direct object passing or spread operators, allowing unauthorized fields to be injected.
+**Learning:** Even administrative endpoints guarded by authorization checks must be hardened against mass assignment to prevent accidental or malicious modification of internal fields (like IDs or timestamps) or exploitation of future schema changes.
+**Prevention:** Always use explicit field whitelisting in repository mutation methods instead of spreading unvalidated request bodies directly into database calls.

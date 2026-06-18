@@ -76,24 +76,22 @@ export class HeritagePrismaRepository implements IHeritageRepository {
     const { size, page, year, userId } = params;
 
     const limitDate = new Date(`${year}-12-31T23:59:59.999Z`);
-    const yearStart = new Date(`${year}-01-01T00:00:00.000Z`);
 
-    // ⚡ Bolt: Parallelize independent database queries to significantly reduce latency.
-    // We concurrently fetch heritage items, aggregate account balances, income, expenses, and max investment dates.
-    // We also fetch all badges to avoid multiple sequential lookups later.
+    // ⚡ Bolt: Parallelize all independent database queries, including investment appreciations,
+    // into a single Promise.all call. This eliminates sequential roundtrips and reduces total latency.
     const [
       heritageResult,
       initAccount,
       reportIncome,
       reportExport,
-      lastDates,
+      allAppreciations,
       allBadges,
     ] = await Promise.all([
       prisma.heritage
         .paginate({
           where: {
             year,
-            userId, // Security: Ensure multi-tenancy by filtering by userId
+            userId,
           },
           include: {
             badge: true,
@@ -114,9 +112,6 @@ export class HeritagePrismaRepository implements IHeritageRepository {
         _sum: {
           initAmount: true,
         },
-        orderBy: {
-          badgeId: "asc",
-        },
       }),
       prisma.vw_yearlyincome.groupBy({
         by: ["badgeId"],
@@ -128,9 +123,6 @@ export class HeritagePrismaRepository implements IHeritageRepository {
         },
         _sum: {
           amount: true,
-        },
-        orderBy: {
-          badgeId: "asc",
         },
       }),
       prisma.vw_yearlyexpensive.groupBy({
@@ -144,12 +136,8 @@ export class HeritagePrismaRepository implements IHeritageRepository {
         _sum: {
           amount: true,
         },
-        orderBy: {
-          badgeId: "asc",
-        },
       }),
-      prisma.investmentAppreciation.groupBy({
-        by: ["investmentId"],
+      prisma.investmentAppreciation.findMany({
         where: {
           userId,
           dateAppreciation: {
@@ -157,122 +145,76 @@ export class HeritagePrismaRepository implements IHeritageRepository {
             lte: limitDate,
           },
         },
-        _max: { dateAppreciation: true },
+        include: {
+          investment: {
+            select: { badgeId: true },
+          },
+        },
+        orderBy: { dateAppreciation: "desc" },
       }),
       prisma.badge.findMany(),
     ]);
 
     const [content, meta] = heritageResult;
 
-    const cleaned = lastDates.filter((d) => d._max.dateAppreciation !== null);
-
-    const investments =
-      cleaned.length > 0
-        ? await prisma.investmentAppreciation.findMany({
-            where: {
-              OR: cleaned.map((d) => ({
-                investmentId: d.investmentId,
-                dateAppreciation: d._max.dateAppreciation!,
-              })),
-            },
-            include: {
-              investment: {
-                select: { badgeId: true },
-              },
-            },
-          })
-        : [];
-
-    // ⚡ Bolt: Create a lookup map for faster badge data access (O(1) instead of O(N)).
-    const badgesMap = new Map(allBadges.map((badge) => [badge.id, badge]));
-
-    // ⚡ Bolt: Map data using the O(1) badge lookup map.
-    const incomeBalances = reportIncome.map((item) => {
-      const badge = badgesMap.get(item.badgeId);
-      return {
-        amount: Number(item._sum.amount),
-        code: String(badge?.code),
-        flag: String(badge?.flag),
-        symbol: String(badge?.symbol),
-      };
-    });
-
-    const expenseBalances = reportExport.map((item) => {
-      const badge = badgesMap.get(item.badgeId);
-      return {
-        amount: Number(item._sum.amount),
-        code: String(badge?.code),
-        flag: String(badge?.flag),
-        symbol: String(badge?.symbol),
-      };
-    });
-
-    const initAccountBalances = initAccount.map((item) => {
-      const badge = badgesMap.get(item.badgeId);
-      return {
-        amount: Number(item._sum.initAmount),
-        code: String(badge?.code),
-        flag: String(badge?.flag),
-        symbol: String(badge?.symbol),
-      };
-    });
-
-    const investmentBalances = investments.map((item) => {
-      const badge = badgesMap.get(item.investment.badgeId);
-      return {
-        amount: Number(item.amount),
-        code: String(badge?.code),
-        flag: String(badge?.flag),
-        symbol: String(badge?.symbol),
-      };
-    });
-
-    // Combine all balances into a single array
-    const generalBalances = [
-      ...incomeBalances,
-      ...expenseBalances,
-      ...initAccountBalances,
-    ];
-
-    const aggregatedBalancesMap = new Map();
-    const investmentMap = new Map();
-
-    for (const balance of generalBalances) {
-      const { code, amount, flag, symbol } = balance;
-
-      if (code) {
-        const existingBalance = aggregatedBalancesMap.get(code) || {
-          code,
-          flag,
-          symbol,
-          amount: 0,
-        };
-
-        existingBalance.amount += amount;
-        aggregatedBalancesMap.set(code, existingBalance);
-      }
+    // ⚡ Bolt: Build a lookup map for faster badge data access (O(1)) and initialize result maps.
+    const badgesMap = new Map();
+    for (const badge of allBadges) {
+      badgesMap.set(badge.id, badge);
     }
 
-    for (const row of investmentBalances) {
-      const { code, amount, flag, symbol } = row;
+    const aggregatedBalancesMap = new Map<string, any>();
+    const investmentMap = new Map<string, any>();
 
-      if (code) {
-        const existingBalance = investmentMap.get(code) || {
-          code,
-          flag,
-          symbol,
-          amount: 0,
-        };
+    /**
+     * ⚡ Bolt: Helper to aggregate amounts by badge directly into a target Map,
+     * avoiding multiple intermediate array mappings and spreads.
+     */
+    const aggregateByBadge = (
+      data: any[],
+      targetMap: Map<string, any>,
+      amountField: string = "amount",
+      isGrouped: boolean = true
+    ) => {
+      for (const item of data) {
+        const badgeId = isGrouped ? item.badgeId : item.investment.badgeId;
+        const badge = badgesMap.get(badgeId);
+        if (!badge) continue;
 
-        existingBalance.amount += amount;
-        investmentMap.set(code, existingBalance);
+        const amount = Number(isGrouped ? item._sum[amountField] : item.amount);
+        const existing = targetMap.get(badge.code);
+
+        if (existing) {
+          existing.amount += amount;
+        } else {
+          targetMap.set(badge.code, {
+            code: badge.code,
+            flag: String(badge.flag),
+            symbol: String(badge.symbol),
+            amount,
+          });
+        }
+      }
+    };
+
+    // ⚡ Bolt: Aggregate all balances in a single pass over each dataset.
+    aggregateByBadge(initAccount, aggregatedBalancesMap, "initAmount");
+    aggregateByBadge(reportIncome, aggregatedBalancesMap);
+    aggregateByBadge(reportExport, aggregatedBalancesMap);
+
+    // ⚡ Bolt: Identify latest investment valuations for the year in-memory using a single pass (O(N)).
+    const investmentProcessed = new Set<string>();
+    const latestAppreciations = [];
+    for (const app of allAppreciations) {
+      if (!investmentProcessed.has(app.investmentId)) {
+        investmentProcessed.add(app.investmentId);
+        latestAppreciations.push(app);
       }
     }
+    aggregateByBadge(latestAppreciations, investmentMap, "amount", false);
 
-    // Resultado final
+    // Final result conversion from Maps to arrays.
     const finalInvestments = Array.from(investmentMap.values());
-
-    // 4. Convertir el Map a un arreglo final
     const finalBalances = Array.from(aggregatedBalancesMap.values());
 
     return {
@@ -566,9 +508,11 @@ export class HeritagePrismaRepository implements IHeritageRepository {
       const limitDate = new Date(`${yearNum}-12-31T23:59:59.999Z`);
       const movements = movementsByYear[i];
 
-      const movementMap = new Map(
-        movements.map((m) => [m.accountId, m._sum.amount || ZERO_DECIMAL])
-      );
+      // ⚡ Bolt: Build movementMap using a for...of loop to avoid intermediate array allocation from movements.map().
+      const movementMap = new Map<string, Decimal>();
+      for (const m of movements) {
+        movementMap.set(m.accountId, (m._sum.amount as unknown as Decimal) || ZERO_DECIMAL);
+      }
       const totalsByBadge = new Map<string, Decimal>();
 
       // A. Balances de cuentas (Init + Movements)

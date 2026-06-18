@@ -13,7 +13,9 @@ export class PeriodPrismaRepository implements IPeriodRepository {
   public async addPeriod(data: CreatePeriod): Promise<Period | ErrorMessage> {
     try {
       const newPeriod = await prisma.period.create({
-        data,
+        data: {
+          name: data.name,
+        },
       });
       return newPeriod;
     } catch (error: any) {
@@ -77,7 +79,9 @@ export class PeriodPrismaRepository implements IPeriodRepository {
         where: {
           id,
         },
-        data,
+        data: {
+          ...(data.name && { name: data.name }),
+        },
       });
       return updatedPeriod;
     } catch (error: any) {

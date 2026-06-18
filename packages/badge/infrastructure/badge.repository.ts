@@ -27,7 +27,12 @@ export class BadgePrismaRepository implements IBadgeRepository {
   public async addBadge(data: CreateBadge): Promise<Badge | ErrorMessage> {
     try {
       const newBadge = await prisma.badge.create({
-        data,
+        data: {
+          name: data.name,
+          code: data.code,
+          symbol: data.symbol,
+          flag: data.flag,
+        },
       });
       return newBadge;
     } catch (error: any) {
@@ -91,7 +96,12 @@ export class BadgePrismaRepository implements IBadgeRepository {
         where: {
           id,
         },
-        data,
+        data: {
+          ...(data.name && { name: data.name }),
+          ...(data.code && { code: data.code }),
+          ...(data.symbol !== undefined && { symbol: data.symbol }),
+          ...(data.flag !== undefined && { flag: data.flag }),
+        },
       });
       return updatedBadge;
     } catch (error: any) {

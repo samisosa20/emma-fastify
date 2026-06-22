@@ -313,6 +313,7 @@ model Budget {
 }
 
 view vw_dailyexpensive {
+  categoryId   String
   category     String
   icon         String?   @db.VarChar(100)
   color        String    @default("#000000") @db.VarChar(10)
@@ -323,6 +324,7 @@ view vw_dailyexpensive {
 }
 
 view vw_dailyincome {
+  categoryId   String
   category     String
   icon         String?   @db.VarChar(100)
   color        String    @default("#000000") @db.VarChar(10)
@@ -333,28 +335,31 @@ view vw_dailyincome {
 }
 
 view vw_monthlyexpensive {
-  category String
-  icon     String?  @db.VarChar(100)
-  color    String   @default("#000000") @db.VarChar(10)
-  amount   Decimal? @db.Decimal(37, 2)
-  year     Int?
-  month    Int?
-  badgeId  String
-  userId   String
+  categoryId String
+  category   String
+  icon       String?  @db.VarChar(100)
+  color      String   @default("#000000") @db.VarChar(10)
+  amount     Decimal? @db.Decimal(37, 2)
+  year       Int?
+  month      Int?
+  badgeId    String
+  userId     String
 }
 
 view vw_monthlyincome {
-  category String
-  icon     String?  @db.VarChar(100)
-  color    String   @default("#000000") @db.VarChar(10)
-  amount   Decimal? @db.Decimal(37, 2)
-  year     Int?
-  month    Int?
-  badgeId  String
-  userId   String
+  categoryId String
+  category   String
+  icon       String?  @db.VarChar(100)
+  color      String   @default("#000000") @db.VarChar(10)
+  amount     Decimal? @db.Decimal(37, 2)
+  year       Int?
+  month      Int?
+  badgeId    String
+  userId     String
 }
 
 view vw_weeklyexpensive {
+  categoryId String
   category   String
   icon       String?  @db.VarChar(100)
   color      String   @default("#000000") @db.VarChar(10)
@@ -366,6 +371,7 @@ view vw_weeklyexpensive {
 }
 
 view vw_weeklyincome {
+  categoryId String
   category   String
   icon       String?  @db.VarChar(100)
   color      String   @default("#000000") @db.VarChar(10)
@@ -377,23 +383,25 @@ view vw_weeklyincome {
 }
 
 view vw_yearlyexpensive {
-  category String
-  icon     String?  @db.VarChar(100)
-  color    String   @default("#000000") @db.VarChar(10)
-  amount   Decimal? @db.Decimal(37, 2)
-  year     Int?
-  badgeId  String
-  userId   String
+  categoryId String
+  category   String
+  icon       String?  @db.VarChar(100)
+  color      String   @default("#000000") @db.VarChar(10)
+  amount     Decimal? @db.Decimal(37, 2)
+  year       Int?
+  badgeId    String
+  userId     String
 }
 
 view vw_yearlyincome {
-  category String
-  icon     String?  @db.VarChar(100)
-  color    String   @default("#000000") @db.VarChar(10)
-  amount   Decimal? @db.Decimal(37, 2)
-  year     Int?
-  badgeId  String
-  userId   String
+  categoryId String
+  category   String
+  icon       String?  @db.VarChar(100)
+  color      String   @default("#000000") @db.VarChar(10)
+  amount     Decimal? @db.Decimal(37, 2)
+  year       Int?
+  badgeId    String
+  userId     String
 }
 
 view vw_accountbalances {

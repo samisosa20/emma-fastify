@@ -11,7 +11,6 @@ import {
   CommonParamsPaginate,
   Paginate,
   ErrorMessage,
-  handleShowDeleteData,
 } from "packages/shared";
 import { APIResponse } from "packages/badge/infrastructure/badge.repository"; // Asumiendo APIResponse para el token
 import { randomUUID } from "node:crypto";
@@ -190,11 +189,32 @@ export class MovementPrismaRepository implements IMovementRepository {
   public async listMovement(
     params: CommonParamsPaginate & MovementsParams
   ): Promise<{ content: Movement[]; meta: Paginate }> {
-    const { deleted, size, page, category, userId, ...restParams } = params;
+    const { deleted, size, page, category, userId, year, month, day, weekNumber, badgeId, ...restParams } = params;
     const [content, meta] = await prisma.movement
       .paginate({
         where: {
           ...restParams,
+          ...(badgeId && {
+            account: {
+              badgeId,
+            },
+          }),
+          ...(year && !month && {datePurchase: {
+            gte: new Date(year, 0, 1, 0, 0, 0, 0),
+            lte: new Date(year, 11, 31, 23, 59, 59, 999),
+          }}),
+          ...(month && year && !day && {datePurchase: {
+            gte: new Date(year, month - 1, 1, 0, 0, 0, 0),
+            lte: new Date(year, month, 0, 23, 59, 59, 999),
+          }}),
+          ...(day && month && year && {datePurchase: {
+            gte: new Date(year, month - 1, day, 0, 0, 0, 0),
+            lte: new Date(year, month - 1, day, 23, 59, 59, 999),
+          }}),
+          ...(day && !(month && year) && {datePurchase: {
+            gte: new Date(day),
+            lte: new Date(day),
+          }}),
           userId,
         },
         include: {

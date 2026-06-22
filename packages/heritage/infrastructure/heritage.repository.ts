@@ -76,6 +76,7 @@ export class HeritagePrismaRepository implements IHeritageRepository {
     const { size, page, year, userId } = params;
 
     const limitDate = new Date(`${year}-12-31T23:59:59.999Z`);
+    const yearStart = new Date(`${year}-01-01T00:00:00.000Z`);
 
     // ⚡ Bolt: Parallelize all independent database queries, including investment appreciations,
     // into a single Promise.all call. This eliminates sequential roundtrips and reduces total latency.

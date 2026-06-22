@@ -53,11 +53,17 @@ export type CreateMovement = Omit<
 
 export type MovementsParams = {
   accountId?: string;
+  badgeId?: string;
   description?: string;
   amount?: string;
   eventId?: string;
+  categoryId?: string;
   category?: string;
   investmentId?: string;
   datePurchase?: string;
   userId?: string;
+  year?: number;
+  weekNumber?: number;
+  month?: number;
+  day?: number;
 };

@@ -1,6 +1,7 @@
 import { Decimal } from "@prisma/client/runtime/library";
 
 export type Report = {
+  categoryId: string;
   category: string;
   amount: number | Decimal;
 }[];

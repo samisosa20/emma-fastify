@@ -4,6 +4,7 @@ import { errorDocumentation } from "./components/error";
 import { getProperties } from "./components/realtions";
 
 export const reportObjectSchema: SchemaDefault[] = [
+  { name: "categoryId", type: "string", body: false, private: false },
   { name: "category", type: "string", body: false, private: false },
   { name: "amount", type: "number", body: false, private: false },
   { name: "participation", type: "number", body: false, private: false },

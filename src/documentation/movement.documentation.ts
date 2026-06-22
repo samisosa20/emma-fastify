@@ -167,11 +167,16 @@ export const listMovementsDocumentation: FastifySchema = {
     properties: {
       ...paginationParamsDocumentation(),
       accountId: { type: "string", description: "ID de la Cuenta" },
+      badgeId: { type: "string", description: "ID de la Moneda/Badge" },
       categoryId: { type: "string", description: "ID de la Categoria" },
       eventId: { type: "string", description: "ID del Evento" },
       investmentId: { type: "string", description: "ID de la Inversión" },
       datePurchase: { type: "string", description: "Fecha de Compra" },
       category: { type: "string", description: "Categoria del movimiento" },
+      year: { type: "integer", description: "Año del movimiento" },
+      month: { type: "integer", description: "Mes del movimiento (1-12)" },
+      day: { type: "integer", description: "Día del movimiento" },
+      weekNumber: { type: "integer", description: "Semana del movimiento" },
     },
   },
   response: {

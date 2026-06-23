@@ -21,6 +21,15 @@ export const AppreciationCreateInput = z.object({
 export const InvestmentUpdateInput = InvestmentCreateInput.partial();
 export const AppreciationUpdateInput = AppreciationCreateInput.partial();
 
+export const InvestmentIdParams = z.object({
+  id: z.string().uuid({ message: "Invalid investment ID format" }),
+});
+
+export const AppreciationIdParams = z.object({
+  id: z.string().uuid({ message: "Invalid investment ID format" }),
+  appreciationId: z.string().uuid({ message: "Invalid appreciation ID format" }),
+});
+
 export type InvestmentCreateInputType = z.infer<typeof InvestmentCreateInput>;
 export type InvestmentUpdateInputType = z.infer<typeof InvestmentUpdateInput>;
 

@@ -5,7 +5,33 @@ import {
   InvestmentUpdateInput,
   AppreciationCreateInput,
   AppreciationUpdateInput,
+  InvestmentIdParams,
+  AppreciationIdParams,
 } from "../validations";
+
+export const validateInvestmentId = async (
+  request: FastifyRequest,
+  reply: FastifyReply
+) => {
+  try {
+    const params = await InvestmentIdParams.parseAsync(request.params);
+    request.params = params;
+  } catch (error) {
+    formatErrorMessageMiddleware(error);
+  }
+};
+
+export const validateAppreciationId = async (
+  request: FastifyRequest,
+  reply: FastifyReply
+) => {
+  try {
+    const params = await AppreciationIdParams.parseAsync(request.params);
+    request.params = params;
+  } catch (error) {
+    formatErrorMessageMiddleware(error);
+  }
+};
 
 export const validateInvestmentCreate = async (
   request: FastifyRequest,

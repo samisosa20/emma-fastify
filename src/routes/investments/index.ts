@@ -16,6 +16,8 @@ import {
   validateInvestmentUpdate,
   validateAppreciationCreate,
   validateAppreciationUpdate,
+  validateInvestmentId,
+  validateAppreciationId,
 } from "packages/shared";
 
 const investmentsRoutes: FastifyPluginAsync = async (fastify) => {
@@ -43,7 +45,7 @@ const investmentsRoutes: FastifyPluginAsync = async (fastify) => {
   fastify.get(
     "/:id",
     {
-      preHandler: [fastify.authenticate],
+      preHandler: [fastify.authenticate, validateInvestmentId],
       schema: getInvestmentDocumentation,
     },
     investmentController.detailInvestment
@@ -52,7 +54,11 @@ const investmentsRoutes: FastifyPluginAsync = async (fastify) => {
   fastify.put(
     "/:id",
     {
-      preHandler: [fastify.authenticate, validateInvestmentUpdate],
+      preHandler: [
+        fastify.authenticate,
+        validateInvestmentId,
+        validateInvestmentUpdate,
+      ],
       schema: updateInvestmentDocumentation,
     },
     investmentController.updateInvestment
@@ -61,7 +67,7 @@ const investmentsRoutes: FastifyPluginAsync = async (fastify) => {
   fastify.delete(
     "/:id",
     {
-      preHandler: [fastify.authenticate],
+      preHandler: [fastify.authenticate, validateInvestmentId],
       schema: deleteInvestmentDocumentation,
     },
     investmentController.deleteInvestment
@@ -86,7 +92,11 @@ const investmentsRoutes: FastifyPluginAsync = async (fastify) => {
   fastify.post(
     "/:id/appreciation",
     {
-      preHandler: [fastify.authenticate, validateAppreciationCreate],
+      preHandler: [
+        fastify.authenticate,
+        validateInvestmentId,
+        validateAppreciationCreate,
+      ],
       schema: createAppreciationDocumentation,
     },
     appreciationController.addAppreciation
@@ -95,7 +105,11 @@ const investmentsRoutes: FastifyPluginAsync = async (fastify) => {
   fastify.put(
     "/:id/appreciation/:appreciationId",
     {
-      preHandler: [fastify.authenticate, validateAppreciationUpdate],
+      preHandler: [
+        fastify.authenticate,
+        validateAppreciationId,
+        validateAppreciationUpdate,
+      ],
       schema: updateAppreciationDocumentation,
     },
     appreciationController.updateAppreciation
@@ -104,7 +118,7 @@ const investmentsRoutes: FastifyPluginAsync = async (fastify) => {
   fastify.delete(
     "/:id/appreciation/:appreciationId",
     {
-      preHandler: [fastify.authenticate],
+      preHandler: [fastify.authenticate, validateAppreciationId],
       schema: deleteAppreciationDocumentation,
     },
     appreciationController.deleteAppreciation

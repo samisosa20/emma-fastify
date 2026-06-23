@@ -153,25 +153,31 @@ export class EventPrismaRepository implements IEventRepository {
     >();
 
     for (const sum of movementSums) {
-      if (!sum.eventId) continue;
+      const eventId = sum.eventId;
+      if (!eventId) continue;
 
       const badgeInfo = accountBadgeMap.get(sum.accountId);
       if (!badgeInfo) continue;
 
-      if (!eventBalancesMap.has(sum.eventId)) {
-        eventBalancesMap.set(sum.eventId, new Map());
+      let badgeBalances = eventBalancesMap.get(eventId);
+      if (!badgeBalances) {
+        badgeBalances = new Map();
+        eventBalancesMap.set(eventId, badgeBalances);
       }
 
-      const badgeBalances = eventBalancesMap.get(sum.eventId)!;
-      const currentBalance = badgeBalances.get(badgeInfo.code) || {
-        ...badgeInfo,
-        balance: ZERO_DECIMAL,
-      };
+      const badgeCode = badgeInfo.code;
+      let currentBalance = badgeBalances.get(badgeCode);
+      if (!currentBalance) {
+        currentBalance = {
+          ...badgeInfo,
+          balance: ZERO_DECIMAL,
+        };
+        badgeBalances.set(badgeCode, currentBalance);
+      }
 
       currentBalance.balance = currentBalance.balance.add(
-        sum._sum.amount || ZERO_DECIMAL
+        (sum._sum.amount as unknown as Decimal) || ZERO_DECIMAL
       );
-      badgeBalances.set(badgeInfo.code, currentBalance);
     }
 
     // Map the rawContent to include calculated balances
@@ -317,7 +323,7 @@ export class EventPrismaRepository implements IEventRepository {
             groupedByBadge.set(badgeCode, badgeGroup);
           }
 
-          const amount = movement.amount as unknown as Decimal;
+          const amount = (movement.amount as unknown as Decimal) || ZERO_DECIMAL;
           badgeGroup.total_amount = badgeGroup.total_amount.add(amount);
 
           const categoryId = movCategory.id;

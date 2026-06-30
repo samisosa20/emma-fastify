@@ -110,3 +110,8 @@
 **Vulnerability:** Mutation operations (add, update) for global system resources (Badge, AccountType, Period, GroupCategory) used direct object passing or spread operators, allowing unauthorized fields to be injected.
 **Learning:** Even administrative endpoints guarded by authorization checks must be hardened against mass assignment to prevent accidental or malicious modification of internal fields (like IDs or timestamps) or exploitation of future schema changes.
 **Prevention:** Always use explicit field whitelisting in repository mutation methods instead of spreading unvalidated request bodies directly into database calls.
+
+## 2026-06-20 - [Missing Length Constraints on User Identity Fields]
+**Vulnerability:** User identity fields (phone, phoneCode) and passwords lacked length constraints, posing a risk of resource exhaustion and DoS via large payloads during authentication and registration.
+**Learning:** While email and name had constraints, other string fields were overlooked. Passwords, in particular, must be limited to prevent expensive hashing operations on extremely long strings.
+**Prevention:** Always apply `.max()` constraints to all string inputs in Zod schemas, especially those involved in computationally expensive operations like password hashing.

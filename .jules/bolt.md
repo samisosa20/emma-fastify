@@ -109,3 +109,7 @@
 ## 2026-06-23 - [Risk of Unsafe Type Casts in Optimized Paths]
 **Learning:** Aggressive optimization sometimes leads to using `as unknown as Decimal` to bypass TypeScript when working with Prisma types. This is a significant runtime risk if the underlying value is not a `Decimal` instance.
 **Action:** Ensure that any unsafe cast is preceded by a robust fallback (e.g., `(val as unknown as Decimal) || ZERO_DECIMAL`) or type guard to prevent runtime crashes.
+
+## 2026-06-30 - [Budget Repository Optimizations]
+**Learning:** Reusing the same Map lookup (.get()) instead of .has() followed by .get() reduces overhead in aggregation loops. Additionally, using targeted 'select' for existence checks avoids fetching unused columns.
+**Action:** Replace .has()/.get() patterns with single-pass .get() and use 'select: { id: true }' for resource ownership validations.

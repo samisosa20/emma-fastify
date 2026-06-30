@@ -38,9 +38,10 @@ type APIBudgetResponse = APIBudgetItem[];
 export class BudgetPrismaRepository implements IBudgetRepository {
   public async addBudget(data: CreateBudget): Promise<Budget | ErrorMessage> {
     try {
-      // Security: Verify that the category belongs to the user
+      // ⚡ Bolt: Use targeted select to minimize data transfer during ownership checks.
       const category = await prisma.category.findFirst({
         where: { id: data.categoryId, userId: data.userId },
+        select: { id: true },
       });
 
       if (!category) {
@@ -130,8 +131,11 @@ export class BudgetPrismaRepository implements IBudgetRepository {
       }),
     ]);
 
-    // Create a fast lookup map for account -> badge mapping
-    const accountBadgeMap = new Map(accounts.map((a) => [a.id, a.badgeId]));
+    // ⚡ Bolt: Build lookup map using for...of to avoid intermediate array allocation.
+    const accountBadgeMap = new Map<string, string>();
+    for (const a of accounts) {
+      accountBadgeMap.set(a.id, a.badgeId);
+    }
 
     // ⚡ Bolt: Aggregate stats by category and badge using a Map for O(N) complexity.
     const executedMap = new Map<string, Decimal>();
@@ -187,10 +191,11 @@ export class BudgetPrismaRepository implements IBudgetRepository {
         });
       }
 
-      // Security: Verify that the category belongs to the user if it is being updated
+      // ⚡ Bolt: Use targeted select to minimize data transfer during ownership checks.
       if (data.categoryId) {
         const category = await prisma.category.findFirst({
           where: { id: data.categoryId, userId },
+          select: { id: true },
         });
 
         if (!category) {
@@ -350,10 +355,20 @@ export class BudgetPrismaRepository implements IBudgetRepository {
         prisma.category.findMany({ where: { userId } }),
       ]);
 
-      // ⚡ Bolt: Use Hash Maps for O(1) in-memory lookups instead of sequential database calls.
-      const periodsMap = new Map(periods.map((p) => [p.name, p]));
-      const badgesMap = new Map(badges.map((b) => [b.code, b]));
-      const categoriesMap = new Map(categories.map((c) => [c.name, c]));
+      // ⚡ Bolt: Use Hash Maps for O(1) in-memory lookups.
+      // Build maps using for...of to avoid intermediate array allocations.
+      const periodsMap = new Map();
+      for (const p of periods) {
+        periodsMap.set(p.name, p);
+      }
+      const badgesMap = new Map();
+      for (const b of badges) {
+        badgesMap.set(b.code, b);
+      }
+      const categoriesMap = new Map();
+      for (const c of categories) {
+        categoriesMap.set(c.name, c);
+      }
 
       // 3. Procesar los presupuestos y prepararlos para la inserción masiva
       const budgetsToCreate = oldBudgets
@@ -448,14 +463,15 @@ export class BudgetPrismaRepository implements IBudgetRepository {
       const yearlyAmount =
         period.name === "Monthly" ? amountDecimal.mul(12) : amountDecimal;
 
-      if (!summaryMap.has(badgeCode)) {
-        summaryMap.set(badgeCode, {
+      // ⚡ Bolt: Single-pass Map lookup and initialization to avoid redundant .has() and .get() calls.
+      let badgeGroup = summaryMap.get(badgeCode);
+      if (!badgeGroup) {
+        badgeGroup = {
           badge: badgeCode,
           yearsMap: new Map<number, BudgetByYear>(),
-        });
+        };
+        summaryMap.set(badgeCode, badgeGroup);
       }
-
-      const badgeGroup = summaryMap.get(badgeCode)!;
       let yearGroup = badgeGroup.yearsMap.get(year);
 
       if (!yearGroup) {

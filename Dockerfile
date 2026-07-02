@@ -6,6 +6,7 @@ WORKDIR /app
 COPY package.json package-lock.json* ./
 # Copiamos el esquema de Prisma (necesario para generar el cliente)
 COPY prisma ./prisma/
+COPY prisma.config.js ./
 
 # Instalamos TODAS las deps (incluyendo devDependencies para compilar TS)
 RUN npm ci
@@ -52,8 +53,9 @@ COPY --from=builder /app/dist ./dist
 # Copiamos package.json por si algún script lo requiere
 COPY package.json ./
 
-# Copiamos la carpeta prisma (necesaria para las migraciones en el arranque)
+# Copiamos la carpeta prisma y su configuración (necesarias para las migraciones en el arranque)
 COPY --from=builder /app/prisma ./prisma
+COPY --from=builder /app/prisma.config.js ./
 
 # Exponemos puerto
 EXPOSE 8010

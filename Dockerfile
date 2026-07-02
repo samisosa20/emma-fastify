@@ -52,6 +52,7 @@ COPY package.json ./
 
 # 4. ¡CRUCIAL!: Copiamos el tsconfig.json para que tsconfig-paths no falle en producción
 COPY tsconfig.json ./
+COPY prisma.config.js ./
 
 # Copiamos la carpeta prisma (necesaria para las migraciones en el arranque)
 COPY --from=builder /app/prisma ./prisma

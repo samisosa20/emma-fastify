@@ -36,13 +36,13 @@
     "prisma-extension-pagination": "^0.7.6",
     "swagger-themes": "^1.4.3",
     "tsconfig-paths": "^4.2.0",
+    "pm2": "7.0.3",
     "zod": "4.4.3"
   },
   "devDependencies": {
     "@types/node": "26.1.0",
     "@types/nodemailer": "8.0.1",
     "nodemon": "^3.1.14",
-    "pm2": "7.0.3",
     "prisma": "^7.8.0",
     "ts-node": "^10.9.2",
     "tsc-alias": "^1.8.17",
@@ -63,6 +63,6 @@
     "ext": "ts, js"
   },
   "engines": {
-    "node": ">=24.0.0"
+    "node": ">=26.0.0"
   }
 }

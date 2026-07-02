@@ -2,6 +2,7 @@ import "dotenv/config";
 import { PrismaClient } from "@prisma/client";
 import { PrismaMariaDb } from "@prisma/adapter-mariadb";
 import { pagination } from "prisma-extension-pagination";
+import mariadb from "mariadb"; //
 
 const databaseUrl = process.env.DATABASE_URL;
 if (!databaseUrl) {
@@ -9,13 +10,15 @@ if (!databaseUrl) {
 }
 
 const parsedUrl = new URL(databaseUrl);
+
 const adapter = new PrismaMariaDb({
   host: parsedUrl.hostname,
   port: parseInt(parsedUrl.port) || 3306,
   user: parsedUrl.username,
-  password: parsedUrl.password,
+  password: decodeURIComponent(parsedUrl.password),
   database: parsedUrl.pathname.substring(1),
   connectionLimit: 10,
+  ssl: parsedUrl.searchParams.get("sslmode") === "skip" ? false : undefined,
 });
 
 const prisma = new PrismaClient({
@@ -31,7 +34,7 @@ const prisma = new PrismaClient({
       limit: 10,
       includePageCount: true,
     },
-  })
+  }),
 );
 
 export default prisma;

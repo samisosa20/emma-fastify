@@ -6,6 +6,7 @@ WORKDIR /app
 COPY package.json package-lock.json* ./
 # Copiamos el esquema de Prisma (necesario para generar el cliente)
 COPY prisma ./prisma/
+COPY prisma.config.js ./
 
 # Instalamos TODAS las deps (incluyendo devDependencies para compilar TS)
 RUN npm ci

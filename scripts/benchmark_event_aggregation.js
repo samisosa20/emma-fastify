@@ -1,6 +1,6 @@
-const { Decimal } = require("@prisma/client/runtime/library");
+const { Prisma } = require("@prisma/client");
 
-const ZERO_DECIMAL = new Decimal(0);
+const ZERO_DECIMAL = new Prisma.Decimal(0);
 
 // Mock data generation
 const generateMovements = (count) => {
@@ -16,7 +16,7 @@ const generateMovements = (count) => {
     const badgeCode = badgeCodes[i % badgeCodes.length];
     const category = categories[i % categories.length];
     movements.push({
-      amount: new Decimal(10.5),
+      amount: new Prisma.Decimal(10.5),
       account: {
         badge: {
           code: badgeCode,

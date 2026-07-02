@@ -1,10 +1,10 @@
-import { Decimal } from "@prisma/client/runtime/library";
+import { Prisma } from "@prisma/client";
 
 export type Investment = {
   id: string;
   name: string;
-  initAmount: Decimal | number;
-  endAmount: Decimal | number;
+  initAmount: Prisma.Decimal | number;
+  endAmount: Prisma.Decimal | number;
   badgeId: string;
   dateInvestment: Date;
   userId: string;
@@ -23,7 +23,7 @@ export type ExtraInfoInvestment = {
 export type InvestmentAppreciation = {
   id: string;
   dateAppreciation: Date;
-  amount: Decimal | number;
+  amount: Prisma.Decimal | number;
   investmentId: string;
   userId: string;
   createdAt: Date;

@@ -1,8 +1,5 @@
-import { Decimal } from "@prisma/client/runtime/library";
-
 import { Account, CreateAccount } from "../domain/account";
 import { IAccountRepository } from "../domain/interfaces/account.interfaces";
-
 import prisma from "packages/shared/settings/prisma.client";
 import {
   CommonParamsPaginate,
@@ -13,7 +10,7 @@ import {
 import { APIResponse } from "packages/badge/infrastructure/badge.repository";
 import { Prisma } from "@prisma/client";
 
-const ZERO_DECIMAL = new Decimal(0); // ⚡ Bolt: Global constant to avoid redundant object allocations
+const ZERO_DECIMAL = new Prisma.Decimal(0); // ⚡ Bolt: Global constant to avoid redundant object allocations
 
 // Definimos un tipo que extiende Account para incluir la suma de los movimientos
 export type AccountWithTotalMovements = Account & {
@@ -156,11 +153,11 @@ export class AccountPrismaRepository implements IAccountRepository {
     const { rawContent, metaResult } = accountsData;
 
     // ⚡ Bolt: Build a lookup map for O(1) balance retrieval using a for...of loop to avoid intermediate array overhead.
-    const sumsMap = new Map<string, Decimal>();
+    const sumsMap = new Map<string, Prisma.Decimal>();
     for (const sum of movementSums) {
       sumsMap.set(
         sum.accountId,
-        (sum._sum.amount as unknown as Decimal) || ZERO_DECIMAL
+        (sum._sum.amount as unknown as Prisma.Decimal) || ZERO_DECIMAL
       );
     }
 

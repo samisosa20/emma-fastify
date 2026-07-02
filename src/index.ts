@@ -37,13 +37,13 @@ const bootstrap = async () => {
     reply.header("X-XSS-Protection", "1; mode=block");
     reply.header(
       "Strict-Transport-Security",
-      "max-age=31536000; includeSubDomains"
+      "max-age=31536000; includeSubDomains",
     );
     reply.header("Content-Security-Policy", "default-src 'self'");
     reply.header("Referrer-Policy", "no-referrer");
     reply.header(
       "Permissions-Policy",
-      "geolocation=(), microphone=(), camera=()"
+      "geolocation=(), microphone=(), camera=()",
     );
     reply.header("X-Permitted-Cross-Domain-Policies", "none");
   });
@@ -88,7 +88,7 @@ const bootstrap = async () => {
       host: "0.0.0.0",
     });
     console.log(
-      `Server is running on http://localhost::${process.env.PORT || 8010}`
+      `Server is running on http://localhost::${process.env.PORT || 8010}`,
     );
     fastify.swagger();
   } catch (error) {

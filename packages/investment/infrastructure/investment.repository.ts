@@ -1,4 +1,4 @@
-import { Decimal } from "@prisma/client/runtime/library";
+import { Prisma } from "@prisma/client";
 
 import {
   Investment,
@@ -17,7 +17,7 @@ import {
 } from "packages/shared";
 import { APIResponse } from "packages/badge/infrastructure/badge.repository"; // Asumiendo APIResponse para el token
 
-const ZERO_DECIMAL = new Decimal(0); // ⚡ Bolt: Global constant to avoid redundant object allocations
+const ZERO_DECIMAL = new Prisma.Decimal(0); // ⚡ Bolt: Global constant to avoid redundant object allocations
 
 type APIInvesmentResponse = {
   investments: APIInvestmentItem[];
@@ -174,8 +174,8 @@ export class InvestmentPrismaRepository implements IInvestmentRepository {
         : [];
 
     // ⚡ Bolt: Use Maps for O(1) in-memory lookups instead of nested loops.
-    const returnsMap = new Map<string, Decimal>();
-    const withdrawalsMap = new Map<string, Decimal>();
+    const returnsMap = new Map<string, Prisma.Decimal>();
+    const withdrawalsMap = new Map<string, Prisma.Decimal>();
     for (const sum of movementSums) {
       if (sum.investmentId) {
         const targetMap = sum.addWithdrawal ? withdrawalsMap : returnsMap;
@@ -193,7 +193,7 @@ export class InvestmentPrismaRepository implements IInvestmentRepository {
       // ⚡ Bolt: Use a consistent way to handle Prisma's Decimal vs runtime number/Decimal types.
       // We convert to Decimal object once if it's not already, ensuring method availability without unsafe casting.
       const initialAmountDecimal = (investment.initAmount ??
-        ZERO_DECIMAL) as unknown as Decimal;
+        ZERO_DECIMAL) as unknown as Prisma.Decimal;
       const movementsWithdrawalSum =
         withdrawalsMap.get(investment.id) || ZERO_DECIMAL;
 
@@ -205,7 +205,7 @@ export class InvestmentPrismaRepository implements IInvestmentRepository {
 
       const lastAppreciationAmount = appreciationMap.get(investment.id);
       const endAmountDecimal = lastAppreciationAmount
-        ? (lastAppreciationAmount as unknown as Decimal)
+        ? (lastAppreciationAmount as unknown as Prisma.Decimal)
         : initialAmountDecimal;
 
       let valorization = "0.00%";
@@ -416,7 +416,7 @@ export class InvestmentPrismaRepository implements IInvestmentRepository {
 
     // ⚡ Bolt: Consolidate movement aggregation into a single pass to eliminate O(N) redundant iterations.
     for (const movement of movements) {
-      const amount = (movement.amount || ZERO_DECIMAL) as unknown as Decimal;
+      const amount = (movement.amount || ZERO_DECIMAL) as unknown as Prisma.Decimal;
       if (movement.addWithdrawal) {
         movementsWithdrawalSum = movementsWithdrawalSum.minus(amount);
       } else {
@@ -426,7 +426,7 @@ export class InvestmentPrismaRepository implements IInvestmentRepository {
 
     const totalReturns = totalReturnsDecimal.toNumber();
     const initialAmountDecimal = (investment.initAmount ||
-      ZERO_DECIMAL) as unknown as Decimal;
+      ZERO_DECIMAL) as unknown as Prisma.Decimal;
 
     // totalWithdrawal como número (pero calculado con Decimal.js para precisión)
     const totalWithdrawal = initialAmountDecimal
@@ -436,7 +436,7 @@ export class InvestmentPrismaRepository implements IInvestmentRepository {
     const lastAppreciation =
       appreciations.length > 0 ? appreciations[appreciations.length - 1] : null;
     const endAmountDecimal = lastAppreciation?.amount
-      ? (lastAppreciation.amount as unknown as Decimal)
+      ? (lastAppreciation.amount as unknown as Prisma.Decimal)
       : initialAmountDecimal;
     const endAmount = endAmountDecimal.toNumber();
 

@@ -11,9 +11,9 @@ import { IBudgetRepository } from "../domain/interfaces/budget.interfaces";
 import prisma from "packages/shared/settings/prisma.client";
 import { CommonParamsPaginate, Paginate, ErrorMessage } from "packages/shared";
 import { APIResponse } from "packages/badge/infrastructure/badge.repository";
-import { Decimal } from "@prisma/client/runtime/library";
+import { Prisma } from "@prisma/client";
 
-const ZERO_DECIMAL = new Decimal(0); // ⚡ Bolt: Global constant to avoid redundant object allocations
+const ZERO_DECIMAL = new Prisma.Decimal(0); // ⚡ Bolt: Global constant to avoid redundant object allocations
 
 // Define el tipo para un solo objeto de presupuesto de la API externa
 type APIBudgetItem = {
@@ -138,13 +138,13 @@ export class BudgetPrismaRepository implements IBudgetRepository {
     }
 
     // ⚡ Bolt: Aggregate stats by category and badge using a Map for O(N) complexity.
-    const executedMap = new Map<string, Decimal>();
+    const executedMap = new Map<string, Prisma.Decimal>();
     for (const stat of movementStats) {
       const bId = accountBadgeMap.get(stat.accountId);
       if (!bId) continue;
 
       const key = `${stat.categoryId}-${bId}`;
-      const sum = (stat._sum.amount as unknown as Decimal) || ZERO_DECIMAL;
+      const sum = (stat._sum.amount as unknown as Prisma.Decimal) || ZERO_DECIMAL;
 
       executedMap.set(key, (executedMap.get(key) || ZERO_DECIMAL).add(sum));
     }
@@ -154,7 +154,7 @@ export class BudgetPrismaRepository implements IBudgetRepository {
       const key = `${b.categoryId}-${b.badgeId}`;
       const executed = executedMap.get(key) || ZERO_DECIMAL;
 
-      const amountDecimal = b.amount as unknown as Decimal;
+      const amountDecimal = b.amount as unknown as Prisma.Decimal;
       const planned =
         b.period.name === "Monthly" ? amountDecimal.mul(12) : amountDecimal;
       const difference = planned.sub(executed.abs());
@@ -459,7 +459,7 @@ export class BudgetPrismaRepository implements IBudgetRepository {
     for (const budget of budgets) {
       const { year, amount, badge, period } = budget;
       const badgeCode = badge.code;
-      const amountDecimal = amount as unknown as Decimal;
+      const amountDecimal = amount as unknown as Prisma.Decimal;
       const yearlyAmount =
         period.name === "Monthly" ? amountDecimal.mul(12) : amountDecimal;
 

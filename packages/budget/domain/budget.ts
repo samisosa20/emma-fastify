@@ -1,9 +1,9 @@
-import { Decimal } from "@prisma/client/runtime/library";
+import { Prisma } from "@prisma/client";
 
 export type Budget = {
   id: string;
   categoryId: string;
-  amount: Decimal | number;
+  amount: Prisma.Decimal | number;
   badgeId: string;
   periodId: string;
   year: number;
@@ -21,9 +21,9 @@ export type ParamsBudget = {
 };
 export type BudgetByYear = {
   year: number;
-  incomes: Decimal;
-  expenses: Decimal;
-  utility: Decimal;
+  incomes: Prisma.Decimal;
+  expenses: Prisma.Decimal;
+  utility: Prisma.Decimal;
   badge: {
     flag: string | null;
     name: string;
@@ -42,7 +42,7 @@ export type BudgetCompare = {
   category: any;
   badge: any;
   year: number;
-  planned: Decimal | number;
-  executed: Decimal | number;
-  difference: Decimal | number;
+  planned: Prisma.Decimal | number;
+  executed: Prisma.Decimal | number;
+  difference: Prisma.Decimal | number;
 };

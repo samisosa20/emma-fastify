@@ -1,5 +1,5 @@
 
-import { Decimal } from "@prisma/client/runtime/library";
+import { Prisma } from "@prisma/client";
 
 function toISODate(date: Date): string {
   return date.toISOString().split("T")[0];

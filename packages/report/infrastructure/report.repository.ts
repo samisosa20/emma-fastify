@@ -12,10 +12,9 @@ import { IReportRepository } from "../domain/interfaces/report.interfaces";
 
 import prisma from "packages/shared/settings/prisma.client";
 import { ErrorMessage } from "packages/shared";
-import { Decimal } from "@prisma/client/runtime/library";
 import { Prisma } from "@prisma/client";
 
-const ZERO_DECIMAL = new Decimal(0); // ⚡ Bolt: Global constant to avoid redundant object allocations
+const ZERO_DECIMAL = new Prisma.Decimal(0); // ⚡ Bolt: Global constant to avoid redundant object allocations
 
 export class ReportPrismaRepository implements IReportRepository {
   public async weeklyExpensive(
@@ -382,7 +381,7 @@ export class ReportPrismaRepository implements IReportRepository {
       if (dailyRecord) {
         item.dailyAmount = dailyRecord.dailyAmount ?? ZERO_DECIMAL;
         item.cumulativeBalance = dailyRecord.cumulativeBalance;
-        lastBalance = (dailyRecord.cumulativeBalance as Decimal) ?? lastBalance;
+        lastBalance = (dailyRecord.cumulativeBalance as Prisma.Decimal) ?? lastBalance;
         hasAnyData = true;
       }
 
@@ -425,7 +424,7 @@ export class ReportPrismaRepository implements IReportRepository {
     ]);
 
     let totalAbsoluto = ZERO_DECIMAL;
-    const amountsAbs: Decimal[] = new Array(report.length);
+    const amountsAbs: Prisma.Decimal[] = new Array(report.length);
 
     // ⚡ Bolt: Calculate absolute amounts once to avoid redundant .abs() calls and re-allocations.
     for (let i = 0; i < report.length; i++) {

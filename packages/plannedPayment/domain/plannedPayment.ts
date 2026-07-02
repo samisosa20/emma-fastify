@@ -1,11 +1,11 @@
-import { Decimal } from "@prisma/client/runtime/library";
+import { Prisma } from "@prisma/client";
 
 export type PlannedPayment = {
   id: string;
   accountId: string;
   categoryId: string;
   description: string | null;
-  amount: number | Decimal;
+  amount: number | Prisma.Decimal;
   startDate: Date;
   endDate: Date | null;
   specificDay: number;

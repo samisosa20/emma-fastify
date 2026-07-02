@@ -1,5 +1,5 @@
-import { Decimal } from "@prisma/client/runtime/library";
-const ZERO_DECIMAL = new Decimal(0); // ⚡ Bolt: Global constant to avoid redundant object allocations
+import { Prisma } from "@prisma/client";
+const ZERO_DECIMAL = new Prisma.Decimal(0); // ⚡ Bolt: Global constant to avoid redundant object allocations
 import {
   Heritage,
   CreateHeritage,
@@ -510,17 +510,17 @@ export class HeritagePrismaRepository implements IHeritageRepository {
       const movements = movementsByYear[i];
 
       // ⚡ Bolt: Build movementMap using a for...of loop to avoid intermediate array allocation from movements.map().
-      const movementMap = new Map<string, Decimal>();
+      const movementMap = new Map<string, Prisma.Decimal>();
       for (const m of movements) {
-        movementMap.set(m.accountId, (m._sum.amount as unknown as Decimal) || ZERO_DECIMAL);
+        movementMap.set(m.accountId, (m._sum.amount as unknown as Prisma.Decimal) || ZERO_DECIMAL);
       }
-      const totalsByBadge = new Map<string, Decimal>();
+      const totalsByBadge = new Map<string, Prisma.Decimal>();
 
       // A. Balances de cuentas (Init + Movements)
       accounts.forEach((acc) => {
         if (acc.createdAt <= limitDate) {
           const movementSum = movementMap.get(acc.id) || ZERO_DECIMAL;
-          const total = (acc.initAmount as unknown as Decimal).plus(
+          const total = (acc.initAmount as unknown as Prisma.Decimal).plus(
             movementSum
           );
           const current = totalsByBadge.get(acc.badgeId) || ZERO_DECIMAL;
@@ -535,7 +535,7 @@ export class HeritagePrismaRepository implements IHeritageRepository {
           const current = totalsByBadge.get(h.badgeId) || ZERO_DECIMAL;
           totalsByBadge.set(
             h.badgeId,
-            current.plus(h.comercialAmount as unknown as Decimal)
+            current.plus(h.comercialAmount as unknown as Prisma.Decimal)
           );
         });
 
@@ -551,7 +551,7 @@ export class HeritagePrismaRepository implements IHeritageRepository {
             totalsByBadge.get(app.investment.badgeId) || ZERO_DECIMAL;
           totalsByBadge.set(
             app.investment.badgeId,
-            current.plus(app.amount as unknown as Decimal)
+            current.plus(app.amount as unknown as Prisma.Decimal)
           );
         }
       });

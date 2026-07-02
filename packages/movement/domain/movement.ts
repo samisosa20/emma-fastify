@@ -1,12 +1,12 @@
-import { Decimal } from "@prisma/client/runtime/library";
+import { Prisma } from "@prisma/client";
 
 export type Movement = {
   id: string;
   accountId: string;
   categoryId: string;
   description: string | null;
-  amount: Decimal | number;
-  trm: Decimal;
+  amount: Prisma.Decimal | number;
+  trm: Prisma.Decimal;
   datePurchase: Date;
   transferId: string | null;
   eventId: string | null;
@@ -26,7 +26,7 @@ export type TranferMovement = {
           name: string;
           badgeId: string;
         };
-        amount: Decimal | number;
+        amount: Prisma.Decimal | number;
       }
     | {};
   transferIn:
@@ -37,7 +37,7 @@ export type TranferMovement = {
           name: string;
           badgeId: string;
         };
-        amount: Decimal | number;
+        amount: Prisma.Decimal | number;
       }
     | {};
 };

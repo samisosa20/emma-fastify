@@ -4,9 +4,9 @@ import { IEventRepository } from "../domain/interfaces/event.interfaces";
 import prisma from "packages/shared/settings/prisma.client";
 import { CommonParamsPaginate, Paginate, ErrorMessage } from "packages/shared";
 import { APIResponse } from "packages/badge/infrastructure/badge.repository";
-import { Decimal } from "@prisma/client/runtime/library";
+import { Prisma } from "@prisma/client";
 
-const ZERO_DECIMAL = new Decimal(0); // ⚡ Bolt: Global constant to avoid redundant object allocations
+const ZERO_DECIMAL = new Prisma.Decimal(0); // ⚡ Bolt: Global constant to avoid redundant object allocations
 
 type APIEventResponse = {
   name: string;
@@ -149,7 +149,7 @@ export class EventPrismaRepository implements IEventRepository {
     // eventId -> badgeCode -> balance data
     const eventBalancesMap = new Map<
       string,
-      Map<string, { code: string; symbol: string; flag: string; balance: Decimal }>
+      Map<string, { code: string; symbol: string; flag: string; balance: Prisma.Decimal }>
     >();
 
     for (const sum of movementSums) {
@@ -176,7 +176,7 @@ export class EventPrismaRepository implements IEventRepository {
       }
 
       currentBalance.balance = currentBalance.balance.add(
-        (sum._sum.amount as unknown as Decimal) || ZERO_DECIMAL
+        (sum._sum.amount as unknown as Prisma.Decimal) || ZERO_DECIMAL
       );
     }
 
@@ -290,7 +290,7 @@ export class EventPrismaRepository implements IEventRepository {
         {
           symbol: string;
           flag: string;
-          total_amount: Decimal;
+          total_amount: Prisma.Decimal;
           categories: Map<
             string,
             {
@@ -298,7 +298,7 @@ export class EventPrismaRepository implements IEventRepository {
               name: string;
               color: string | null;
               icon: string | null;
-              amount: Decimal;
+              amount: Prisma.Decimal;
             }
           >;
         }
@@ -323,7 +323,7 @@ export class EventPrismaRepository implements IEventRepository {
             groupedByBadge.set(badgeCode, badgeGroup);
           }
 
-          const amount = (movement.amount as unknown as Decimal) || ZERO_DECIMAL;
+          const amount = (movement.amount as unknown as Prisma.Decimal) || ZERO_DECIMAL;
           badgeGroup.total_amount = badgeGroup.total_amount.add(amount);
 
           const categoryId = movCategory.id;

@@ -1,9 +1,9 @@
-import { Decimal } from "@prisma/client/runtime/library";
+import { Prisma } from "@prisma/client";
 
 export type Report = {
   categoryId: string;
   category: string;
-  amount: number | Decimal;
+  amount: number | Prisma.Decimal;
 }[];
 
 export type ReportParams = {
@@ -21,24 +21,24 @@ export type ReportParams = {
 
 export type ReportBalance = {
   code: string;
-  amount: Decimal | number | null;
+  amount: Prisma.Decimal | number | null;
 }[];
 
 export type ReportAccountBalance = {
   code: string;
-  yearlyAmount: Decimal | number | null;
-  monthlyAmount: Decimal | number | null;
-  totalAmount: Decimal | number | null;
+  yearlyAmount: Prisma.Decimal | number | null;
+  monthlyAmount: Prisma.Decimal | number | null;
+  totalAmount: Prisma.Decimal | number | null;
 };
 
 export type ReportCategoryStats = {
   code: string;
-  avgMonthlyIncome: Decimal | number | null;
-  incomeLowerLimit: Decimal | number | null;
-  incomeUpperLimit: Decimal | number | null;
-  avgMonthlyExpense: Decimal | number | null;
-  expenseLowerLimit: Decimal | number | null;
-  expenseUpperLimit: Decimal | number | null;
+  avgMonthlyIncome: Prisma.Decimal | number | null;
+  incomeLowerLimit: Prisma.Decimal | number | null;
+  incomeUpperLimit: Prisma.Decimal | number | null;
+  avgMonthlyExpense: Prisma.Decimal | number | null;
+  expenseLowerLimit: Prisma.Decimal | number | null;
+  expenseUpperLimit: Prisma.Decimal | number | null;
 }[];
 
 export type ReportBalanceHistory = {
@@ -53,8 +53,8 @@ export type ItemBalanceHistory = {
   flag: string;
   symbol: string;
   date: string | Date;
-  dailyAmount: Decimal | number | null;
-  cumulativeBalance: Decimal | number | null;
+  dailyAmount: Prisma.Decimal | number | null;
+  cumulativeBalance: Prisma.Decimal | number | null;
 };
 
 export type BalanceHistory = ItemBalanceHistory[];

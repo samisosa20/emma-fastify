@@ -1,10 +1,10 @@
-import { Decimal } from "@prisma/client/runtime/library";
+import { Prisma } from "@prisma/client";
 
 export type Heritage = {
   id: string;
   name: string;
-  comercialAmount: Decimal | number;
-  legalAmount: Decimal | number;
+  comercialAmount: Prisma.Decimal | number;
+  legalAmount: Prisma.Decimal | number;
   badgeId: string;
   year: number;
   userId: string;
@@ -19,7 +19,7 @@ export type HeritageReport = {
     code: string | null;
     flag: string | null;
     symbol: string | null;
-    amount: Decimal | number;
+    amount: Prisma.Decimal | number;
   }[];
 };
 

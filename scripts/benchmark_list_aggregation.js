@@ -1,6 +1,6 @@
-const { Decimal } = require("@prisma/client/runtime/library");
+const { Prisma } = require("@prisma/client");
 
-const ZERO_DECIMAL = new Decimal(0);
+const ZERO_DECIMAL = new Prisma.Decimal(0);
 
 const generateMovementSums = (count) => {
   const sums = [];
@@ -12,7 +12,7 @@ const generateMovementSums = (count) => {
       eventId: eventIds[i % eventIds.length],
       accountId: accountIds[i % accountIds.length],
       _sum: {
-        amount: new Decimal(10.5),
+        amount: new Prisma.Decimal(10.5),
       },
     });
   }

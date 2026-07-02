@@ -1,9 +1,9 @@
-import { Decimal } from "@prisma/client/runtime/library";
+import { Prisma } from "@prisma/client";
 
 export type Appreciation = {
   id: string;
   dateAppreciation: Date;
-  amount: Decimal | number;
+  amount: Prisma.Decimal | number;
   investmentId: string;
   userId: string;
   createdAt: Date;

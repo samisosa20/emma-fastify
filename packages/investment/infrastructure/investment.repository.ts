@@ -53,7 +53,7 @@ type APIAppreciationResponse = APIAppreciationItem[];
 
 export class InvestmentPrismaRepository implements IInvestmentRepository {
   public async addInvestment(
-    data: CreateInvestment
+    data: CreateInvestment,
   ): Promise<Investment | ErrorMessage> {
     try {
       const newInvestment = await prisma.investment.create({
@@ -109,7 +109,7 @@ export class InvestmentPrismaRepository implements IInvestmentRepository {
   }
 
   public async listInvestment(
-    params: CommonParamsPaginate
+    params: CommonParamsPaginate,
   ): Promise<{ content: Investment[]; meta: Paginate }> {
     const { deleted, size, page, userId } = params;
 
@@ -184,11 +184,12 @@ export class InvestmentPrismaRepository implements IInvestmentRepository {
     }
 
     const appreciationMap = new Map(
-      latestAppreciations.map((a) => [a.investmentId, a.amount])
+      latestAppreciations.map((a) => [a.investmentId, a.amount]),
     );
 
     const indicatorsInvestment = content.map((investment) => {
-      const totalReturnsDecimal = returnsMap.get(investment.id) || ZERO_DECIMAL;
+      const yieldMovementsDecimal =
+        returnsMap.get(investment.id) || ZERO_DECIMAL;
 
       // ⚡ Bolt: Use a consistent way to handle Prisma's Decimal vs runtime number/Decimal types.
       // We convert to Decimal object once if it's not already, ensuring method availability without unsafe casting.
@@ -198,9 +199,9 @@ export class InvestmentPrismaRepository implements IInvestmentRepository {
         withdrawalsMap.get(investment.id) || ZERO_DECIMAL;
 
       // totalWithdrawal calculated with Decimal precision.
-      // Withdrawals decrease the total net invested capital.
+      // Withdrawals decrease the total net invested capital (positive = withdrawal, negative = deposit).
       const totalWithdrawalDecimal = initialAmountDecimal.minus(
-        movementsWithdrawalSum
+        movementsWithdrawalSum,
       );
 
       const lastAppreciationAmount = appreciationMap.get(investment.id);
@@ -217,10 +218,13 @@ export class InvestmentPrismaRepository implements IInvestmentRepository {
         valorization = `${rawValorization.toFixed(2)}%`;
       }
 
+      // totalReturns is the sum of yields (movements with addWithdrawal = false)
+      const totalReturnsDecimal = yieldMovementsDecimal;
+
       let totalRate = "0.00%";
       if (!totalWithdrawalDecimal.isZero()) {
         const rawTotalRate = endAmountDecimal
-          .plus(totalReturnsDecimal)
+          .plus(yieldMovementsDecimal)
           .minus(totalWithdrawalDecimal)
           .dividedBy(totalWithdrawalDecimal)
           .times(100);
@@ -246,7 +250,7 @@ export class InvestmentPrismaRepository implements IInvestmentRepository {
   public async updateInvestment(
     id: string,
     data: Partial<CreateInvestment>,
-    userId: string
+    userId: string,
   ): Promise<Investment | ErrorMessage> {
     try {
       const investment = await prisma.investment.findFirst({
@@ -306,7 +310,7 @@ export class InvestmentPrismaRepository implements IInvestmentRepository {
 
   public async detailInvestment(
     id: string,
-    userId: string
+    userId: string,
   ): Promise<(Investment & ExtraInfoInvestment) | null> {
     try {
       const investment = await prisma.investment.findFirst({
@@ -365,7 +369,7 @@ export class InvestmentPrismaRepository implements IInvestmentRepository {
 
   public async deleteInvestment(
     id: string,
-    userId: string
+    userId: string,
   ): Promise<Investment | null> {
     const investment = await prisma.investment.findFirst({
       where: { id, userId },
@@ -406,32 +410,33 @@ export class InvestmentPrismaRepository implements IInvestmentRepository {
   }
 
   private async getMoreDetailInvestment(
-    investment: Investment & { movements: any[]; appreciations: any[] }
+    investment: Investment & { movements: any[]; appreciations: any[] },
   ): Promise<Investment & ExtraInfoInvestment> {
     const movements = investment.movements || [];
     const appreciations = investment.appreciations || [];
 
-    let totalReturnsDecimal = ZERO_DECIMAL;
+    let yieldMovementsDecimal = ZERO_DECIMAL;
     let movementsWithdrawalSum = ZERO_DECIMAL;
 
     // ⚡ Bolt: Consolidate movement aggregation into a single pass to eliminate O(N) redundant iterations.
     for (const movement of movements) {
-      const amount = (movement.amount || ZERO_DECIMAL) as unknown as Prisma.Decimal;
+      const amount = (movement.amount ||
+        ZERO_DECIMAL) as unknown as Prisma.Decimal;
       if (movement.addWithdrawal) {
-        movementsWithdrawalSum = movementsWithdrawalSum.minus(amount);
+        movementsWithdrawalSum = movementsWithdrawalSum.plus(amount);
       } else {
-        totalReturnsDecimal = totalReturnsDecimal.plus(amount);
+        yieldMovementsDecimal = yieldMovementsDecimal.plus(amount);
       }
     }
 
-    const totalReturns = totalReturnsDecimal.toNumber();
     const initialAmountDecimal = (investment.initAmount ||
       ZERO_DECIMAL) as unknown as Prisma.Decimal;
 
-    // totalWithdrawal como número (pero calculado con Decimal.js para precisión)
-    const totalWithdrawal = initialAmountDecimal
-      .plus(movementsWithdrawalSum)
-      .toNumber();
+    // totalWithdrawal calculated with Decimal precision (positive = withdrawal, negative = deposit).
+    const totalWithdrawalDecimal = initialAmountDecimal.minus(
+      movementsWithdrawalSum,
+    );
+    const totalWithdrawal = totalWithdrawalDecimal.toNumber();
 
     const lastAppreciation =
       appreciations.length > 0 ? appreciations[appreciations.length - 1] : null;
@@ -442,29 +447,29 @@ export class InvestmentPrismaRepository implements IInvestmentRepository {
 
     // --- Cálculos de Porcentajes con Dos Decimales ---
 
-    // ⚡ Bolt: Avoid redundant Decimal allocations for values that can be derived from existing Decimal objects.
-    const totalWithdrawalForCalculations = initialAmountDecimal.plus(movementsWithdrawalSum);
-    const totalReturnsForCalculations = totalReturnsDecimal;
-
     let valorization = "0.00%";
-    if (totalWithdrawalForCalculations.isZero()) {
+    if (totalWithdrawalDecimal.isZero()) {
       valorization = "0.00%";
     } else {
       const rawValorization = endAmountDecimal
-        .minus(totalWithdrawalForCalculations)
-        .dividedBy(totalWithdrawalForCalculations)
+        .minus(totalWithdrawalDecimal)
+        .dividedBy(totalWithdrawalDecimal)
         .times(100);
       valorization = `${rawValorization.toFixed(2)}%`;
     }
 
+    // totalReturns is the sum of yields (movements with addWithdrawal = false)
+    const totalReturnsDecimal = yieldMovementsDecimal;
+    const totalReturns = totalReturnsDecimal.toNumber();
+
     let totalRate = "0.00%";
-    if (totalWithdrawalForCalculations.isZero()) {
+    if (totalWithdrawalDecimal.isZero()) {
       totalRate = "0.00%";
     } else {
       const rawTotalRate = endAmountDecimal
-        .plus(totalReturnsForCalculations)
-        .minus(totalWithdrawalForCalculations)
-        .dividedBy(totalWithdrawalForCalculations)
+        .plus(yieldMovementsDecimal)
+        .minus(totalWithdrawalDecimal)
+        .dividedBy(totalWithdrawalDecimal)
         .times(100);
       totalRate = `${rawTotalRate.toFixed(2)}%`;
     }
@@ -513,7 +518,7 @@ export class InvestmentPrismaRepository implements IInvestmentRepository {
         const errorText = await loginResponse.text();
         console.error(
           `API login failed: ${loginResponse.status} ${loginResponse.statusText}`,
-          errorText
+          errorText,
         );
         throw Object.assign(
           new Error(`API login failed: ${loginResponse.statusText}`),
@@ -523,7 +528,7 @@ export class InvestmentPrismaRepository implements IInvestmentRepository {
             message: `Failed to login to API: ${loginResponse.status} ${
               loginResponse.statusText
             }. ${errorText || ""}`.trim(),
-          }
+          },
         );
       }
 
@@ -544,11 +549,11 @@ export class InvestmentPrismaRepository implements IInvestmentRepository {
         const errorText = await investmentsResponse.text();
         console.error(
           `API investments fetch failed: ${investmentsResponse.status} ${investmentsResponse.statusText}`,
-          errorText
+          errorText,
         );
         throw Object.assign(
           new Error(
-            `API investments fetch failed: ${investmentsResponse.statusText}`
+            `API investments fetch failed: ${investmentsResponse.statusText}`,
           ),
           {
             statusCode: investmentsResponse.status,
@@ -556,7 +561,7 @@ export class InvestmentPrismaRepository implements IInvestmentRepository {
             message: `Failed to fetch investments from API: ${
               investmentsResponse.status
             } ${investmentsResponse.statusText}. ${errorText || ""}`.trim(),
-          }
+          },
         );
       }
 
@@ -577,7 +582,7 @@ export class InvestmentPrismaRepository implements IInvestmentRepository {
 
           if (!badge) {
             console.warn(
-              `Badge with code '${investment.currency.code}' not found for investment '${investment.name}'. Skipping this investment.`
+              `Badge with code '${investment.currency.code}' not found for investment '${investment.name}'. Skipping this investment.`,
             );
             return null; // Omitir esta inversión si no se encuentra la insignia
           }
@@ -622,7 +627,7 @@ export class InvestmentPrismaRepository implements IInvestmentRepository {
       // Para otros errores inesperados
       throw Object.assign(
         new Error(
-          (error as Error)?.message || "Investment import process failed"
+          (error as Error)?.message || "Investment import process failed",
         ),
         {
           statusCode: (error as any)?.statusCode || 500,
@@ -630,9 +635,8 @@ export class InvestmentPrismaRepository implements IInvestmentRepository {
           message:
             (error as Error)?.message ||
             "An unexpected error occurred during investment import.",
-        }
+        },
       );
     }
   }
-
 }

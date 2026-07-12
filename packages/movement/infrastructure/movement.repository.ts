@@ -491,48 +491,36 @@ export class MovementPrismaRepository implements IMovementRepository {
     id: string,
     userId: string
   ): Promise<Movement | null> {
-    // ⚡ Bolt: Use a targeted select instead of heavy includes to avoid 4 unnecessary joins
-    // and reduce database load when deleting a movement.
     const movement = await prisma.movement.findFirst({
       where: { id, userId },
-      select: {
-        id: true,
-        accountId: true,
-        categoryId: true,
-        description: true,
-        amount: true,
-        trm: true,
-        datePurchase: true,
-        transferId: true,
-        eventId: true,
-        investmentId: true,
-        userId: true,
-        createdAt: true,
-        updatedAt: true,
-        addWithdrawal: true,
-        originalOrPairedMovement: {
-          select: { id: true },
-        },
-        relatedTransferMovements: {
-          select: { id: true },
-        },
+      include: {
+        account: true,
+        category: true,
+        event: true,
+        investment: true,
+        originalOrPairedMovement: true,
+        relatedTransferMovements: true,
       },
     });
     if (!movement) {
       return null;
     }
 
-    const isTransferOut = movement.transferId === null;
     let whereClause = undefined;
-    if (!isTransferOut && movement.originalOrPairedMovement) {
-      whereClause = { id: String(movement.originalOrPairedMovement?.id) };
-    } else {
-      whereClause = { id: String(movement.relatedTransferMovements[0]?.id) };
+    if (movement.transferId !== null) {
+      if (movement.originalOrPairedMovement) {
+        whereClause = { id: String(movement.originalOrPairedMovement.id) };
+      }
+    } else if (movement.relatedTransferMovements && movement.relatedTransferMovements.length > 0) {
+      whereClause = { id: String(movement.relatedTransferMovements[0].id) };
     }
     await prisma.movement.deleteMany({
       where: {
         userId,
-        OR: [whereClause, { id }],
+        OR: [
+          ...(whereClause ? [whereClause] : []),
+          { id },
+        ],
       },
     });
 

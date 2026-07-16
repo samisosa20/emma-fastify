@@ -6,14 +6,18 @@ export const InvestmentCreateInput = z.object({
   initAmount: z.number({ message: "initAmount is required" }),
   endAmount: z.number({ message: "endAmount is required" }),
   badgeId: z.uuid({ message: "badgeId is required" }),
-  dateInvestment: z.string({ message: "dateInvestment is required" }),
+  dateInvestment: z
+    .string({ message: "dateInvestment is required" })
+    .datetime({ message: "Invalid date format" }),
   // userId: z.string({ message: "userId is required" }),
   // categoryId: z.string().optional().nullable(), // Si aplica
 }) satisfies z.Schema<Omit<Prisma.InvestmentUncheckedCreateInput, "userId">>;
 
 export const AppreciationCreateInput = z.object({
   amount: z.number({ message: "amount is required" }),
-  dateAppreciation: z.string({ message: "dateAppreciation is required" }),
+  dateAppreciation: z
+    .string({ message: "dateAppreciation is required" })
+    .datetime({ message: "Invalid date format" }),
 }) satisfies z.Schema<
   Omit<Prisma.InvestmentAppreciationCreateInput, "user" | "investment">
 >;

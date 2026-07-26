@@ -1,8 +1,15 @@
-import { betterAuth } from "better-auth";
+import { betterAuth, CookieOptions } from "better-auth";
 import { prismaAdapter } from "better-auth/adapters/prisma";
 import prisma from "../../packages/shared/settings/prisma.client";
 import { sendEmailConfirmation } from "../../packages/shared";
 import { customSession } from "better-auth/plugins";
+
+const isProduction = process.env.NODE_ENV === "production";
+
+const crossSiteCookieAttributes: CookieOptions = {
+  sameSite: isProduction ? "none" : "lax",
+  secure: isProduction,
+} as const;
 
 export const auth = betterAuth({
   database: prismaAdapter(prisma, {
@@ -15,6 +22,10 @@ export const auth = betterAuth({
     process.env.APP_URL || "http://localhost:3000",
     "http://localhost:8010",
   ],
+  advanced: {
+    useSecureCookies: isProduction,
+    defaultCookieAttributes: crossSiteCookieAttributes,
+  },
   account: {
     modelName: "oauthAccount",
     fields: {

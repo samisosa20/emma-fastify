@@ -9,6 +9,7 @@ import {
   handleShowDeleteData,
   hashPassword,
   sendEmailConfirmation,
+  sendPasswordRecoveryEmail,
   verifyPassword,
 } from "packages/shared";
 import { Paginate } from "packages/shared";
@@ -335,7 +336,7 @@ export class UserRepositoryPrismaPostgres implements IUserRepository {
       },
     });
 
-    await sendEmailConfirmation(email, token);
+    await sendPasswordRecoveryEmail(email, token);
 
     return {
       statusCode: 200,

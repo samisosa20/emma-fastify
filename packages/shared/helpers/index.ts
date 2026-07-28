@@ -53,6 +53,22 @@ export async function sendEmailConfirmation(email: string, token: string) {
   );
 }
 
+export async function sendPasswordRecoveryEmail(email: string, token: string) {
+  // Create a password recovery URL
+  const encodedEmail = encodeURIComponent(email);
+  const encodedToken = encodeURIComponent(token);
+  const recoveryUrl = `${process.env.APP_URL}/reset-password?token=${encodedToken}&email=${encodedEmail}`;
+  // Send the password recovery email
+  await sendEmail(
+    email,
+    "Reset your password",
+    `<p>Hi,</p>
+    <p>Please reset your password by clicking the link below:</p>
+   <a href="${recoveryUrl}">Reset Password</a>
+   <p>If you did not request this, please ignore this email.</p>`
+  );
+}
+
 export const formatErrorMessageMiddleware = (error: any) => {
   if (error instanceof ZodError) {
     throw Object.assign(new Error("Validation Error", { cause: "zod" }), {

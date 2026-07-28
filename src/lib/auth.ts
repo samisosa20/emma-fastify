@@ -58,13 +58,16 @@ export const auth = betterAuth({
   },
   plugins: [
     customSession(async ({ user, session }) => {
-      const badges = await prisma.badge.findMany();
-      const accountTypes = await prisma.accountType.findMany();
-      const groupCategories = await prisma.groupCategory.findMany();
-      const userFromDb = await prisma.user.findUnique({
-        where: { id: user.id },
-        select: { confirmedEmailAt: true, badgeId: true },
-      });
+      // ⚡ Bolt: Fetch global lookup data and user metadata in parallel to reduce session resolution latency.
+      const [badges, accountTypes, groupCategories, userFromDb] = await Promise.all([
+        prisma.badge.findMany(),
+        prisma.accountType.findMany(),
+        prisma.groupCategory.findMany(),
+        prisma.user.findUnique({
+          where: { id: user.id },
+          select: { confirmedEmailAt: true, badgeId: true },
+        }),
+      ]);
       return {
         user: {
           ...user,

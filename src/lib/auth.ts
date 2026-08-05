@@ -58,8 +58,7 @@ export const auth = betterAuth({
   },
   plugins: [
     customSession(async ({ user, session }) => {
-      // ⚡ Bolt: Parallelize metadata fetching and user metadata lookups in the customSession hook.
-      // This minimizes session verification latency by running independent queries concurrently.
+      // ⚡ Bolt: Fetch global lookup data and user metadata in parallel to reduce session resolution latency.
       const [badges, accountTypes, groupCategories, userFromDb] = await Promise.all([
         prisma.badge.findMany(),
         prisma.accountType.findMany(),

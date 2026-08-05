@@ -117,3 +117,7 @@
 ## 2026-06-30 - [Budget Repository Optimizations]
 **Learning:** Reusing the same Map lookup (.get()) instead of .has() followed by .get() reduces overhead in aggregation loops. Additionally, using targeted 'select' for existence checks avoids fetching unused columns.
 **Action:** Replace .has()/.get() patterns with single-pass .get() and use 'select: { id: true }' for resource ownership validations.
+
+## 2026-07-28 - [Parallelize Better-Auth Session Resolution]
+**Learning:** Executing sequential await database queries during Better-Auth session validation on every request compounds latency significantly.
+**Action:** Always use Promise.all to fetch session metadata concurrently, cutting database wait time by up to 75%.

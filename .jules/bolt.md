@@ -1,3 +1,7 @@
+## 2026-08-04 - [Parallelize customSession Hook Queries]
+**Learning:** Sequential await calls for metadata and user lookups in the `customSession` plugin increase session verification latency on every authenticated request.
+**Action:** Use `Promise.all` to fetch global metadata collections and user-specific verification details concurrently inside custom session plugins.
+
 ## 2026-05-01 - [Parallelize Reporting Queries]
 **Learning:** Sequential await calls for independent database queries significantly increase latency in reporting endpoints.
 **Action:** Use `Promise.all` to fetch data and metadata concurrently in repository methods.

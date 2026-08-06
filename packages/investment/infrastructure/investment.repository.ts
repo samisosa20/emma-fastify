@@ -207,7 +207,7 @@ export class InvestmentPrismaRepository implements IInvestmentRepository {
       const lastAppreciationAmount = appreciationMap.get(investment.id);
       const endAmountDecimal = lastAppreciationAmount
         ? (lastAppreciationAmount as unknown as Prisma.Decimal)
-        : initialAmountDecimal;
+        : (investment.endAmount as unknown as Prisma.Decimal);
 
       let valorization = "0.00%";
       if (!totalWithdrawalDecimal.isZero()) {
@@ -218,14 +218,14 @@ export class InvestmentPrismaRepository implements IInvestmentRepository {
         valorization = `${rawValorization.toFixed(2)}%`;
       }
 
-      // totalReturns is the sum of yields (movements with addWithdrawal = false)
-      const totalReturnsDecimal = yieldMovementsDecimal;
+      // totalReturns includes both appreciation/depreciation and movement yields.
+      const totalReturnsDecimal = endAmountDecimal
+        .minus(totalWithdrawalDecimal)
+        .plus(yieldMovementsDecimal);
 
       let totalRate = "0.00%";
       if (!totalWithdrawalDecimal.isZero()) {
-        const rawTotalRate = endAmountDecimal
-          .plus(yieldMovementsDecimal)
-          .minus(totalWithdrawalDecimal)
+        const rawTotalRate = totalReturnsDecimal
           .dividedBy(totalWithdrawalDecimal)
           .times(100);
         totalRate = `${rawTotalRate.toFixed(2)}%`;
@@ -442,7 +442,7 @@ export class InvestmentPrismaRepository implements IInvestmentRepository {
       appreciations.length > 0 ? appreciations[appreciations.length - 1] : null;
     const endAmountDecimal = lastAppreciation?.amount
       ? (lastAppreciation.amount as unknown as Prisma.Decimal)
-      : initialAmountDecimal;
+      : (investment.endAmount as unknown as Prisma.Decimal);
     const endAmount = endAmountDecimal.toNumber();
 
     // --- Cálculos de Porcentajes con Dos Decimales ---
@@ -458,17 +458,17 @@ export class InvestmentPrismaRepository implements IInvestmentRepository {
       valorization = `${rawValorization.toFixed(2)}%`;
     }
 
-    // totalReturns is the sum of yields (movements with addWithdrawal = false)
-    const totalReturnsDecimal = yieldMovementsDecimal;
+    // totalReturns includes both appreciation/depreciation and movement yields.
+    const totalReturnsDecimal = endAmountDecimal
+      .minus(totalWithdrawalDecimal)
+      .plus(yieldMovementsDecimal);
     const totalReturns = totalReturnsDecimal.toNumber();
 
     let totalRate = "0.00%";
     if (totalWithdrawalDecimal.isZero()) {
       totalRate = "0.00%";
     } else {
-      const rawTotalRate = endAmountDecimal
-        .plus(yieldMovementsDecimal)
-        .minus(totalWithdrawalDecimal)
+      const rawTotalRate = totalReturnsDecimal
         .dividedBy(totalWithdrawalDecimal)
         .times(100);
       totalRate = `${rawTotalRate.toFixed(2)}%`;

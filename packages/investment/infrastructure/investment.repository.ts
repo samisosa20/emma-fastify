@@ -219,13 +219,11 @@ export class InvestmentPrismaRepository implements IInvestmentRepository {
       }
 
       // totalReturns includes both appreciation/depreciation and movement yields.
-      const totalReturnsDecimal = endAmountDecimal
-        .minus(totalWithdrawalDecimal)
-        .plus(yieldMovementsDecimal);
+      //const totalReturnsDecimal = yieldMovementsDecimal;
 
       let totalRate = "0.00%";
       if (!totalWithdrawalDecimal.isZero()) {
-        const rawTotalRate = totalReturnsDecimal
+        const rawTotalRate = yieldMovementsDecimal
           .dividedBy(totalWithdrawalDecimal)
           .times(100);
         totalRate = `${rawTotalRate.toFixed(2)}%`;
@@ -233,7 +231,7 @@ export class InvestmentPrismaRepository implements IInvestmentRepository {
 
       return {
         ...investment,
-        totalReturns: totalReturnsDecimal.toNumber(),
+        totalReturns: yieldMovementsDecimal.toNumber(),
         totalWithdrawal: totalWithdrawalDecimal.toNumber(),
         valorization,
         totalRate,

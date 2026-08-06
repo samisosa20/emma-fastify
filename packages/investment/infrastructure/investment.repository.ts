@@ -461,7 +461,7 @@ export class InvestmentPrismaRepository implements IInvestmentRepository {
     const totalReturnsDecimal = endAmountDecimal
       .minus(totalWithdrawalDecimal)
       .plus(yieldMovementsDecimal);
-    const totalReturns = totalReturnsDecimal.toNumber();
+    const totalReturns = yieldMovementsDecimal.toNumber();
 
     let totalRate = "0.00%";
     if (totalWithdrawalDecimal.isZero()) {

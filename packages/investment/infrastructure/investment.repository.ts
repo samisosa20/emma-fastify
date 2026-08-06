@@ -207,7 +207,7 @@ export class InvestmentPrismaRepository implements IInvestmentRepository {
       const lastAppreciationAmount = appreciationMap.get(investment.id);
       const endAmountDecimal = lastAppreciationAmount
         ? (lastAppreciationAmount as unknown as Prisma.Decimal)
-        : totalWithdrawalDecimal.mul(-1);
+        : ZERO_DECIMAL;
 
       let valorization = "0.00%";
       if (!totalWithdrawalDecimal.isZero()) {
@@ -442,7 +442,7 @@ export class InvestmentPrismaRepository implements IInvestmentRepository {
       appreciations.length > 0 ? appreciations[appreciations.length - 1] : null;
     const endAmountDecimal = lastAppreciation?.amount
       ? (lastAppreciation.amount as unknown as Prisma.Decimal)
-      : totalWithdrawalDecimal.mul(-1);
+      : ZERO_DECIMAL;
 
     const endAmount = endAmountDecimal.toNumber();
 

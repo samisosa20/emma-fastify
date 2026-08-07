@@ -59,15 +59,17 @@ export const auth = betterAuth({
   plugins: [
     customSession(async ({ user, session }) => {
       // ⚡ Bolt: Fetch global lookup data and user metadata in parallel to reduce session resolution latency.
-      const [badges, accountTypes, groupCategories, userFromDb] = await Promise.all([
-        prisma.badge.findMany(),
-        prisma.accountType.findMany(),
-        prisma.groupCategory.findMany(),
-        prisma.user.findUnique({
-          where: { id: user.id },
-          select: { confirmedEmailAt: true, badgeId: true },
-        }),
-      ]);
+      const [periods, badges, accountTypes, groupCategories, userFromDb] =
+        await Promise.all([
+          prisma.period.findMany(),
+          prisma.badge.findMany(),
+          prisma.accountType.findMany(),
+          prisma.groupCategory.findMany(),
+          prisma.user.findUnique({
+            where: { id: user.id },
+            select: { confirmedEmailAt: true, badgeId: true },
+          }),
+        ]);
       return {
         user: {
           ...user,
@@ -78,6 +80,7 @@ export const auth = betterAuth({
         session: {
           ...session,
         },
+        periods,
         badges,
         accountTypes,
         groupCategories,

@@ -30,3 +30,15 @@ export const ReportBalanceHistoryQuery = z.object({
   startDate: z.string().date({ message: "Invalid startDate format" }),
   endDate: z.string().date({ message: "Invalid endDate format" }),
 });
+
+export const ReportIncomeDistributionQuery = z.object({
+  year: z.preprocess(
+    (val) => (val ? Number(val) : undefined),
+    z.number().int().optional()
+  ),
+  month: z.preprocess(
+    (val) => (val ? Number(val) : undefined),
+    z.number().int().min(1).max(12).optional()
+  ),
+  badgeId: z.string().uuid().optional(),
+});

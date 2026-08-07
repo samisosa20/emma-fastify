@@ -6,6 +6,7 @@ import {
   ReportBalanceHistory,
   ReportCategoryStats,
   ReportParams,
+  ReportIncomeDistribution,
 } from "../report";
 
 export interface IReportRepository {
@@ -27,4 +28,7 @@ export interface IReportRepository {
   reportBalanceHistory(
     params: ReportParams
   ): Promise<ReportBalanceHistory | ErrorMessage>;
+  reportIncomeDistribution(
+    params: ReportParams
+  ): Promise<ReportIncomeDistribution | ErrorMessage>;
 }

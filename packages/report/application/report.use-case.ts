@@ -7,6 +7,7 @@ import {
   ReportBalanceHistory,
   ReportCategoryStats,
   ReportParams,
+  ReportIncomeDistribution,
 } from "../domain/report";
 
 export class ReportUseCase {
@@ -68,5 +69,10 @@ export class ReportUseCase {
     params: ReportParams
   ): Promise<ReportBalanceHistory | ErrorMessage> {
     return this.reportRepository.reportBalanceHistory(params);
+  }
+  async reportIncomeDistribution(
+    params: ReportParams
+  ): Promise<ReportIncomeDistribution | ErrorMessage> {
+    return this.reportRepository.reportIncomeDistribution(params);
   }
 }

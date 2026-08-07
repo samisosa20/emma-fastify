@@ -226,3 +226,82 @@ export const historyReportDocumentation: FastifySchema = {
     ...errorDocumentation,
   },
 };
+
+const distributionSummarySchema = {
+  type: "object",
+  properties: {
+    targetPercentage: { type: "number" },
+    targetAmount: { type: "number" },
+    actualAmount: { type: "number" },
+    actualPercentage: { type: "number" },
+  },
+  required: ["targetPercentage", "targetAmount", "actualAmount", "actualPercentage"],
+};
+
+export const incomeDistributionReportSchema = {
+  type: "object",
+  properties: {
+    badgeId: { type: "string" },
+    badgeCode: { type: "string" },
+    badgeSymbol: { type: "string" },
+    totalIncome: { type: "number" },
+    totalExpenses: { type: "number" },
+    fijos: distributionSummarySchema,
+    personales: distributionSummarySchema,
+    ahorros: distributionSummarySchema,
+    categories: {
+      type: "array",
+      items: {
+        type: "object",
+        properties: {
+          id: { type: "string" },
+          name: { type: "string" },
+          color: { type: "string" },
+          icon: { type: ["string", "null"] },
+          groupName: { type: "string" },
+          ruleGroup: { type: "string" },
+          amount: { type: "number" },
+          participation: { type: "number" },
+        },
+        required: ["id", "name", "color", "groupName", "ruleGroup", "amount", "participation"],
+      },
+    },
+  },
+  required: [
+    "badgeId",
+    "badgeCode",
+    "badgeSymbol",
+    "totalIncome",
+    "totalExpenses",
+    "fijos",
+    "personales",
+    "ahorros",
+    "categories"
+  ],
+};
+
+export const incomeDistributionReportDocumentation: FastifySchema = {
+  description: "Reporte de distribución de ingresos basado en la regla 50/30/20",
+  tags: ["Report"],
+  querystring: {
+    type: "object",
+    properties: {
+      badgeId: {
+        type: "string",
+        description: "Id de la divisa (insignia/badge). Si no se envía se usa la predeterminada del usuario.",
+      },
+      year: {
+        type: "integer",
+        description: "Año a filtrar.",
+      },
+      month: {
+        type: "integer",
+        description: "Mes a filtrar (1-12).",
+      },
+    },
+  },
+  response: {
+    200: incomeDistributionReportSchema,
+    ...errorDocumentation,
+  },
+};

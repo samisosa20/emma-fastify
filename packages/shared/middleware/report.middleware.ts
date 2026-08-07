@@ -5,6 +5,7 @@ import {
   ReportAccountBalanceParams,
   ReportCategoryStatsParams,
   ReportBalanceHistoryQuery,
+  ReportIncomeDistributionQuery,
 } from "../validations/report";
 
 export const validateReportMovements = async (
@@ -49,6 +50,18 @@ export const validateReportBalanceHistory = async (
 ) => {
   try {
     const query = await ReportBalanceHistoryQuery.parseAsync(request.query);
+    request.query = query;
+  } catch (error) {
+    formatErrorMessageMiddleware(error);
+  }
+};
+
+export const validateReportIncomeDistribution = async (
+  request: FastifyRequest,
+  reply: FastifyReply
+) => {
+  try {
+    const query = await ReportIncomeDistributionQuery.parseAsync(request.query);
     request.query = query;
   } catch (error) {
     formatErrorMessageMiddleware(error);

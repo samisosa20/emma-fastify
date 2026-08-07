@@ -7,6 +7,7 @@ import {
   ReportBalanceHistory,
   ReportCategoryStats,
   ReportParams,
+  ReportIncomeDistribution,
 } from "../domain/report";
 import { IReportRepository } from "../domain/interfaces/report.interfaces";
 
@@ -455,5 +456,146 @@ export class ReportPrismaRepository implements IReportRepository {
         flag: badgeFlag,
       };
     }) as unknown as Report;
+  }
+
+  public async reportIncomeDistribution(
+    params: ReportParams
+  ): Promise<ReportIncomeDistribution | ErrorMessage> {
+    const year = params.year ?? new Date().getFullYear();
+    const month = params.month ?? (new Date().getMonth() + 1);
+
+    const startDate = new Date(year, month - 1, 1);
+    const endDate = new Date(year, month, 0, 23, 59, 59, 999);
+
+    const badgeId = params.badgeId!;
+    const userId = params.userId!;
+
+    const badge = await prisma.badge.findFirst({
+      where: { id: badgeId },
+    });
+    if (!badge) {
+      return {
+        statusCode: 404,
+        error: "Not Found",
+        message: "Badge not found",
+      };
+    }
+
+    const movements = await prisma.movement.findMany({
+      where: {
+        userId,
+        account: {
+          badgeId,
+        },
+        datePurchase: {
+          gte: startDate,
+          lte: endDate,
+        },
+      },
+      include: {
+        category: {
+          include: {
+            GroupCategory: true,
+          },
+        },
+      },
+    });
+
+    let totalIncome = new Prisma.Decimal(0);
+    let totalFijos = new Prisma.Decimal(0);
+    let totalPersonales = new Prisma.Decimal(0);
+    let totalAhorros = new Prisma.Decimal(0);
+
+    const categorySummary = new Map<string, {
+      id: string;
+      name: string;
+      color: string;
+      icon: string | null;
+      groupName: string;
+      ruleGroup: "fijos" | "personales" | "ahorros";
+      amount: Prisma.Decimal;
+    }>();
+
+    for (const m of movements) {
+      const amount = m.amount;
+      const groupName = m.category.GroupCategory.name;
+
+      if (groupName === "Ingresos") {
+        totalIncome = totalIncome.plus(amount);
+      } else if (groupName === "Transferencia") {
+        continue;
+      } else {
+        let ruleGroup: "fijos" | "personales" | "ahorros";
+        if (m.investmentId !== null) {
+          ruleGroup = "ahorros";
+          totalAhorros = totalAhorros.plus(amount);
+        } else if (groupName === "Gastos Fijos") {
+          ruleGroup = "fijos";
+          totalFijos = totalFijos.plus(amount);
+        } else {
+          ruleGroup = "personales";
+          totalPersonales = totalPersonales.plus(amount);
+        }
+
+        const catId = m.categoryId;
+        const existing = categorySummary.get(catId);
+        if (existing) {
+          existing.amount = existing.amount.plus(amount);
+        } else {
+          categorySummary.set(catId, {
+            id: catId,
+            name: m.category.name,
+            color: m.category.color,
+            icon: m.category.icon,
+            groupName,
+            ruleGroup,
+            amount,
+          });
+        }
+      }
+    }
+
+    const totalExpenses = totalFijos.plus(totalPersonales).plus(totalAhorros);
+
+    const getDistribution = (actual: Prisma.Decimal, targetPct: number) => {
+      const targetAmount = totalIncome.times(targetPct).dividedBy(100);
+      const actualPct = totalIncome.isZero() ? 0 : actual.dividedBy(totalIncome).times(100).toNumber();
+      return {
+        targetPercentage: targetPct,
+        targetAmount: targetAmount.toNumber(),
+        actualAmount: actual.toNumber(),
+        actualPercentage: Number(actualPct.toFixed(2)),
+      };
+    };
+
+    const fijos = getDistribution(totalFijos, 50);
+    const personales = getDistribution(totalPersonales, 30);
+    const ahorros = getDistribution(totalAhorros, 20);
+
+    const categories = Array.from(categorySummary.values()).map((c) => {
+      const participation = totalExpenses.isZero() ? 0 : c.amount.dividedBy(totalExpenses).times(100).toNumber();
+      return {
+        id: c.id,
+        name: c.name,
+        color: c.color,
+        icon: c.icon,
+        groupName: c.groupName,
+        ruleGroup: c.ruleGroup,
+        amount: c.amount.toNumber(),
+        participation: Number(participation.toFixed(2)),
+      };
+    }).sort((a, b) => b.amount - a.amount);
+
+    return {
+      badgeId,
+      badgeCode: badge.code,
+      badgeSymbol: badge.symbol ?? "$",
+      totalIncome: totalIncome.toNumber(),
+      totalExpenses: totalExpenses.toNumber(),
+      fijos,
+      personales,
+      ahorros,
+      categories,
+    };
   }
 }

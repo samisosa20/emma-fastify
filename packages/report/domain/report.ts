@@ -58,3 +58,33 @@ export type ItemBalanceHistory = {
 };
 
 export type BalanceHistory = ItemBalanceHistory[];
+
+export type DistributionSummary = {
+  targetPercentage: number;
+  targetAmount: number;
+  actualAmount: number;
+  actualPercentage: number;
+};
+
+export type CategoryExpense = {
+  id: string;
+  name: string;
+  color: string;
+  icon: string | null;
+  groupName: string;
+  ruleGroup: "fijos" | "personales" | "ahorros";
+  amount: number;
+  participation: number;
+};
+
+export type ReportIncomeDistribution = {
+  badgeId: string;
+  badgeCode: string;
+  badgeSymbol: string;
+  totalIncome: number;
+  totalExpenses: number;
+  fijos: DistributionSummary;
+  personales: DistributionSummary;
+  ahorros: DistributionSummary;
+  categories: CategoryExpense[];
+};

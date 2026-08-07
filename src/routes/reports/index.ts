@@ -5,6 +5,7 @@ import {
   generalReportBalanceDocumentation,
   historyReportDocumentation,
   movementReportDocumentation,
+  incomeDistributionReportDocumentation,
 } from "src/documentation";
 import { FastifyPluginAsync } from "fastify";
 import {
@@ -12,6 +13,7 @@ import {
   validateReportAccountBalance,
   validateReportCategoryStats,
   validateReportBalanceHistory,
+  validateReportIncomeDistribution,
 } from "packages/shared";
 
 const reportsRoutes: FastifyPluginAsync = async (fastify) => {
@@ -56,6 +58,14 @@ const reportsRoutes: FastifyPluginAsync = async (fastify) => {
       schema: historyReportDocumentation,
     },
     reportController.reportBalanceHistory
+  );
+  fastify.get(
+    "/income-distribution",
+    {
+      preHandler: [fastify.authenticate, validateReportIncomeDistribution],
+      schema: incomeDistributionReportDocumentation,
+    },
+    reportController.reportIncomeDistribution
   );
 };
 

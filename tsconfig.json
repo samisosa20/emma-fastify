@@ -1,27 +1,25 @@
 {
   "compilerOptions": {
-    "ignoreDeprecations": "6.0",
     "target": "ESNext",
     "module": "commonjs",
     "outDir": "dist",
-    "moduleResolution": "node",
     "forceConsistentCasingInFileNames": true,
     "strict": true,
     "esModuleInterop": true,
     "skipLibCheck": true,
-    "baseUrl": ".",
     "paths": {
-      "@routes": ["src/routes"],
-      "@controllers": ["src/controllers"],
-      "@lib": ["src/lib"],
-      "@lib/*": ["src/lib/*"],
-      "@packages": ["packages"],
+      "*": ["./*"],
+      "@routes": ["./src/routes"],
+      "@controllers": ["./src/controllers"],
+      "@lib": ["./src/lib"],
+      "@lib/*": ["./src/lib/*"],
+      "@packages": ["./packages"]
     }
   },
   "include": ["src/**/*.ts", "packages/**/*.ts"],
   "exclude": [
     "node_modules",
     "**/*.d.ts",
-    "**/*.spec.ts",
+    "**/*.spec.ts"
   ]
 }

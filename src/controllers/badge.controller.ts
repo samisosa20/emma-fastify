@@ -5,6 +5,7 @@ import { formatErrorMessage, isAdmin } from "@lib";
 import { BadgeUseCase } from "packages/badge/application/badge.use-case";
 import { BadgePrismaRepository } from "packages/badge/infrastructure/badge.repository";
 import { CreateBadge } from "packages/badge/domain/badge";
+import { invalidateLookupMetadataCache } from "packages/shared/settings/metadata.cache";
 
 type BadgeParams = {
   page: number;
@@ -35,7 +36,9 @@ export class BadgeController {
     const dataBadge = request.body as CreateBadge;
 
     try {
-      return badgeUseCase.addBadge(dataBadge);
+      const result = await badgeUseCase.addBadge(dataBadge);
+      invalidateLookupMetadataCache();
+      return result;
     } catch (error: any) {
       const detail = formatErrorMessage(error);
       return reply.status(400).send({
@@ -60,7 +63,9 @@ export class BadgeController {
     const { id } = request.params as { id: string };
 
     try {
-      return badgeUseCase.updateBadge(id, dataBadge);
+      const result = await badgeUseCase.updateBadge(id, dataBadge);
+      invalidateLookupMetadataCache();
+      return result;
     } catch (error: any) {
       const detail = formatErrorMessage(error);
       return reply.status(400).send({
@@ -87,7 +92,9 @@ export class BadgeController {
     }
 
     const { id } = request.params as { id: string };
-    return await badgeUseCase.deleteBadge(id);
+    const result = await badgeUseCase.deleteBadge(id);
+    invalidateLookupMetadataCache();
+    return result;
   };
 
   importBadge = async (request: FastifyRequest, reply: FastifyReply) => {
@@ -100,6 +107,8 @@ export class BadgeController {
       });
     }
 
-    return await badgeUseCase.importCurrenciesAsBadges();
+    const result = await badgeUseCase.importCurrenciesAsBadges();
+    invalidateLookupMetadataCache();
+    return result;
   };
 }

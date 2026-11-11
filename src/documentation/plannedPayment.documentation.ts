@@ -10,6 +10,7 @@ import { getBody, getProperties } from "./components/realtions";
 
 import { categoryObjectSchema } from "./category.documentation";
 import { accountObjectSchema } from "./account.documentation";
+import { investmentObjectSchema } from "./investment.documentation";
 
 const plannedPaymentObjectSchema: SchemaDefault[] = [
   { name: "id", type: "string", body: false, private: false },
@@ -56,6 +57,18 @@ const plannedPaymentObjectSchema: SchemaDefault[] = [
     private: true,
   },
   {
+    name: "investmentId",
+    type: ["string", "null"],
+    body: ["create", "update"],
+    private: true,
+  },
+  {
+    name: "addWithdrawal",
+    type: "boolean",
+    body: ["create", "update"],
+    private: false,
+  },
+  {
     name: "account",
     type: "object",
     body: false,
@@ -68,6 +81,13 @@ const plannedPaymentObjectSchema: SchemaDefault[] = [
     body: false,
     private: false,
     properties: getProperties(categoryObjectSchema),
+  },
+  {
+    name: "investment",
+    type: "object",
+    body: false,
+    private: false,
+    properties: getProperties(investmentObjectSchema),
   },
   { name: "userId", type: "string", body: ["create"], private: false },
   { name: "createdAt", type: "string", body: false, private: false },

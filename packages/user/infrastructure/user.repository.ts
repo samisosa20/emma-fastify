@@ -2,6 +2,7 @@ import { IUserRepository } from "../domain/interfaces/user.interfaces";
 import { User, CreateUser, UserLogin } from "../domain/user";
 
 import prisma from "packages/shared/settings/prisma.client";
+import { invalidateUserSessionCache } from "packages/shared/settings/metadata.cache";
 
 import {
   CommonParamsPaginate,
@@ -114,6 +115,7 @@ export class UserRepositoryPrismaPostgres implements IUserRepository {
           ...(user.password && { password: await hashPassword(user.password) }),
         },
       });
+      invalidateUserSessionCache(id);
 
       const { password: _, tokenRecoveryPassword: __, ...userWithoutPassword } = updatedUser as any;
       return userWithoutPassword;
@@ -148,6 +150,7 @@ export class UserRepositoryPrismaPostgres implements IUserRepository {
       const deletedUser = await prisma.user.delete({
         where: { id },
       });
+      invalidateUserSessionCache(id);
 
       const { password: _, tokenRecoveryPassword: __, ...userWithoutPassword } = deletedUser as any;
       return userWithoutPassword;
@@ -256,6 +259,9 @@ export class UserRepositoryPrismaPostgres implements IUserRepository {
       where: { id: user?.id },
       data: { confirmedEmailAt: new Date() },
     });
+    if (user?.id) {
+      invalidateUserSessionCache(user.id);
+    }
 
     // Delete the token
     await prisma.emailConfirmationToken.delete({
@@ -301,7 +307,16 @@ export class UserRepositoryPrismaPostgres implements IUserRepository {
       },
     });
 
-    await sendEmailConfirmation(email, token);
+    const sent = await sendEmailConfirmation(email, token);
+
+    if (!sent) {
+      return {
+        statusCode: 500,
+        message:
+          "No se pudo enviar el correo de confirmación. Verifica la configuración SMTP.",
+        error: "Internal Server Error",
+      };
+    }
 
     return {
       statusCode: 200,

@@ -25,25 +25,35 @@ export function handleShowDeleteData(show?: boolean) {
   return orConditions;
 }
 
-export async function sendEmail(to: string, subject: string, html: string) {
+export async function sendEmail(
+  to: string,
+  subject: string,
+  html: string
+): Promise<boolean> {
   try {
     await transporterMailer.sendMail({
+      from: process.env.MAIL_FROM_ADDRESS || process.env.MAIL_USERNAME,
       to,
       subject,
       html,
     });
+    return true;
   } catch (error) {
-    console.error(error);
+    console.error("Error sending email:", error);
+    return false;
   }
 }
 
-export async function sendEmailConfirmation(email: string, token: string) {
+export async function sendEmailConfirmation(
+  email: string,
+  token: string
+): Promise<boolean> {
   // Create a confirmation URL
   const encodedEmail = encodeURIComponent(email);
   const encodedToken = encodeURIComponent(token);
   const confirmationUrl = `${process.env.APP_URL}/confirm-email?token=${encodedToken}&email=${encodedEmail}`;
   // Send the confirmation email
-  await sendEmail(
+  return await sendEmail(
     email,
     "Confirm your email address",
     `<p>Hi,</p>

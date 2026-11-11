@@ -149,6 +149,7 @@ export class MovementPrismaRepository implements IMovementRepository {
               investment: { connect: { id: data.investmentId } },
             }),
             ...(data.type === "transfer" && { trm }),
+            addWithdrawal: Boolean(data.addWithdrawal),
           },
           include: {
             account: true,
@@ -375,7 +376,9 @@ export class MovementPrismaRepository implements IMovementRepository {
               ? { connect: { id: data.investmentId } }
               : undefined,
           trm,
-          ...(data.addWithdrawal && { addWithdrawal: data.addWithdrawal }),
+          ...(typeof data.addWithdrawal === "boolean"
+            ? { addWithdrawal: data.addWithdrawal }
+            : {}),
         },
         include: {
           account: true,

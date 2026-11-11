@@ -97,7 +97,14 @@ const authRoutes: FastifyPluginAsync = async (fastify) => {
     authController.getProfile
   );
 
-  fastify.all("/*", async (request, reply) => {
+  fastify.all(
+    "/*",
+    {
+      schema: {
+        hide: true,
+      },
+    },
+    async (request, reply) => {
     // Security: Use the trusted APP_URL environment variable for constructing the URL
     // instead of the potentially spoofed Host header to prevent Host Header Injection.
     const url = new URL(request.url, process.env.APP_URL);

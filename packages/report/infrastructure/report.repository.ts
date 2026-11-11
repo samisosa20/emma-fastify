@@ -12,6 +12,7 @@ import {
 import { IReportRepository } from "../domain/interfaces/report.interfaces";
 
 import prisma from "packages/shared/settings/prisma.client";
+import { getCachedLookupMetadata } from "packages/shared/settings/metadata.cache";
 import { ErrorMessage } from "packages/shared";
 import { Prisma } from "@prisma/client";
 
@@ -26,7 +27,7 @@ export class ReportPrismaRepository implements IReportRepository {
         where: {
           weekNumber: params.weekNumber,
           year: params.year,
-          badgeId: params.badgeId,
+          ...(params.badgeId ? { badgeId: params.badgeId } : {}),
           userId: params.userId,
         },
         orderBy: [{ year: "desc" }, { weekNumber: "desc" }, { amount: "asc" }],
@@ -43,7 +44,7 @@ export class ReportPrismaRepository implements IReportRepository {
         where: {
           weekNumber: params.weekNumber,
           year: params.year,
-          badgeId: params.badgeId,
+          ...(params.badgeId ? { badgeId: params.badgeId } : {}),
           userId: params.userId,
         },
         orderBy: [{ year: "desc" }, { weekNumber: "desc" }, { amount: "desc" }],
@@ -60,7 +61,7 @@ export class ReportPrismaRepository implements IReportRepository {
         where: {
           month: params.month,
           year: params.year,
-          badgeId: params.badgeId,
+          ...(params.badgeId ? { badgeId: params.badgeId } : {}),
           userId: params.userId,
         },
         orderBy: [{ year: "desc" }, { month: "desc" }, { amount: "asc" }],
@@ -77,7 +78,7 @@ export class ReportPrismaRepository implements IReportRepository {
         where: {
           month: params.month,
           year: params.year,
-          badgeId: params.badgeId,
+          ...(params.badgeId ? { badgeId: params.badgeId } : {}),
           userId: params.userId,
         },
         orderBy: [{ year: "desc" }, { month: "desc" }, { amount: "desc" }],
@@ -93,7 +94,7 @@ export class ReportPrismaRepository implements IReportRepository {
       prisma.vw_yearlyexpensive.findMany({
         where: {
           year: params.year,
-          badgeId: params.badgeId,
+          ...(params.badgeId ? { badgeId: params.badgeId } : {}),
           userId: params.userId,
         },
         orderBy: [{ year: "desc" }, { amount: "asc" }],
@@ -109,7 +110,7 @@ export class ReportPrismaRepository implements IReportRepository {
       prisma.vw_yearlyincome.findMany({
         where: {
           year: params.year,
-          badgeId: params.badgeId,
+          ...(params.badgeId ? { badgeId: params.badgeId } : {}),
           userId: params.userId,
         },
         orderBy: [{ year: "desc" }, { amount: "desc" }],
@@ -124,8 +125,8 @@ export class ReportPrismaRepository implements IReportRepository {
     return this.getReportWithParticipation(
       prisma.vw_dailyexpensive.findMany({
         where: {
-          datePurchase: params.date,
-          badgeId: params.badgeId,
+          ...(params.date ? { datePurchase: params.date } : {}),
+          ...(params.badgeId ? { badgeId: params.badgeId } : {}),
           userId: params.userId,
         },
         orderBy: [{ amount: "asc" }],
@@ -140,8 +141,8 @@ export class ReportPrismaRepository implements IReportRepository {
     return this.getReportWithParticipation(
       prisma.vw_dailyincome.findMany({
         where: {
-          datePurchase: params.date,
-          badgeId: params.badgeId,
+          ...(params.date ? { datePurchase: params.date } : {}),
+          ...(params.badgeId ? { badgeId: params.badgeId } : {}),
           userId: params.userId,
         },
         orderBy: [{ amount: "desc" }],
@@ -414,33 +415,35 @@ export class ReportPrismaRepository implements IReportRepository {
     queryPromise: Promise<any[]>,
     badgeId: string | undefined
   ): Promise<Report | ErrorMessage> {
-    // ⚡ Bolt: Fetch report data and badge info in parallel using findUnique for O(1) primary key lookup.
-    const [report, badge] = await Promise.all([
+    const [report, metadata] = await Promise.all([
       queryPromise,
-      badgeId
-        ? prisma.badge.findUnique({
-            where: { id: badgeId },
-          })
-        : Promise.resolve(null),
+      getCachedLookupMetadata(),
     ]);
 
+    const effectiveBadge =
+      (badgeId ? metadata.badges.find((b) => b.id === badgeId) : undefined) ??
+      metadata.badges[0] ??
+      null;
+
+    const reportItems = Array.isArray(report) ? report : [];
+
     let totalAbsoluto = ZERO_DECIMAL;
-    const amountsAbs: Prisma.Decimal[] = new Array(report.length);
+    const amountsAbs: Prisma.Decimal[] = new Array(reportItems.length);
 
     // ⚡ Bolt: Calculate absolute amounts once to avoid redundant .abs() calls and re-allocations.
-    for (let i = 0; i < report.length; i++) {
-      const abs = (report[i].amount ?? ZERO_DECIMAL).abs();
+    for (let i = 0; i < reportItems.length; i++) {
+      const abs = (reportItems[i].amount ?? ZERO_DECIMAL).abs();
       amountsAbs[i] = abs;
       totalAbsoluto = totalAbsoluto.plus(abs);
     }
 
     // ⚡ Bolt: Hoist badge metadata to avoid repeated property access in the loop.
-    const badgeCode = badge?.code;
-    const badgeSymbol = badge?.symbol;
-    const badgeFlag = badge?.flag;
+    const badgeCode = effectiveBadge?.code || "USD";
+    const badgeSymbol = effectiveBadge?.symbol || "$";
+    const badgeFlag = effectiveBadge?.flag || "🇺🇸";
 
     // 2. Add participation percentage reusing stored absolute amounts.
-    return report.map((item, i) => {
+    return reportItems.map((item, i) => {
       const itemAmountAbsoluto = amountsAbs[i];
 
       const participation = totalAbsoluto.isZero()
@@ -449,8 +452,8 @@ export class ReportPrismaRepository implements IReportRepository {
 
       return {
         ...item,
-        amount: itemAmountAbsoluto,
-        participation: participation.toFixed(1),
+        amount: itemAmountAbsoluto ? Number(itemAmountAbsoluto) : 0,
+        participation: Number(participation.toFixed(1)),
         code: badgeCode,
         symbol: badgeSymbol,
         flag: badgeFlag,
@@ -470,9 +473,8 @@ export class ReportPrismaRepository implements IReportRepository {
     const badgeId = params.badgeId!;
     const userId = params.userId!;
 
-    const badge = await prisma.badge.findFirst({
-      where: { id: badgeId },
-    });
+    const { badges } = await getCachedLookupMetadata();
+    const badge = badges.find((b) => b.id === badgeId);
     if (!badge) {
       return {
         statusCode: 404,

@@ -30,21 +30,26 @@ export class PlannedPaymentPrismaRepository
     data: CreatePlannedPayment
   ): Promise<PlannedPayment | ErrorMessage> {
     try {
-      // Security: Verify that the account and category belong to the user
-      const [account, category] = await Promise.all([
+      // Security: Verify that the account, category, and investment (if provided) belong to the user
+      const [account, category, investment] = await Promise.all([
         prisma.account.findFirst({
           where: { id: data.accountId, userId: data.userId },
         }),
         prisma.category.findFirst({
           where: { id: data.categoryId, userId: data.userId },
         }),
+        data.investmentId
+          ? prisma.investment.findFirst({
+              where: { id: data.investmentId, userId: data.userId },
+            })
+          : Promise.resolve(true),
       ]);
 
-      if (!account || !category) {
-        throw Object.assign(new Error("Invalid account or category ownership"), {
+      if (!account || !category || !investment) {
+        throw Object.assign(new Error("Invalid account, category or investment ownership"), {
           statusCode: 403,
           error: "Forbidden",
-          message: "Account or Category does not belong to the user.",
+          message: "Account, Category or Investment does not belong to the user.",
         });
       }
 
@@ -55,6 +60,14 @@ export class PlannedPaymentPrismaRepository
           endDate: data.endDate,
           description: data.description,
           amount: data.amount,
+          addWithdrawal: Boolean(data.addWithdrawal),
+          ...(data.investmentId && {
+            investment: {
+              connect: {
+                id: data.investmentId,
+              },
+            },
+          }),
           user: {
             connect: {
               id: data.userId,
@@ -85,6 +98,13 @@ export class PlannedPaymentPrismaRepository
               id: true,
               color: true,
               icon: true,
+            },
+          },
+          investment: {
+            select: {
+              name: true,
+              id: true,
+              badge: true,
             },
           },
         },
@@ -139,6 +159,13 @@ export class PlannedPaymentPrismaRepository
                 color: true,
               },
             },
+            investment: {
+              select: {
+                name: true,
+                id: true,
+                badge: true,
+              },
+            },
           },
         })
         .withPages({
@@ -166,6 +193,13 @@ export class PlannedPaymentPrismaRepository
               id: true,
               color: true,
               icon: true,
+            },
+          },
+          investment: {
+            select: {
+              name: true,
+              id: true,
+              badge: true,
             },
           },
         },
@@ -199,7 +233,7 @@ export class PlannedPaymentPrismaRepository
     try {
       // ⚡ Bolt: Consolidate all prerequisite lookups (existence check and resource ownership)
       // into a single Promise.all call to minimize total database roundtrips during updates.
-      const [existing, account, category] = await Promise.all([
+      const [existing, account, category, investment] = await Promise.all([
         prisma.plannedPayment.findFirst({
           where: { id, userId },
         }),
@@ -213,6 +247,11 @@ export class PlannedPaymentPrismaRepository
               where: { id: data.categoryId, userId },
             })
           : Promise.resolve(true),
+        data.investmentId
+          ? prisma.investment.findFirst({
+              where: { id: data.investmentId, userId },
+            })
+          : Promise.resolve(true),
       ]);
 
       if (!existing) {
@@ -223,18 +262,28 @@ export class PlannedPaymentPrismaRepository
         });
       }
 
-      if (!account || !category) {
+      if (!account || !category || !investment) {
         throw Object.assign(
-          new Error("Invalid account or category ownership"),
+          new Error("Invalid account, category or investment ownership"),
           {
             statusCode: 403,
             error: "Forbidden",
-            message: "Account or Category does not belong to the user.",
+            message: "Account, Category or Investment does not belong to the user.",
           }
         );
       }
 
-      const { userId: _, ...dataToUpdate } = data;
+      const { userId: _, investmentId, addWithdrawal, ...otherData } = data;
+      const dataToUpdate: any = {
+        ...otherData,
+        ...(typeof addWithdrawal === "boolean" ? { addWithdrawal } : {}),
+      };
+      if (investmentId === null) {
+        dataToUpdate.investment = { disconnect: true };
+      } else if (investmentId) {
+        dataToUpdate.investment = { connect: { id: investmentId } };
+      }
+
       const updatedPlannedPayment = await prisma.plannedPayment.update({
         where: {
           id,
@@ -253,6 +302,13 @@ export class PlannedPaymentPrismaRepository
               id: true,
               color: true,
               icon: true,
+            },
+          },
+          investment: {
+            select: {
+              name: true,
+              id: true,
+              badge: true,
             },
           },
         },
@@ -290,6 +346,13 @@ export class PlannedPaymentPrismaRepository
               id: true,
               color: true,
               icon: true,
+            },
+          },
+          investment: {
+            select: {
+              name: true,
+              id: true,
+              badge: true,
             },
           },
         },
@@ -333,6 +396,13 @@ export class PlannedPaymentPrismaRepository
             id: true,
             color: true,
             icon: true,
+          },
+        },
+        investment: {
+          select: {
+            name: true,
+            id: true,
+            badge: true,
           },
         },
       },
@@ -446,6 +516,8 @@ export class PlannedPaymentPrismaRepository
             categoryId: category.id,
             accountId: account.id,
             userId: userId,
+            investmentId: null,
+            addWithdrawal: false,
             createdAt: new Date(payment.created_at),
             updatedAt: new Date(payment.updated_at),
           } as CreatePlannedPayment;

@@ -3,6 +3,8 @@ import { FastifyRequest, FastifyReply } from "fastify";
 import { ReportUseCase } from "packages/report/application/report.use-case";
 import { ReportParams } from "packages/report/domain/report";
 import { ReportPrismaRepository } from "packages/report/infrastructure/report.repository";
+import prisma from "packages/shared/settings/prisma.client";
+import { getCachedLookupMetadata } from "packages/shared/settings/metadata.cache";
 
 const reportRepository = new ReportPrismaRepository();
 const reportUseCase = new ReportUseCase(reportRepository);
@@ -24,6 +26,34 @@ const REPORT_USE_CASE_MAP: Record<string, Record<string, string>> = {
 };
 
 export class ReportController {
+  private getEffectiveBadgeId = async (
+    queryBadgeId?: string,
+    userBadgeId?: string | null,
+    userId?: string
+  ): Promise<string | undefined> => {
+    if (queryBadgeId) return queryBadgeId;
+    if (userBadgeId) return userBadgeId;
+
+    if (userId) {
+      try {
+        const userAccount = await prisma.account.findFirst({
+          where: { userId, deletedAt: null },
+          select: { badgeId: true },
+        });
+        if (userAccount?.badgeId) return userAccount.badgeId;
+      } catch {
+        // ignore
+      }
+    }
+
+    try {
+      const { badges } = await getCachedLookupMetadata();
+      return badges[0]?.id;
+    } catch {
+      return undefined;
+    }
+  };
+
   reportMovements = async (request: FastifyRequest, reply: FastifyReply) => {
     type ReportType = "expensive" | "income";
     type ReportPeriod = "daily" | "weekly" | "monthly" | "yearly";
@@ -50,13 +80,19 @@ export class ReportController {
     }
 
     try {
+      const effectiveBadgeId = await this.getEffectiveBadgeId(
+        query.badgeId,
+        user.badgeId,
+        user.id
+      );
+
       // @ts-ignore
       const result = await reportUseCase[selectedHandler]({
         ...(query.weekNumber && { weekNumber: Number(query.weekNumber) }),
         ...(query.year && { year: Number(query.year) }),
         ...(query.month && { month: Number(query.month) }),
         ...(query.date && { date: new Date(query.date) }),
-        badgeId: query.badgeId ?? user.badgeId,
+        badgeId: effectiveBadgeId,
         userId: user.id,
       });
 
@@ -126,10 +162,15 @@ export class ReportController {
         endDate: string;
       };
       const user = request.user;
+      const effectiveBadgeId = await this.getEffectiveBadgeId(
+        query.badgeId,
+        user.badgeId,
+        user.id
+      );
       const result = await reportUseCase.reportBalanceHistory({
         userId: user.id,
         ...query,
-        badgeId: query.badgeId ?? user.badgeId,
+        badgeId: effectiveBadgeId,
       });
 
       return reply.send(result);
@@ -149,11 +190,16 @@ export class ReportController {
         month?: number;
       };
       const user = request.user;
+      const effectiveBadgeId = await this.getEffectiveBadgeId(
+        query.badgeId,
+        user.badgeId,
+        user.id
+      );
       const result = await reportUseCase.reportIncomeDistribution({
         userId: user.id,
         year: query.year,
         month: query.month,
-        badgeId: query.badgeId ?? (user.badgeId ?? undefined),
+        badgeId: effectiveBadgeId,
       });
 
       return reply.send(result);

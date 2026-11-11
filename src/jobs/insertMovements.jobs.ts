@@ -36,7 +36,8 @@ cron.schedule("0 5 * * *", async () => {
       trm: 1,
       datePurchase: new Date(),
       userId: pp.userId,
-      addWithdrawal: false,
+      investmentId: pp.investmentId ?? null,
+      addWithdrawal: Boolean(pp.addWithdrawal),
     }));
 
     // 3️⃣ Insertar todos los movimientos

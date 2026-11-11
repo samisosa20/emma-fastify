@@ -11,11 +11,18 @@ if (!databaseUrl) {
 
 const parsedUrl = new URL(databaseUrl);
 
+let password = parsedUrl.password;
+try {
+  password = decodeURIComponent(password);
+} catch {
+  // fallback to raw password if not URI encoded
+}
+
 const adapter = new PrismaMariaDb({
   host: parsedUrl.hostname,
   port: parseInt(parsedUrl.port) || 3306,
   user: parsedUrl.username,
-  password: decodeURIComponent(parsedUrl.password),
+  password,
   database: parsedUrl.pathname.substring(1),
   connectionLimit: 10,
   ssl: parsedUrl.searchParams.get("sslmode") === "skip" ? false : undefined,

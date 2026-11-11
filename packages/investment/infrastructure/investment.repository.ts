@@ -92,9 +92,10 @@ export class InvestmentPrismaRepository implements IInvestmentRepository {
             select: {
               amount: true,
             },
-            orderBy: {
-              dateAppreciation: "desc",
-            },
+            orderBy: [
+              { dateAppreciation: "desc" },
+              { createdAt: "desc" },
+            ],
           },
         },
       });
@@ -292,9 +293,10 @@ export class InvestmentPrismaRepository implements IInvestmentRepository {
               amount: true,
               dateAppreciation: true,
             },
-            orderBy: {
-              dateAppreciation: "asc",
-            },
+            orderBy: [
+              { dateAppreciation: "desc" },
+              { createdAt: "desc" },
+            ],
           },
         },
       });
@@ -331,6 +333,10 @@ export class InvestmentPrismaRepository implements IInvestmentRepository {
               event: true,
               category: true,
             },
+            orderBy: [
+              { datePurchase: "desc" },
+              { createdAt: "desc" },
+            ],
           },
           badge: {
             select: {
@@ -346,9 +352,10 @@ export class InvestmentPrismaRepository implements IInvestmentRepository {
               amount: true,
               dateAppreciation: true,
             },
-            orderBy: {
-              dateAppreciation: "asc",
-            },
+            orderBy: [
+              { dateAppreciation: "desc" },
+              { createdAt: "desc" },
+            ],
           },
         },
       });
@@ -392,9 +399,10 @@ export class InvestmentPrismaRepository implements IInvestmentRepository {
           select: {
             amount: true,
           },
-          orderBy: {
-            dateAppreciation: "desc",
-          },
+          orderBy: [
+            { dateAppreciation: "desc" },
+            { createdAt: "desc" },
+          ],
         },
       },
     });
@@ -439,7 +447,7 @@ export class InvestmentPrismaRepository implements IInvestmentRepository {
     const totalWithdrawal = totalWithdrawalDecimal.toNumber();
 
     const lastAppreciation =
-      appreciations.length > 0 ? appreciations[appreciations.length - 1] : null;
+      appreciations.length > 0 ? appreciations[0] : null;
     const endAmountDecimal = lastAppreciation?.amount
       ? (lastAppreciation.amount as unknown as Prisma.Decimal)
       : ZERO_DECIMAL;

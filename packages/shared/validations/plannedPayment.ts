@@ -19,6 +19,8 @@ export const PlannedPaymentCreateInput = z.object({
     .max(31),
   categoryId: z.string({ message: "categoryId is required" }).uuid(),
   accountId: z.string({ message: "accountId is required" }).uuid(),
+  investmentId: z.union([z.string().uuid(), z.null()]).optional(),
+  addWithdrawal: z.boolean().default(false).optional(),
 }) satisfies z.Schema<
   Omit<Prisma.PlannedPaymentUncheckedCreateInput, "userId">
 >;

@@ -1,6 +1,10 @@
 import { betterAuth, CookieOptions } from "better-auth";
 import { prismaAdapter } from "better-auth/adapters/prisma";
 import prisma from "../../packages/shared/settings/prisma.client";
+import {
+  getCachedLookupMetadata,
+  getCachedUserSessionFields,
+} from "../../packages/shared/settings/metadata.cache";
 import { sendEmailConfirmation } from "../../packages/shared";
 import { customSession } from "better-auth/plugins";
 
@@ -22,6 +26,12 @@ export const auth = betterAuth({
     process.env.APP_URL || "http://localhost:3000",
     "http://localhost:8010",
   ],
+  session: {
+    cookieCache: {
+      enabled: true,
+      maxAge: 60,
+    },
+  },
   advanced: {
     useSecureCookies: isProduction,
     defaultCookieAttributes: crossSiteCookieAttributes,
@@ -58,17 +68,10 @@ export const auth = betterAuth({
   },
   plugins: [
     customSession(async ({ user, session }) => {
-      // ⚡ Bolt: Fetch global lookup data and user metadata in parallel to reduce session resolution latency.
-      const [periods, badges, accountTypes, groupCategories, userFromDb] =
+      const [{ periods, badges, accountTypes, groupCategories }, userFromDb] =
         await Promise.all([
-          prisma.period.findMany(),
-          prisma.badge.findMany(),
-          prisma.accountType.findMany(),
-          prisma.groupCategory.findMany(),
-          prisma.user.findUnique({
-            where: { id: user.id },
-            select: { confirmedEmailAt: true, badgeId: true },
-          }),
+          getCachedLookupMetadata(),
+          getCachedUserSessionFields(user.id),
         ]);
       return {
         user: {

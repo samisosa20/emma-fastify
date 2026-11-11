@@ -1,4 +1,4 @@
-import Fastify from "fastify";
+import Fastify, { LogController } from "fastify";
 import path from "path";
 import fastifyJwt from "@fastify/jwt";
 import autoload from "@fastify/autoload";
@@ -28,7 +28,10 @@ const bootstrap = async () => {
     }
   }
 
-  const fastify = Fastify({ logger: true, disableRequestLogging: true });
+  const fastify = Fastify({
+    logger: true,
+    logController: new LogController({ disableRequestLogging: true }),
+  });
 
   // Security Headers: Implement standard protection against common web attacks.
   fastify.addHook("onSend", async (_request, reply, _payload) => {
@@ -88,7 +91,7 @@ const bootstrap = async () => {
       host: "0.0.0.0",
     });
     console.log(
-      `Server is running on http://localhost::${process.env.PORT || 8010}`,
+      `Server is running on http://localhost:${process.env.PORT || 8010}`,
     );
     fastify.swagger();
   } catch (error) {

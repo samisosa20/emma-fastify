@@ -4,6 +4,8 @@ export type PlannedPayment = {
   id: string;
   accountId: string;
   categoryId: string;
+  investmentId: string | null;
+  addWithdrawal: boolean;
   description: string | null;
   amount: number | Prisma.Decimal;
   startDate: Date;

@@ -5,6 +5,7 @@ import { formatErrorMessage, isAdmin } from "@lib";
 import { AccountTypeUseCase } from "packages/account/application/accountType.use-case";
 import { AccountTypePrismaRepository } from "packages/account/infrastructure/accountType.repository";
 import { CreateAccountType } from "packages/account/domain/accountType";
+import { invalidateLookupMetadataCache } from "packages/shared/settings/metadata.cache";
 
 type AccountTypeParams = {
   page: number;
@@ -33,7 +34,9 @@ export class AccountTypeController {
     const dataAccountType = request.body as CreateAccountType;
 
     try {
-      return accountTypeUseCase.addAccountType(dataAccountType);
+      const result = await accountTypeUseCase.addAccountType(dataAccountType);
+      invalidateLookupMetadataCache();
+      return result;
     } catch (error: any) {
       const detail = formatErrorMessage(error);
       return reply.status(400).send({
@@ -57,7 +60,12 @@ export class AccountTypeController {
     const { id } = request.params as { id: string };
 
     try {
-      return accountTypeUseCase.updateAccountType(id, dataAccountType);
+      const result = await accountTypeUseCase.updateAccountType(
+        id,
+        dataAccountType
+      );
+      invalidateLookupMetadataCache();
+      return result;
     } catch (error: any) {
       const detail = formatErrorMessage(error);
       return reply.status(400).send({
@@ -87,6 +95,7 @@ export class AccountTypeController {
     if (result === null) {
       return reply.status(404).send({ message: "AccountType not found" });
     }
+    invalidateLookupMetadataCache();
     return result;
   };
 }

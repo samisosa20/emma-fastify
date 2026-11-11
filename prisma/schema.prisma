@@ -193,30 +193,35 @@ model Investment {
   user           User                     @relation(fields: [userId], references: [id])
   appreciations  InvestmentAppreciation[]
   movements      Movement[]
+  plannedPayments PlannedPayment[]
 
   @@index([badgeId], map: "Investment_badgeId_fkey")
   @@index([userId], map: "Investment_userId_fkey")
 }
 
 model PlannedPayment {
-  id          String    @id @default(uuid())
-  accountId   String
-  categoryId  String
-  description String?
-  amount      Decimal   @db.Decimal(15, 2)
-  startDate   DateTime  @db.Date
-  endDate     DateTime? @db.Date
-  specificDay Int
-  userId      String
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-  account     Account   @relation(fields: [accountId], references: [id], onDelete: Cascade)
-  category    Category  @relation(fields: [categoryId], references: [id])
-  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id            String      @id @default(uuid())
+  accountId     String
+  categoryId    String
+  description   String?
+  amount        Decimal     @db.Decimal(15, 2)
+  startDate     DateTime    @db.Date
+  endDate       DateTime?   @db.Date
+  specificDay   Int
+  userId        String
+  investmentId  String?
+  addWithdrawal Boolean     @default(false)
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+  account       Account     @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  category      Category    @relation(fields: [categoryId], references: [id])
+  user          User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  investment    Investment? @relation(fields: [investmentId], references: [id])
 
   @@index([accountId], map: "PlannedPayment_accountId_fkey")
   @@index([categoryId], map: "PlannedPayment_categoryId_fkey")
   @@index([userId], map: "PlannedPayment_userId_fkey")
+  @@index([investmentId], map: "PlannedPayment_investmentId_fkey")
 }
 
 model Movement {

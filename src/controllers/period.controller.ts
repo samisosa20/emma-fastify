@@ -5,6 +5,7 @@ import { formatErrorMessage, isAdmin } from "@lib";
 import { PeriodUseCase } from "packages/period/application/period.use-case";
 import { PeriodPrismaRepository } from "packages/period/infrastructure/period.repository";
 import { CreatePeriod } from "packages/period/domain/period";
+import { invalidateLookupMetadataCache } from "packages/shared/settings/metadata.cache";
 
 type PeriodParams = {
   page: number;
@@ -33,7 +34,9 @@ export class PeriodController {
     const dataPeriod = request.body as CreatePeriod;
 
     try {
-      return periodUseCase.addPeriod(dataPeriod);
+      const result = await periodUseCase.addPeriod(dataPeriod);
+      invalidateLookupMetadataCache();
+      return result;
     } catch (error: any) {
       const detail = formatErrorMessage(error);
       return reply.status(400).send({
@@ -57,7 +60,9 @@ export class PeriodController {
     const { id } = request.params as { id: string };
 
     try {
-      return periodUseCase.updatePeriod(id, dataPeriod);
+      const result = await periodUseCase.updatePeriod(id, dataPeriod);
+      invalidateLookupMetadataCache();
+      return result;
     } catch (error: any) {
       const detail = formatErrorMessage(error);
       return reply.status(400).send({
@@ -87,6 +92,7 @@ export class PeriodController {
     if (result === null) {
       return reply.status(404).send({ message: "Period not found" });
     }
+    invalidateLookupMetadataCache();
     return result;
   };
 }

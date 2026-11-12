@@ -1,5 +1,6 @@
 import { PlannedPayment, CreatePlannedPayment } from "../domain/plannedPayment";
 import { IPlannedPaymentRepository } from "../domain/interfaces/plannedPayment.interfaces";
+import { Prisma } from "@prisma/client";
 
 import prisma from "packages/shared/settings/prisma.client";
 import { CommonParamsPaginate, Paginate, ErrorMessage } from "packages/shared";
@@ -112,10 +113,15 @@ export class PlannedPaymentPrismaRepository
       return newPlannedPayment;
     } catch (error: any) {
       if (error.statusCode) throw error;
-      throw Object.assign(new Error("Validation Error"), {
+      const message =
+        error?.message ||
+        (error?.code
+          ? `${error.code} ${error?.meta?.field_name || error?.meta?.target || ""}`.trim()
+          : "Validation Error");
+      throw Object.assign(new Error(message), {
         statusCode: 400,
         error: "Bad Request",
-        message: `${error?.code} ${error?.meta?.field_name}`,
+        message,
       });
     }
   }
@@ -273,16 +279,11 @@ export class PlannedPaymentPrismaRepository
         );
       }
 
-      const { userId: _, investmentId, addWithdrawal, ...otherData } = data;
-      const dataToUpdate: any = {
+      const { userId: _, addWithdrawal, ...otherData } = data;
+      const dataToUpdate: Prisma.PlannedPaymentUncheckedUpdateInput = {
         ...otherData,
         ...(typeof addWithdrawal === "boolean" ? { addWithdrawal } : {}),
       };
-      if (investmentId === null) {
-        dataToUpdate.investment = { disconnect: true };
-      } else if (investmentId) {
-        dataToUpdate.investment = { connect: { id: investmentId } };
-      }
 
       const updatedPlannedPayment = await prisma.plannedPayment.update({
         where: {
@@ -317,10 +318,15 @@ export class PlannedPaymentPrismaRepository
       return updatedPlannedPayment;
     } catch (error: any) {
       if (error.statusCode) throw error;
-      throw Object.assign(new Error("Validation Error"), {
+      const message =
+        error?.message ||
+        (error?.code
+          ? `${error.code} ${error?.meta?.field_name || error?.meta?.target || ""}`.trim()
+          : "Validation Error");
+      throw Object.assign(new Error(message), {
         statusCode: 400,
         error: "Bad Request",
-        message: `${error?.code} ${error?.meta?.field_name}`,
+        message,
       });
     }
   }
@@ -358,10 +364,16 @@ export class PlannedPaymentPrismaRepository
         },
       });
     } catch (error: any) {
-      throw Object.assign(new Error("Validation Error"), {
+      if (error.statusCode) throw error;
+      const message =
+        error?.message ||
+        (error?.code
+          ? `${error.code} ${error?.meta?.field_name || error?.meta?.target || ""}`.trim()
+          : "Validation Error");
+      throw Object.assign(new Error(message), {
         statusCode: 400,
         error: "Bad Request",
-        message: `${error?.code} ${error?.meta?.field_name}`,
+        message,
       });
     }
   }

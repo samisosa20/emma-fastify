@@ -216,7 +216,12 @@ export class HeritagePrismaRepository implements IHeritageRepository {
 
     // Final result conversion from Maps to arrays.
     const finalInvestments = Array.from(investmentMap.values());
-    const finalBalances = Array.from(aggregatedBalancesMap.values());
+    const finalBalances = Array.from(aggregatedBalancesMap.values()).filter(
+      (item) =>
+        item.amount !== null &&
+        item.amount !== undefined &&
+        Math.abs(Number(item.amount)) > 0.0001
+    );
 
     return {
       balances: finalBalances,
@@ -557,8 +562,12 @@ export class HeritagePrismaRepository implements IHeritageRepository {
       });
 
       // Formatear resultados para este año
-      const balancesArray = Array.from(totalsByBadge.entries()).map(
-        ([badgeId, amount]) => {
+      const balancesArray = Array.from(totalsByBadge.entries())
+        .filter(
+          ([, amount]) =>
+            !amount.isZero() && Math.abs(amount.toNumber()) > 0.0001
+        )
+        .map(([badgeId, amount]) => {
           const badge = badgesMap.get(badgeId);
           return {
             code: badge?.code || null,
@@ -566,8 +575,7 @@ export class HeritagePrismaRepository implements IHeritageRepository {
             symbol: badge?.symbol || null,
             amount: amount.toNumber(),
           };
-        }
-      );
+        });
 
       reports.push({
         year: yearNum,

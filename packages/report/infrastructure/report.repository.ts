@@ -159,7 +159,12 @@ export class ReportPrismaRepository implements IReportRepository {
       },
     });
 
-    return report;
+    return report.filter(
+      (item) =>
+        item.amount !== null &&
+        item.amount !== undefined &&
+        Math.abs(Number(item.amount)) > 0.0001
+    );
   }
   public async reportAccountBalance(
     params: ReportParams
